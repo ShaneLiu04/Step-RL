@@ -1,0 +1,43 @@
+# Step-RL v2.0 Dependencies
+# Python 3.10+
+
+# Core ML / DL
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.28.0
+datasets>=2.18.0
+peft>=0.10.0
+trl>=0.8.0
+bitsandbytes>=0.43.0
+
+# Web Automation
+playwright>=1.43.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+
+# Utilities
+PyYAML>=6.0
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+pillow>=10.2.0
+imagehash>=4.3.1
+tqdm>=4.66.0
+wandb>=0.16.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+tabulate>=0.9.0
+
+# Demo / API
+gradio>=4.25.0
+fastapi>=0.110.0
+uvicorn>=0.29.0
+
+# Dev / Test
+pytest>=8.1.0
+black>=24.0.0
+isort>=5.13.0
+flake8>=7.0.0
+
+# Optional: DeepSpeed for distributed training
+deepspeed>=0.14.0
