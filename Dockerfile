@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
+ENV PATH=/root/.local/bin:$PATH
 
 # Install Playwright browsers
 RUN playwright install chromium
