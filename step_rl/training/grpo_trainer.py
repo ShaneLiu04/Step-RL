@@ -78,14 +78,16 @@ class GRPOTrainer(BaseTrainer):
     # GRPO Advantage (Group Normalized)
     # -----------------------------
 
-    def compute_group_advantages(self, trajectories: List[Trajectory]) -> List[List[float]]:
+    def compute_group_advantages(
+        self, trajectories: List[Trajectory]
+    ) -> List[List[float]]:
         """
         Group trajectories and compute advantages as normalized returns.
         Each step within a trajectory receives the same advantage = normalized group return.
         """
         all_advantages = []
         for i in range(0, len(trajectories), self.group_size):
-            group = trajectories[i:i + self.group_size]
+            group = trajectories[i : i + self.group_size]
             returns = [t.total_return for t in group]
             mean_r = np.mean(returns)
             std_r = np.std(returns) + 1e-8
@@ -146,8 +148,16 @@ class GRPOTrainer(BaseTrainer):
 
                 batch_obs = [all_obs[i] for i in batch_idx]
                 batch_responses = [all_responses[i] for i in batch_idx]
-                batch_advantages = torch.tensor([all_advantages[i] for i in batch_idx], dtype=torch.float32, device=self.device)
-                batch_old_log_probs = torch.tensor([all_old_log_probs[i] for i in batch_idx], dtype=torch.float32, device=self.device)
+                batch_advantages = torch.tensor(
+                    [all_advantages[i] for i in batch_idx],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                batch_old_log_probs = torch.tensor(
+                    [all_old_log_probs[i] for i in batch_idx],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
 
                 # Compute new log-prob of the *last generated token* under current policy
                 new_log_probs = self._get_update_log_probs(batch_obs, batch_responses)
@@ -155,11 +165,16 @@ class GRPOTrainer(BaseTrainer):
                 # KL with reference (last-token approximation)
                 inputs = self.tokenizer(
                     [obs + resp for obs, resp in zip(batch_obs, batch_responses)],
-                    return_tensors="pt", padding=True, truncation=True, max_length=4096,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=4096,
                 )
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 seq_lengths = inputs["attention_mask"].sum(dim=1) - 1
-                batch_indices = torch.arange(inputs["input_ids"].size(0), device=self.device)
+                batch_indices = torch.arange(
+                    inputs["input_ids"].size(0), device=self.device
+                )
 
                 outputs = self.policy(**inputs, output_hidden_states=True)
                 last_logits = outputs.logits[batch_indices, seq_lengths]
@@ -180,14 +195,19 @@ class GRPOTrainer(BaseTrainer):
                 # GRPO surrogate
                 ratio = torch.exp(new_log_probs - batch_old_log_probs)
                 surr1 = ratio * batch_advantages
-                surr2 = torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range) * batch_advantages
+                surr2 = (
+                    torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
+                    * batch_advantages
+                )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
                 loss = policy_loss + self.kl_coef * kl - 0.01 * entropy
 
                 self.policy_optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(
+                    self.policy.parameters(), self.max_grad_norm
+                )
                 self.policy_optimizer.step()
 
                 metrics["policy_loss"] += policy_loss.item()
@@ -205,14 +225,17 @@ class GRPOTrainer(BaseTrainer):
 
     def save_checkpoint(self, save_dir: str, epoch: int) -> None:
         path = f"{save_dir}/checkpoint_epoch_{epoch}.pt"
-        torch.save({
-            "epoch": epoch,
-            "global_step": self.global_step,
-            "policy_state_dict": self.policy.state_dict(),
-            "policy_optimizer": self.policy_optimizer.state_dict(),
-            "kl_coef": self.kl_coef,
-            "algorithm": "grpo",
-        }, path)
+        torch.save(
+            {
+                "epoch": epoch,
+                "global_step": self.global_step,
+                "policy_state_dict": self.policy.state_dict(),
+                "policy_optimizer": self.policy_optimizer.state_dict(),
+                "kl_coef": self.kl_coef,
+                "algorithm": "grpo",
+            },
+            path,
+        )
         logger.info(f"Checkpoint saved: {path}")
 
     def load_checkpoint(self, path: str) -> None:
@@ -229,13 +252,23 @@ class GRPOTrainer(BaseTrainer):
 # Entry point
 # -----------------------------
 
+
 def main():
     parser = _build_base_parser("GRPO Training for Step-RL")
     args = parser.parse_args()
 
-    config, device, env, grounding, state_memory, curriculum, tokenizer, policy, ref_model, progress_estimator = (
-        _load_config_and_components(args, "grpo")
-    )
+    (
+        config,
+        device,
+        env,
+        grounding,
+        state_memory,
+        curriculum,
+        tokenizer,
+        policy,
+        ref_model,
+        progress_estimator,
+    ) = _load_config_and_components(args, "grpo")
 
     trainer = GRPOTrainer(
         policy_model=policy,

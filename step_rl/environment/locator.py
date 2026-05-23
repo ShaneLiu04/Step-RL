@@ -47,12 +47,14 @@ async def robust_locate(
 
     if params.get("element_id"):
         eid = escape_css_string(params["element_id"])
-        selectors.extend([
-            f"[data-testid='{eid}']",
-            f"[data-test-id='{eid}']",
-            f"#{eid}",
-            f"[id='{eid}']",
-        ])
+        selectors.extend(
+            [
+                f"[data-testid='{eid}']",
+                f"[data-test-id='{eid}']",
+                f"#{eid}",
+                f"[id='{eid}']",
+            ]
+        )
         methods.extend(["data-testid", "data-test-id", "id_hash", "id_attr"])
 
     if params.get("element_text"):
@@ -132,21 +134,41 @@ async def _coordinate_fallback(
         if testid:
             loc = page.locator(f"[data-testid='{escape_css_string(testid)}']")
             if await loc.count() > 0:
-                return loc.first, {"method": "coordinate_fallback", "coords": [x, y], "by": "testid"}
+                return loc.first, {
+                    "method": "coordinate_fallback",
+                    "coords": [x, y],
+                    "by": "testid",
+                }
         if eid:
             loc = page.locator(f"#{escape_css_string(eid)}")
             if await loc.count() > 0:
-                return loc.first, {"method": "coordinate_fallback", "coords": [x, y], "by": "id"}
+                return loc.first, {
+                    "method": "coordinate_fallback",
+                    "coords": [x, y],
+                    "by": "id",
+                }
         if text:
             loc = page.locator(f"{tag}:has-text('{escape_css_string(text)}')")
             if await loc.count() > 0:
-                return loc.first, {"method": "coordinate_fallback", "coords": [x, y], "by": "tag_text"}
+                return loc.first, {
+                    "method": "coordinate_fallback",
+                    "coords": [x, y],
+                    "by": "tag_text",
+                }
         # Last resort: tag at coordinates via nth-of-type is fragile;
         # use JS click via page.evaluate as a reliable fallback
-        return page.locator(f"{tag}").filter(has_text=text if text else None).first if text else page.locator(tag).first, {
-            "method": "coordinate_fallback", "coords": [x, y], "by": "tag"
+        return page.locator(f"{tag}").filter(
+            has_text=text if text else None
+        ).first if text else page.locator(tag).first, {
+            "method": "coordinate_fallback",
+            "coords": [x, y],
+            "by": "tag",
         }
 
     except Exception as e:
         logger.debug(f"Coordinate fallback failed: {e}")
-        return None, {"method": "coordinate_fallback", "status": "error", "error": str(e)}
+        return None, {
+            "method": "coordinate_fallback",
+            "status": "error",
+            "error": str(e),
+        }

@@ -21,6 +21,7 @@ MODEL_PATH = "./models/Qwen2.5-7B-Instruct/qwen/Qwen2.5-7B-Instruct"
 def load_trajectories(data_dir):
     import random
     from pathlib import Path
+
     trajectories = []
     for fp in Path(data_dir).rglob("*.jsonl"):
         with open(fp, "r", encoding="utf-8") as f:
@@ -45,7 +46,9 @@ def format_trajectory(trajectory):
             f"Difficulty: {level}\nHistory: {history}\n"
             f"Page: {obs}\nOutput JSON:"
         )
-        response = json.dumps({"thought": thought, "action": action, "params": params}, ensure_ascii=False)
+        response = json.dumps(
+            {"thought": thought, "action": action, "params": params}, ensure_ascii=False
+        )
         examples.append({"prompt": prompt, "response": response})
         history.append(f"{thought} -> {action}")
     return examples
@@ -86,16 +89,24 @@ def main():
         texts = []
         for p, r in zip(prompts, responses):
             # Qwen ChatML format: <|im_start|>user\n...<|im_end|>\n<|im_start|>assistant\n...<|im_end|>
-            text = f"<|im_start|>user\n{p}<|im_end|>\n<|im_start|>assistant\n{r}<|im_end|>"
+            text = (
+                f"<|im_start|>user\n{p}<|im_end|>\n<|im_start|>assistant\n{r}<|im_end|>"
+            )
             texts.append(text)
 
-        model_inputs = tokenizer(texts, truncation=True, max_length=max_seq_length, padding="max_length")
+        model_inputs = tokenizer(
+            texts, truncation=True, max_length=max_seq_length, padding="max_length"
+        )
         labels = model_inputs["input_ids"].copy()
 
         # Mask prompt portion in labels
         for i, prompt in enumerate(prompts):
-            prompt_text = f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
-            prompt_tokens = tokenizer(prompt_text, truncation=True, max_length=max_seq_length)["input_ids"]
+            prompt_text = (
+                f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+            )
+            prompt_tokens = tokenizer(
+                prompt_text, truncation=True, max_length=max_seq_length
+            )["input_ids"]
             prompt_len = len(prompt_tokens)
             # Also mask padding tokens
             for j in range(prompt_len):
@@ -106,7 +117,9 @@ def main():
             # Actually, for Causal LM, we only mask prompt and keep response + padding as targets
             # Wait - for padding tokens, we should also mask them!
             # Let's find actual length (non-padded)
-            actual_len = len([x for x in model_inputs["input_ids"][i] if x != tokenizer.pad_token_id])
+            actual_len = len(
+                [x for x in model_inputs["input_ids"][i] if x != tokenizer.pad_token_id]
+            )
             for j in range(actual_len, max_seq_length):
                 labels[i][j] = -100
 
@@ -114,7 +127,9 @@ def main():
         return model_inputs
 
     hf_dataset = HFDataset.from_list(all_examples[:4])  # Use only 4 examples for debug
-    tokenized = hf_dataset.map(preprocess, batched=True, remove_columns=hf_dataset.column_names)
+    tokenized = hf_dataset.map(
+        preprocess, batched=True, remove_columns=hf_dataset.column_names
+    )
 
     print("\nChecking first sample...")
     sample = tokenized[0]
@@ -148,9 +163,20 @@ def main():
 
     # LoRA
     lora_config = LoraConfig(
-        r=64, lora_alpha=32,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-        lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
+        r=64,
+        lora_alpha=32,
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
@@ -176,6 +202,7 @@ def main():
     except Exception as e:
         print(f"  [FAIL] {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
 
 

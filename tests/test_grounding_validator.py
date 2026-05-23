@@ -27,11 +27,12 @@ class MockPage:
     def __init__(self):
         self.locator = MagicMock(return_value=MockLocator())
         self.evaluate = AsyncMock(return_value=None)
-        self.evaluate_handle = AsyncMock(return_value=MagicMock(as_element=MagicMock(return_value=None)))
+        self.evaluate_handle = AsyncMock(
+            return_value=MagicMock(as_element=MagicMock(return_value=None))
+        )
 
 
 class TestGroundingValidator(unittest.TestCase):
-
     def setUp(self):
         self.validator = GroundingValidator(
             similarity_threshold=0.85,

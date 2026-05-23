@@ -14,7 +14,9 @@ MODEL_PATH = "./models/Qwen2.5-7B-Instruct/qwen/Qwen2.5-7B-Instruct"
 
 def main():
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
-    print(f"pad_token_id: {tokenizer.pad_token_id}, eos_token_id: {tokenizer.eos_token_id}")
+    print(
+        f"pad_token_id: {tokenizer.pad_token_id}, eos_token_id: {tokenizer.eos_token_id}"
+    )
     print(f"vocab_size: {tokenizer.vocab_size}, len: {len(tokenizer)}")
 
     # Load ONE example
@@ -24,22 +26,44 @@ def main():
     steps = traj.get("steps", [])
     ex = {
         "prompt": f"Task: {traj.get('task_goal', '')}\nPage: {steps[0].get('observation', '')}",
-        "response": json.dumps({"thought": steps[0].get("thought", ""), "action": steps[0].get("action", "")}, ensure_ascii=False)
+        "response": json.dumps(
+            {
+                "thought": steps[0].get("thought", ""),
+                "action": steps[0].get("action", ""),
+            },
+            ensure_ascii=False,
+        ),
     }
 
     # Test different formatting approaches
     print("\n=== Approach 1: Original (pad_token=eos_token, raw concatenation) ===")
     tokenizer.pad_token = tokenizer.eos_token
     text1 = f"{ex['prompt']}\n{tokenizer.eos_token}\n{ex['response']}\n{tokenizer.eos_token}"
-    out1 = tokenizer(text1, truncation=True, max_length=512, padding="max_length", return_tensors="pt")
-    print(f"  input_ids max: {out1['input_ids'].max().item()}, min: {out1['input_ids'].min().item()}")
+    out1 = tokenizer(
+        text1,
+        truncation=True,
+        max_length=512,
+        padding="max_length",
+        return_tensors="pt",
+    )
+    print(
+        f"  input_ids max: {out1['input_ids'].max().item()}, min: {out1['input_ids'].min().item()}"
+    )
     print(f"  pad_token_id used: {tokenizer.pad_token_id}")
 
     print("\n=== Approach 2: Keep original pad_token, use ChatML format ===")
     tokenizer2 = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
     text2 = f"<|im_start|>user\n{ex['prompt']}<|im_end|>\n<|im_start|>assistant\n{ex['response']}<|im_end|>"
-    out2 = tokenizer2(text2, truncation=True, max_length=512, padding="max_length", return_tensors="pt")
-    print(f"  input_ids max: {out2['input_ids'].max().item()}, min: {out2['input_ids'].min().item()}")
+    out2 = tokenizer2(
+        text2,
+        truncation=True,
+        max_length=512,
+        padding="max_length",
+        return_tensors="pt",
+    )
+    print(
+        f"  input_ids max: {out2['input_ids'].max().item()}, min: {out2['input_ids'].min().item()}"
+    )
     print(f"  pad_token_id used: {tokenizer2.pad_token_id}")
 
     # Load model
@@ -67,7 +91,9 @@ def main():
     labels1[0, :50] = -100  # Mask first 50 tokens as prompt
     batch1 = {
         "input_ids": out1["input_ids"].to(model.model.embed_tokens.weight.device),
-        "attention_mask": out1["attention_mask"].to(model.model.embed_tokens.weight.device),
+        "attention_mask": out1["attention_mask"].to(
+            model.model.embed_tokens.weight.device
+        ),
         "labels": labels1.to(model.model.embed_tokens.weight.device),
     }
     try:
@@ -85,7 +111,9 @@ def main():
     labels2[0, :50] = -100
     batch2 = {
         "input_ids": out2["input_ids"].to(model.model.embed_tokens.weight.device),
-        "attention_mask": out2["attention_mask"].to(model.model.embed_tokens.weight.device),
+        "attention_mask": out2["attention_mask"].to(
+            model.model.embed_tokens.weight.device
+        ),
         "labels": labels2.to(model.model.embed_tokens.weight.device),
     }
     try:

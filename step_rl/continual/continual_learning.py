@@ -39,27 +39,37 @@ class TrajectoryStore:
 
     def save(self, trajectory: Dict[str, Any], status: str = "pending") -> str:
         """Save a trajectory to the appropriate folder."""
-        folder = self.pending_dir if status == "pending" else (
-            self.approved_dir if status == "approved" else self.rejected_dir
+        folder = (
+            self.pending_dir
+            if status == "pending"
+            else (self.approved_dir if status == "approved" else self.rejected_dir)
         )
-        traj_id = trajectory.get("trajectory_id", f"traj_{random.randint(100000, 999999)}")
+        traj_id = trajectory.get(
+            "trajectory_id", f"traj_{random.randint(100000, 999999)}"
+        )
         path = folder / f"{traj_id}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(trajectory, f, ensure_ascii=False, indent=2)
         return str(path)
 
     def list_by_status(self, status: str = "pending") -> List[Path]:
-        folder = self.pending_dir if status == "pending" else (
-            self.approved_dir if status == "approved" else self.rejected_dir
+        folder = (
+            self.pending_dir
+            if status == "pending"
+            else (self.approved_dir if status == "approved" else self.rejected_dir)
         )
         return sorted(folder.glob("*.json"))
 
     def move(self, traj_id: str, from_status: str, to_status: str) -> None:
-        src = self.pending_dir if from_status == "pending" else (
-            self.approved_dir if from_status == "approved" else self.rejected_dir
+        src = (
+            self.pending_dir
+            if from_status == "pending"
+            else (self.approved_dir if from_status == "approved" else self.rejected_dir)
         )
-        dst = self.pending_dir if to_status == "pending" else (
-            self.approved_dir if to_status == "approved" else self.rejected_dir
+        dst = (
+            self.pending_dir
+            if to_status == "pending"
+            else (self.approved_dir if to_status == "approved" else self.rejected_dir)
         )
         src_file = src / f"{traj_id}.json"
         if src_file.exists():
@@ -82,7 +92,9 @@ class ContinualLearner:
         self.tokenizer = tokenizer
         self.config = config
         self.device = device
-        self.store = TrajectoryStore(config["continual"].get("store_dir", "./data/trajectories"))
+        self.store = TrajectoryStore(
+            config["continual"].get("store_dir", "./data/trajectories")
+        )
 
         self.bootstrap_threshold = config["continual"]["bootstrap_threshold"]
         self.min_new_samples = config["continual"]["min_new_samples_for_retrain"]
@@ -178,7 +190,9 @@ class ContinualLearner:
 
         approved_files = self.store.list_by_status("approved")
         if len(approved_files) < self.min_new_samples:
-            return {"error": f"Not enough approved samples ({len(approved_files)} < {self.min_new_samples})"}
+            return {
+                "error": f"Not enough approved samples ({len(approved_files)} < {self.min_new_samples})"
+            }
 
         data = []
         for path in approved_files:
@@ -186,12 +200,14 @@ class ContinualLearner:
                 traj = json.load(f)
             for step in traj.get("steps", []):
                 if "progress_label" in step:
-                    data.append({
-                        "text": step.get("observation", ""),
-                        "progress": step["progress_label"],
-                        "step_count": step.get("step_index", 0),
-                        "task_id": traj.get("task_id", "unknown"),
-                    })
+                    data.append(
+                        {
+                            "text": step.get("observation", ""),
+                            "progress": step["progress_label"],
+                            "step_count": step.get("step_index", 0),
+                            "task_id": traj.get("task_id", "unknown"),
+                        }
+                    )
 
         if len(data) < 10:
             return {"error": "Not enough labeled steps."}
@@ -205,6 +221,7 @@ class ContinualLearner:
         )
 
         from step_rl.reward.progress_estimator import progress_estimator_loss
+
         self.model.train()
         total_metrics: Dict[str, float] = {}
         for epoch in range(epochs):
@@ -242,17 +259,24 @@ def main():
     parser = argparse.ArgumentParser(description="Continual Learning for Step-RL")
     parser.add_argument("--config", type=str, default="config.yaml")
     parser.add_argument("--progress_model", type=str, required=True)
-    parser.add_argument("--action", type=str, choices=["review", "retrain", "stats"], default="stats")
+    parser.add_argument(
+        "--action", type=str, choices=["review", "retrain", "stats"], default="stats"
+    )
     parser.add_argument("--traj_id", type=str, default=None)
     parser.add_argument("--approve", action="store_true")
-    parser.add_argument("--labels", type=str, default=None, help="Comma-separated progress labels")
+    parser.add_argument(
+        "--labels", type=str, default=None, help="Comma-separated progress labels"
+    )
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(config["model"]["base_model"], trust_remote_code=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        config["model"]["base_model"], trust_remote_code=True
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = ProgressEstimator(

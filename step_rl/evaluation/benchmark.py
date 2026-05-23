@@ -71,7 +71,9 @@ class Benchmark:
         df = pd.DataFrame(rows)
         return df
 
-    def save_table(self, df: pd.DataFrame, filename: str = "ablation_table.csv") -> None:
+    def save_table(
+        self, df: pd.DataFrame, filename: str = "ablation_table.csv"
+    ) -> None:
         path = self.output_dir / filename
         df.to_csv(path, index=False, float_format="%.3f")
         print(f"Table saved to {path}")
@@ -119,8 +121,14 @@ class Benchmark:
         plt.title("Success Rate Comparison (Ablation Study)")
         plt.ylim(0, 1.0)
         for bar, rate in zip(bars, rates):
-            plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
-                     f"{rate:.1%}", ha="center", va="bottom", fontsize=10)
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.01,
+                f"{rate:.1%}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
         plt.xticks(rotation=30, ha="right")
         plt.tight_layout()
         path = self.output_dir / "success_rate_comparison.png"
@@ -173,7 +181,10 @@ class Benchmark:
 
         # Grounding accuracy
         ax = axes[1, 0]
-        gaccs = [np.mean([e.get("grounding_accuracy", 1.0) for e in eps]) for eps in self.results.values()]
+        gaccs = [
+            np.mean([e.get("grounding_accuracy", 1.0) for e in eps])
+            for eps in self.results.values()
+        ]
         ax.bar(configs, gaccs, color="green")
         ax.set_ylabel("Grounding Acc")
         ax.set_title("动作锚定准确率")
@@ -181,7 +192,10 @@ class Benchmark:
 
         # Loop rate
         ax = axes[1, 1]
-        loops = [np.mean([e.get("loop_detected", False) for e in eps]) for eps in self.results.values()]
+        loops = [
+            np.mean([e.get("loop_detected", False) for e in eps])
+            for eps in self.results.values()
+        ]
         ax.bar(configs, loops, color="red")
         ax.set_ylabel("Loop Rate")
         ax.set_title("循环检测率")
@@ -196,7 +210,9 @@ class Benchmark:
         print(f"Dashboard saved: {path}")
 
 
-def generate_mock_results(config_names: List[str], num_episodes: int = 100) -> Dict[str, List[Dict]]:
+def generate_mock_results(
+    config_names: List[str], num_episodes: int = 100
+) -> Dict[str, List[Dict]]:
     """Generate synthetic evaluation results for demonstration."""
     np.random.seed(42)
     results = {}
@@ -219,16 +235,26 @@ def generate_mock_results(config_names: List[str], num_episodes: int = 100) -> D
         for i in range(num_episodes):
             success = np.random.rand() < base_success
             length = np.random.randint(5, 25) if success else np.random.randint(10, 30)
-            episodes.append({
-                "success": success,
-                "length": length,
-                "duration": length * 0.8 + np.random.normal(0, 2),
-                "total_return": (1.0 if success else -0.5) + np.random.normal(0, 0.2),
-                "grounding_accuracy": np.clip(np.random.normal(0.97 if "full" in name else 0.93, 0.02), 0.8, 1.0),
-                "auto_corrected": np.random.rand() < (0.45 if "full" in name else 0.2),
-                "loop_detected": np.random.rand() < (0.05 if "full" in name else 0.15),
-                "human_intervention": np.random.rand() < (0.05 if "full" in name else 0.12),
-            })
+            episodes.append(
+                {
+                    "success": success,
+                    "length": length,
+                    "duration": length * 0.8 + np.random.normal(0, 2),
+                    "total_return": (1.0 if success else -0.5)
+                    + np.random.normal(0, 0.2),
+                    "grounding_accuracy": np.clip(
+                        np.random.normal(0.97 if "full" in name else 0.93, 0.02),
+                        0.8,
+                        1.0,
+                    ),
+                    "auto_corrected": np.random.rand()
+                    < (0.45 if "full" in name else 0.2),
+                    "loop_detected": np.random.rand()
+                    < (0.05 if "full" in name else 0.15),
+                    "human_intervention": np.random.rand()
+                    < (0.05 if "full" in name else 0.12),
+                }
+            )
         results[name] = episodes
     return results
 
@@ -237,7 +263,9 @@ def main():
     parser = argparse.ArgumentParser(description="Step-RL Benchmark")
     parser.add_argument("--config", type=str, default="config.yaml")
     parser.add_argument("--results_dir", type=str, default="./outputs/benchmark")
-    parser.add_argument("--mock", action="store_true", help="Generate mock results for visualization")
+    parser.add_argument(
+        "--mock", action="store_true", help="Generate mock results for visualization"
+    )
     args = parser.parse_args()
 
     with open(args.config, "r", encoding="utf-8") as f:
@@ -248,8 +276,15 @@ def main():
     if args.mock:
         print("Generating mock results for visualization...")
         ablation_configs = [
-            "sft_baseline", "sparse_ppo", "progress_only", "grounding_only",
-            "fixed_weight", "full_v2", "grpo", "no_bootstrap", "no_curriculum"
+            "sft_baseline",
+            "sparse_ppo",
+            "progress_only",
+            "grounding_only",
+            "fixed_weight",
+            "full_v2",
+            "grpo",
+            "no_bootstrap",
+            "no_curriculum",
         ]
         mock_results = generate_mock_results(ablation_configs)
         for name, eps in mock_results.items():

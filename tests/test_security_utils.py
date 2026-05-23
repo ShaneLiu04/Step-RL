@@ -2,7 +2,11 @@
 
 import pytest
 
-from step_rl.utils.security_utils import escape_css_string, escape_xpath_string, validate_url
+from step_rl.utils.security_utils import (
+    escape_css_string,
+    escape_xpath_string,
+    validate_url,
+)
 
 
 class TestEscapeCssString:

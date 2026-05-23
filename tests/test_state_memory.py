@@ -13,7 +13,6 @@ from step_rl.memory.state_memory import StateMemory
 
 
 class TestStateMemory(unittest.TestCase):
-
     def setUp(self):
         self.memory = StateMemory(
             hash_method="simple",

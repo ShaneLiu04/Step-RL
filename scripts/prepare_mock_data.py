@@ -18,7 +18,13 @@ def generate_sft_trajectory(task_id: str, goal: str, level: int, num_steps: int)
         ("click", {"element_text": "搜索框", "xpath": "//input[@placeholder='搜索']"}),
         ("type", {"element_text": "搜索框", "text": "iPhone 15"}),
         ("click", {"element_text": "搜索按钮", "xpath": "//button[text()='搜索']"}),
-        ("click", {"element_text": "iPhone 15 商品", "xpath": "//a[contains(text(),'iPhone 15')]"}),
+        (
+            "click",
+            {
+                "element_text": "iPhone 15 商品",
+                "xpath": "//a[contains(text(),'iPhone 15')]",
+            },
+        ),
         ("click", {"element_text": "加入购物车", "xpath": "//button[text()='加入购物车']"}),
         ("click", {"element_text": "去结算", "xpath": "//a[text()='去结算']"}),
         ("click", {"element_text": "提交订单", "xpath": "//button[text()='提交订单']"}),
@@ -37,12 +43,14 @@ def generate_sft_trajectory(task_id: str, goal: str, level: int, num_steps: int)
     for i in range(min(num_steps, len(actions_pool))):
         action_name, params = actions_pool[i]
         obs_text = obs_templates[min(i, len(obs_templates) - 1)]
-        steps.append({
-            "observation": obs_text,
-            "thought": f"第{i+1}步: 需要执行{action_name}操作来推进任务",
-            "action": action_name,
-            "params": params,
-        })
+        steps.append(
+            {
+                "observation": obs_text,
+                "thought": f"第{i+1}步: 需要执行{action_name}操作来推进任务",
+                "action": action_name,
+                "params": params,
+            }
+        )
 
     return {
         "task_id": task_id,
@@ -59,14 +67,16 @@ def generate_progress_labels(trajectory: dict):
     steps = trajectory["steps"]
     n = len(steps)
     for i, step in enumerate(steps):
-        labels.append({
-            "text": f"任务: {trajectory['task_goal']}\n页面: {step['observation']}",
-            "progress": (i + 1) / max(n, 1),
-            "step_count": i,
-            "trajectory_id": trajectory["task_id"],
-            "task_id": trajectory["task_id"],
-            "outcome": "success" if trajectory["success"] else "failure",
-        })
+        labels.append(
+            {
+                "text": f"任务: {trajectory['task_goal']}\n页面: {step['observation']}",
+                "progress": (i + 1) / max(n, 1),
+                "step_count": i,
+                "trajectory_id": trajectory["task_id"],
+                "task_id": trajectory["task_id"],
+                "outcome": "success" if trajectory["success"] else "failure",
+            }
+        )
     return labels
 
 

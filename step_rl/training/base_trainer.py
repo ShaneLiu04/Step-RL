@@ -125,7 +125,12 @@ class BaseTrainer(ABC):
             response_text = forward_result["response_text"]
             value = forward_result.get("value", 0.0)
 
-            valid, r_grounding, corrected, msg = await self.grounding.validate_and_correct(
+            (
+                valid,
+                r_grounding,
+                corrected,
+                msg,
+            ) = await self.grounding.validate_and_correct(
                 self.env.page, action_dict["action"], action_dict.get("params", {})
             )
             if corrected:
@@ -140,29 +145,37 @@ class BaseTrainer(ABC):
             r_progress = 0.0
             uncertainty = 0.0
             if self.progress_estimator is not None:
-                r_progress, uncertainty = self._compute_progress_reward(obs, task.goal, step, prev_progress)
+                r_progress, uncertainty = self._compute_progress_reward(
+                    obs, task.goal, step, prev_progress
+                )
                 prev_progress += r_progress
 
             r_sparse = self.config["reward"]["sparse"]["step_penalty"]
             done = False
             if action.action == "finish":
-                r_sparse = self.config["reward"]["sparse"]["success"] if info.get("terminal") else self.config["reward"]["sparse"]["failure"]
+                r_sparse = (
+                    self.config["reward"]["sparse"]["success"]
+                    if info.get("terminal")
+                    else self.config["reward"]["sparse"]["failure"]
+                )
                 done = True
                 trajectory.success = info.get("success", False)
 
             r_efficiency = 0.0
             if done and trajectory.success:
                 saved = max(0, self.max_steps - step)
-                r_efficiency = saved * self.config["reward"].get("efficiency", {}).get("bonus_per_saved_step", 0.01)
+                r_efficiency = saved * self.config["reward"].get("efficiency", {}).get(
+                    "bonus_per_saved_step", 0.01
+                )
 
             weights = self.curriculum.get_reward_weights(self.epoch)
             r_total = (
-                weights["alpha"] * r_progress * (1.0 - uncertainty) +
-                weights["beta"] * r_grounding +
-                weights["gamma"] * r_sparse +
-                weights["delta"] * r_efficiency +
-                weights["epsilon"] * r_novelty +
-                weights["zeta"] * r_loop
+                weights["alpha"] * r_progress * (1.0 - uncertainty)
+                + weights["beta"] * r_grounding
+                + weights["gamma"] * r_sparse
+                + weights["delta"] * r_efficiency
+                + weights["epsilon"] * r_novelty
+                + weights["zeta"] * r_loop
             )
 
             trajectory.observations.append(prompt_text)
@@ -172,15 +185,17 @@ class BaseTrainer(ABC):
             trajectory.log_probs.append(log_prob)
             trajectory.values.append(value)
             trajectory.dones.append(done)
-            trajectory.infos.append({
-                "grounding": r_grounding,
-                "progress": r_progress,
-                "loop": r_loop,
-                "novelty": r_novelty,
-                "sparse": r_sparse,
-                "uncertainty": uncertainty,
-                "message": msg,
-            })
+            trajectory.infos.append(
+                {
+                    "grounding": r_grounding,
+                    "progress": r_progress,
+                    "loop": r_loop,
+                    "novelty": r_novelty,
+                    "sparse": r_sparse,
+                    "uncertainty": uncertainty,
+                    "message": msg,
+                }
+            )
 
             if done:
                 break
@@ -190,11 +205,19 @@ class BaseTrainer(ABC):
         trajectory.total_return = sum(trajectory.rewards)
         return trajectory
 
-    def _build_prompt(self, task: Task, obs: Observation, action_history: List[Dict]) -> str:
-        history_str = "\n".join([
-            f"{i+1}. {a.get('action', '')}: {a.get('params', {})}"
-            for i, a in enumerate(action_history[-10:])
-        ]) if action_history else "None"
+    def _build_prompt(
+        self, task: Task, obs: Observation, action_history: List[Dict]
+    ) -> str:
+        history_str = (
+            "\n".join(
+                [
+                    f"{i+1}. {a.get('action', '')}: {a.get('params', {})}"
+                    for i, a in enumerate(action_history[-10:])
+                ]
+            )
+            if action_history
+            else "None"
+        )
         return (
             f"You are a Web automation assistant. Generate the next action based on the task goal and current page state.\n"
             f"Task: {task.goal}\n"
@@ -216,7 +239,9 @@ class BaseTrainer(ABC):
             - response_text: raw generated text
             - value: (optional, added by PPO subclass)
         """
-        inputs = self.tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=4096)
+        inputs = self.tokenizer(
+            prompt_text, return_tensors="pt", truncation=True, max_length=4096
+        )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         prompt_len = inputs["input_ids"].shape[1]
 
@@ -231,21 +256,33 @@ class BaseTrainer(ABC):
                 return_dict_in_generate=True,
             )
             response_ids = gen_out.sequences[0, prompt_len:]
-            response_text = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+            response_text = self.tokenizer.decode(
+                response_ids, skip_special_tokens=True
+            )
 
             # Compute exact log-prob of generated tokens
             scores = torch.stack(gen_out.scores, dim=1)  # [1, new_len, vocab]
             log_probs_all = F.log_softmax(scores, dim=-1)
-            response_ids_expanded = response_ids.unsqueeze(0).unsqueeze(-1)  # [1, new_len, 1]
-            token_log_probs = log_probs_all.gather(-1, response_ids_expanded).squeeze(-1)  # [1, new_len]
+            response_ids_expanded = response_ids.unsqueeze(0).unsqueeze(
+                -1
+            )  # [1, new_len, 1]
+            token_log_probs = log_probs_all.gather(-1, response_ids_expanded).squeeze(
+                -1
+            )  # [1, new_len]
 
             # Use *last token* log-prob as the action proxy (consistent with update phase)
-            last_token_log_prob = token_log_probs[0, -1].item() if token_log_probs.shape[1] > 0 else 0.0
+            last_token_log_prob = (
+                token_log_probs[0, -1].item() if token_log_probs.shape[1] > 0 else 0.0
+            )
 
         try:
             action_dict = json.loads(response_text)
         except json.JSONDecodeError:
-            action_dict = {"thought": "", "action": "wait", "params": {"duration_ms": 1000}}
+            action_dict = {
+                "thought": "",
+                "action": "wait",
+                "params": {"duration_ms": 1000},
+            }
 
         return {
             "action_dict": action_dict,
@@ -260,12 +297,16 @@ class BaseTrainer(ABC):
             return 0.0, 0.0
 
         text = f"Task: {goal}\nPage: {obs.url}\n{obs.text[:1500]}"
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=2048
+        )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         step_t = torch.tensor([step_count], dtype=torch.long, device=self.device)
 
         with torch.no_grad():
-            out = self.progress_estimator(inputs["input_ids"], inputs["attention_mask"], step_t)
+            out = self.progress_estimator(
+                inputs["input_ids"], inputs["attention_mask"], step_t
+            )
 
         progress = out.progress.item()
         uncertainty = out.uncertainty.item() if out.uncertainty is not None else 0.0
@@ -296,15 +337,23 @@ class BaseTrainer(ABC):
             self.epoch = epoch
             self.curriculum.step_epoch()
 
-            logger.info(f"=== {self.algorithm.upper()} Epoch {epoch + 1}/{total_epochs} ===")
+            logger.info(
+                f"=== {self.algorithm.upper()} Epoch {epoch + 1}/{total_epochs} ==="
+            )
 
             trajectories = await self.collect_rollouts(self.num_rollouts)
             self.store_trajectories(trajectories)
 
-            avg_return = np.mean([t.total_return for t in trajectories]) if trajectories else 0
+            avg_return = (
+                np.mean([t.total_return for t in trajectories]) if trajectories else 0
+            )
             avg_len = np.mean([t.length for t in trajectories]) if trajectories else 0
-            success_rate = np.mean([t.success for t in trajectories]) if trajectories else 0
-            logger.info(f"Rollouts: return={avg_return:.3f}, len={avg_len:.1f}, success={success_rate:.2%}")
+            success_rate = (
+                np.mean([t.success for t in trajectories]) if trajectories else 0
+            )
+            logger.info(
+                f"Rollouts: return={avg_return:.3f}, len={avg_len:.1f}, success={success_rate:.2%}"
+            )
 
             if len(trajectories) > 0:
                 metrics = self.update(trajectories)
@@ -328,12 +377,15 @@ class BaseTrainer(ABC):
 
     def save_checkpoint(self, save_dir: str, epoch: int) -> None:
         path = os.path.join(save_dir, f"checkpoint_epoch_{epoch}.pt")
-        torch.save({
-            "epoch": epoch,
-            "global_step": self.global_step,
-            "policy_state_dict": self.policy.state_dict(),
-            "algorithm": self.algorithm,
-        }, path)
+        torch.save(
+            {
+                "epoch": epoch,
+                "global_step": self.global_step,
+                "policy_state_dict": self.policy.state_dict(),
+                "algorithm": self.algorithm,
+            },
+            path,
+        )
         logger.info(f"Checkpoint saved: {path}")
 
     def load_checkpoint(self, path: str) -> None:
@@ -362,7 +414,13 @@ class BaseTrainer(ABC):
         """
         # Concatenate prompt + response so we can index the response's last token
         full_texts = [obs + resp for obs, resp in zip(batch_obs, batch_responses)]
-        inputs = self.tokenizer(full_texts, return_tensors="pt", padding=True, truncation=True, max_length=4096)
+        inputs = self.tokenizer(
+            full_texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=4096,
+        )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         outputs = self.policy(**inputs, output_hidden_states=True)
@@ -391,6 +449,7 @@ class BaseTrainer(ABC):
 # -----------------------------
 # Shared helpers
 # -----------------------------
+
 
 def _get_dtype():
     if torch.cuda.is_available() and torch.cuda.device_count() > 0:
@@ -431,16 +490,26 @@ def _load_config_and_components(args: argparse.Namespace, algorithm: str):
     dtype = _get_dtype()
 
     policy = AutoModelForCausalLM.from_pretrained(
-        base_model_name, torch_dtype=dtype, trust_remote_code=True,
+        base_model_name,
+        torch_dtype=dtype,
+        trust_remote_code=True,
     )
     policy = PeftModel.from_pretrained(policy, args.sft_adapter)
-    policy = policy.merge_and_unload() if hasattr(policy, "merge_and_unload") else policy
+    policy = (
+        policy.merge_and_unload() if hasattr(policy, "merge_and_unload") else policy
+    )
 
     ref_model = AutoModelForCausalLM.from_pretrained(
-        base_model_name, torch_dtype=dtype, trust_remote_code=True,
+        base_model_name,
+        torch_dtype=dtype,
+        trust_remote_code=True,
     )
     ref_model = PeftModel.from_pretrained(ref_model, args.sft_adapter)
-    ref_model = ref_model.merge_and_unload() if hasattr(ref_model, "merge_and_unload") else ref_model
+    ref_model = (
+        ref_model.merge_and_unload()
+        if hasattr(ref_model, "merge_and_unload")
+        else ref_model
+    )
     for param in ref_model.parameters():
         param.requires_grad = False
 
@@ -454,4 +523,15 @@ def _load_config_and_components(args: argparse.Namespace, algorithm: str):
         progress_estimator.load_state_dict(ckpt["model_state_dict"])
         progress_estimator.eval()
 
-    return config, device, env, grounding, state_memory, curriculum, tokenizer, policy, ref_model, progress_estimator
+    return (
+        config,
+        device,
+        env,
+        grounding,
+        state_memory,
+        curriculum,
+        tokenizer,
+        policy,
+        ref_model,
+        progress_estimator,
+    )

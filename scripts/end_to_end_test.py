@@ -37,6 +37,7 @@ from step_rl.training.curriculum_scheduler import CurriculumScheduler, Task
 # Mock Environment (avoids Playwright for fast testing)
 # =============================================================================
 
+
 @dataclass
 class MockObservation:
     text: str = ""
@@ -54,7 +55,9 @@ class MockWebEnv:
     async def reset(self, task_goal: str = "", start_url: str = None):
         self.step_count = 0
         self.task = task_goal
-        return MockObservation(text=f"首页 搜索框 导航栏", url="https://example.com", title="首页")
+        return MockObservation(
+            text=f"首页 搜索框 导航栏", url="https://example.com", title="首页"
+        )
 
     async def get_observation(self):
         templates = [
@@ -65,7 +68,9 @@ class MockWebEnv:
             "订单确认页 地址 提交订单",
         ]
         idx = min(self.step_count, len(templates) - 1)
-        return MockObservation(text=templates[idx], url="https://example.com/page" + str(idx), title="Page")
+        return MockObservation(
+            text=templates[idx], url="https://example.com/page" + str(idx), title="Page"
+        )
 
     async def execute_action(self, action):
         self.step_count += 1
@@ -84,6 +89,7 @@ class MockWebEnv:
 # =============================================================================
 # Mini GRPO Trainer (simplified for integration test)
 # =============================================================================
+
 
 class MiniGRPOTrainer:
     def __init__(self, policy, ref_model, tokenizer, env, curriculum, device):
@@ -119,6 +125,7 @@ class MiniGRPOTrainer:
 
             class MockAction:
                 action = action_str
+
             await self.env.execute_action(MockAction())
             if action_str == "finish":
                 break
@@ -136,7 +143,9 @@ class MiniGRPOTrainer:
             # Differentiable policy update: compute log-prob over collected prompts
             total_loss = 0.0
             for prompt in prompts:
-                inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=128)
+                inputs = self.tokenizer(
+                    prompt, return_tensors="pt", truncation=True, max_length=128
+                )
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 outputs = self.policy(**inputs)
                 logits = outputs.logits[:, -1, :]
@@ -151,7 +160,9 @@ class MiniGRPOTrainer:
 
             self.global_step += 1
             if (ep + 1) % 2 == 0:
-                print(f"  Episode {ep+1}/{num_episodes} | Return: {ret:.3f} | PolicyLoss: {total_loss:.4f}")
+                print(
+                    f"  Episode {ep+1}/{num_episodes} | Return: {ret:.3f} | PolicyLoss: {total_loss:.4f}"
+                )
 
         print("[MiniGRPO] Training complete.")
 
@@ -160,10 +171,11 @@ class MiniGRPOTrainer:
 # Test Suite
 # =============================================================================
 
+
 def test_progress_estimator(device):
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 1: Progress Estimator")
-    print("="*60)
+    print("=" * 60)
 
     tokenizer = AutoTokenizer.from_pretrained("gpt2")
     tokenizer.pad_token = tokenizer.eos_token
@@ -180,7 +192,9 @@ def test_progress_estimator(device):
 
     # Dummy batch
     texts = ["任务: 搜索iPhone\n页面: 首页", "任务: 搜索iPhone\n页面: 结果页"]
-    enc = tokenizer(texts, padding=True, truncation=True, max_length=64, return_tensors="pt")
+    enc = tokenizer(
+        texts, padding=True, truncation=True, max_length=64, return_tensors="pt"
+    )
     batch = {
         "input_ids": enc["input_ids"].to(device),
         "attention_mask": enc["attention_mask"].to(device),
@@ -189,7 +203,9 @@ def test_progress_estimator(device):
     }
 
     model.train()
-    loss, metrics = progress_estimator_loss(model, batch, {"mse": 1.0, "rank": 0.5, "mono": 0.3})
+    loss, metrics = progress_estimator_loss(
+        model, batch, {"mse": 1.0, "rank": 0.5, "mono": 0.3}
+    )
     loss.backward()
 
     print(f"  Loss: {loss.item():.4f}")
@@ -202,8 +218,12 @@ def test_progress_estimator(device):
     torch.save({"model_state_dict": model.state_dict()}, ckpt_path)
 
     model2 = ProgressEstimator(
-        encoder_name="gpt2", hidden_dim=64, num_layers=2,
-        use_uncertainty=True, uncertainty_method="evidential", freeze_encoder=False,
+        encoder_name="gpt2",
+        hidden_dim=64,
+        num_layers=2,
+        use_uncertainty=True,
+        uncertainty_method="evidential",
+        freeze_encoder=False,
     )
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=True)
     model2.load_state_dict(ckpt["model_state_dict"])
@@ -213,9 +233,9 @@ def test_progress_estimator(device):
 
 
 def test_sft_warmup(device):
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 2: SFT Warmup (LoRA on GPT-2)")
-    print("="*60)
+    print("=" * 60)
 
     from peft import LoraConfig, get_peft_model
 
@@ -223,7 +243,9 @@ def test_sft_warmup(device):
     tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained("gpt2")
-    lora_config = LoraConfig(r=8, lora_alpha=16, target_modules=["c_attn"], lora_dropout=0.05)
+    lora_config = LoraConfig(
+        r=8, lora_alpha=16, target_modules=["c_attn"], lora_dropout=0.05
+    )
     model = get_peft_model(model, lora_config)
     model.to(device)
     model.print_trainable_parameters()
@@ -240,9 +262,9 @@ def test_sft_warmup(device):
 
 
 def test_grpo_training(device, sft_model, tokenizer):
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("TEST 3: GRPO Training Loop")
-    print("="*60)
+    print("=" * 60)
 
     env = MockWebEnv()
     grounding = GroundingValidator()
@@ -265,16 +287,20 @@ def test_grpo_training(device, sft_model, tokenizer):
     )
 
     import asyncio
+
     asyncio.run(trainer.train(num_episodes=6))
 
     # Save checkpoint
     with tempfile.NamedTemporaryFile(suffix=".pt", delete=False) as f:
         ckpt_path = f.name
-    torch.save({
-        "epoch": 5,
-        "global_step": trainer.global_step,
-        "policy_state_dict": trainer.policy.state_dict(),
-    }, ckpt_path)
+    torch.save(
+        {
+            "epoch": 5,
+            "global_step": trainer.global_step,
+            "policy_state_dict": trainer.policy.state_dict(),
+        },
+        ckpt_path,
+    )
     print(f"  Checkpoint saved: {ckpt_path}")
 
     # Resume
@@ -285,9 +311,9 @@ def test_grpo_training(device, sft_model, tokenizer):
 
 
 def test_full_pipeline():
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Step-RL v2.0 End-to-End Integration Test")
-    print("="*60)
+    print("=" * 60)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nDevice: {device}")
@@ -308,9 +334,9 @@ def test_full_pipeline():
     # 3. GRPO Training
     test_grpo_training(device, sft_model, sft_tokenizer)
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("ALL TESTS PASSED [OK]")
-    print("="*60)
+    print("=" * 60)
     print("\nThe full pipeline is functional:")
     print("  1. Progress Estimator training (MSE + Evidential uncertainty)")
     print("  2. SFT Warmup with LoRA")

@@ -49,7 +49,9 @@ class CurriculumScheduler:
 
         self.tasks: List[Task] = []
         self._current_level: int = 1
-        self._level_success_rates: Dict[int, List[float]] = {lvl: [] for lvl in self.levels}
+        self._level_success_rates: Dict[int, List[float]] = {
+            lvl: [] for lvl in self.levels
+        }
         self._epoch: int = 0
 
     # -----------------------------
@@ -61,18 +63,21 @@ class CurriculumScheduler:
 
     def load_tasks_from_yaml(self, path: str) -> None:
         import yaml
+
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         for item in data.get("tasks", []):
-            self.tasks.append(Task(
-                task_id=item["id"],
-                goal=item["goal"],
-                level=item["level"],
-                start_url=item.get("start_url"),
-                min_steps=item.get("min_steps", 2),
-                max_steps=item.get("max_steps", 30),
-                metadata=item.get("metadata", {}),
-            ))
+            self.tasks.append(
+                Task(
+                    task_id=item["id"],
+                    goal=item["goal"],
+                    level=item["level"],
+                    start_url=item.get("start_url"),
+                    min_steps=item.get("min_steps", 2),
+                    max_steps=item.get("max_steps", 30),
+                    metadata=item.get("metadata", {}),
+                )
+            )
 
     # -----------------------------
     # Sampling
@@ -129,30 +134,30 @@ class CurriculumScheduler:
 
         if progress < 0.3:
             return {
-                "alpha": 1.0,   # progress
-                "beta": 2.0,    # grounding (dominant)
-                "gamma": 1.0,   # sparse
-                "delta": 0.5,   # efficiency
-                "epsilon": 0.3, # novelty
-                "zeta": 1.0,    # loop
+                "alpha": 1.0,  # progress
+                "beta": 2.0,  # grounding (dominant)
+                "gamma": 1.0,  # sparse
+                "delta": 0.5,  # efficiency
+                "epsilon": 0.3,  # novelty
+                "zeta": 1.0,  # loop
             }
         elif progress < 0.7:
             return {
-                "alpha": 2.0,   # progress (dominant)
-                "beta": 1.0,    # grounding
-                "gamma": 1.0,   # sparse
-                "delta": 0.5,   # efficiency
-                "epsilon": 0.8, # novelty
-                "zeta": 1.0,    # loop
+                "alpha": 2.0,  # progress (dominant)
+                "beta": 1.0,  # grounding
+                "gamma": 1.0,  # sparse
+                "delta": 0.5,  # efficiency
+                "epsilon": 0.8,  # novelty
+                "zeta": 1.0,  # loop
             }
         else:
             return {
-                "alpha": 2.5,   # progress (dominant)
-                "beta": 0.8,    # grounding
-                "gamma": 1.2,   # sparse
-                "delta": 0.5,   # efficiency
-                "epsilon": 0.2, # novelty (decay)
-                "zeta": 1.0,    # loop
+                "alpha": 2.5,  # progress (dominant)
+                "beta": 0.8,  # grounding
+                "gamma": 1.2,  # sparse
+                "delta": 0.5,  # efficiency
+                "epsilon": 0.2,  # novelty (decay)
+                "zeta": 1.0,  # loop
             }
 
     # -----------------------------
@@ -173,7 +178,9 @@ class CurriculumScheduler:
             avg = sum(rates) / len(rates)
             if avg >= self.promotion_threshold and current < max(self.levels.keys()):
                 self._current_level += 1
-                print(f"[Curriculum] Promoted to Level {self._current_level} (avg success={avg:.2%})")
+                print(
+                    f"[Curriculum] Promoted to Level {self._current_level} (avg success={avg:.2%})"
+                )
 
     # -----------------------------
     # Epoch Management

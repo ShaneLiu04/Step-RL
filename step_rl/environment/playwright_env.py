@@ -13,7 +13,13 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page, Locator
+from playwright.async_api import (
+    async_playwright,
+    Browser,
+    BrowserContext,
+    Page,
+    Locator,
+)
 
 from step_rl.environment.locator import robust_locate
 from step_rl.utils.logging_utils import get_logger
@@ -25,6 +31,7 @@ logger = get_logger(__name__)
 @dataclass
 class Observation:
     """Structured observation from the web environment."""
+
     text: str = ""
     url: str = ""
     title: str = ""
@@ -36,16 +43,16 @@ class Observation:
 @dataclass
 class Action:
     """Structured action output from the policy."""
+
     thought: str = ""
     action: str = "wait"  # click, type, scroll, goto, wait, finish
     params: Dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> str:
-        return json.dumps({
-            "thought": self.thought,
-            "action": self.action,
-            "params": self.params
-        }, ensure_ascii=False)
+        return json.dumps(
+            {"thought": self.thought, "action": self.action, "params": self.params},
+            ensure_ascii=False,
+        )
 
     @classmethod
     def from_json(cls, text: str) -> "Action":
@@ -56,7 +63,7 @@ class Action:
         return cls(
             thought=data.get("thought", ""),
             action=data.get("action", "wait"),
-            params=data.get("params", {})
+            params=data.get("params", {}),
         )
 
     @staticmethod
@@ -67,13 +74,14 @@ class Action:
         return {
             "thought": thought_match.group(1) if thought_match else "",
             "action": action_match.group(1) if action_match else "wait",
-            "params": {}
+            "params": {},
         }
 
 
 @dataclass
 class StepResult:
     """Result of a single step."""
+
     observation: Observation
     reward: float = 0.0
     done: bool = False
@@ -104,8 +112,12 @@ class PlaywrightWebEnv:
         self.max_obs_tokens = max_obs_tokens
         self.timeout_ms = timeout_ms
         self.action_timeout_ms = action_timeout_ms
-        self.allowed_domains = set(d.lower().strip() for d in (allowed_domains or []) if d)
-        self.blocked_domains = set(d.lower().strip() for d in (blocked_domains or []) if d)
+        self.allowed_domains = set(
+            d.lower().strip() for d in (allowed_domains or []) if d
+        )
+        self.blocked_domains = set(
+            d.lower().strip() for d in (blocked_domains or []) if d
+        )
         self.sandbox_mode = sandbox_mode
 
         self._playwright = None
@@ -132,7 +144,7 @@ class PlaywrightWebEnv:
             # Block unwanted resources for speed
             await self._context.route(
                 "**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf}",
-                lambda route: route.abort()
+                lambda route: route.abort(),
             )
             self._page = await self._context.new_page()
             self._page.set_default_timeout(self.timeout_ms)
@@ -163,7 +175,9 @@ class PlaywrightWebEnv:
         self._context = None
         self._playwright = None
 
-    async def reset(self, task_goal: str = "", start_url: Optional[str] = None) -> Observation:
+    async def reset(
+        self, task_goal: str = "", start_url: Optional[str] = None
+    ) -> Observation:
         self._step_count = 0
         self._task_goal = task_goal
         if self._page is None:
@@ -187,7 +201,9 @@ class PlaywrightWebEnv:
     async def get_observation(self, include_screenshot: bool = False) -> Observation:
         page = self._page
         if page is None:
-            raise RuntimeError("Environment not started. Call start() or reset() first.")
+            raise RuntimeError(
+                "Environment not started. Call start() or reset() first."
+            )
 
         compressed = await self._extract_page_text(page)
 
@@ -211,7 +227,7 @@ class PlaywrightWebEnv:
             title=title,
             viewport=self.viewport,
             screenshot_b64=screenshot_b64,
-            metadata={"step": self._step_count, "task": self._task_goal}
+            metadata={"step": self._step_count, "task": self._task_goal},
         )
 
     async def _extract_page_text(self, page, max_tokens: Optional[int] = None) -> str:
@@ -255,6 +271,7 @@ class PlaywrightWebEnv:
             try:
                 html = await page.content()
                 from bs4 import BeautifulSoup
+
                 soup = BeautifulSoup(html, "lxml")
                 text = soup.get_text(separator="\n", strip=True)
                 if len(text) > max_chars:
@@ -365,7 +382,9 @@ class PlaywrightWebEnv:
                 logger.warning(f"Blocked navigation to: {url}")
                 return False
         try:
-            await self._page.goto(url, wait_until="domcontentloaded", timeout=self.timeout_ms)
+            await self._page.goto(
+                url, wait_until="domcontentloaded", timeout=self.timeout_ms
+            )
             return True
         except Exception as e:
             logger.warning(f"Navigation failed: {e}")

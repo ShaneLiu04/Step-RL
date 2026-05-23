@@ -32,6 +32,7 @@ class EvidentialLayer(nn.Module):
     Output: gamma (mean), nu (precision), alpha (shape), beta (scale).
     Uncertainty ~ 1 / nu
     """
+
     def __init__(self, in_dim: int, hidden_dim: int = 256):
         super().__init__()
         self.shared = nn.Sequential(
@@ -39,12 +40,14 @@ class EvidentialLayer(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
         )
-        self.gamma = nn.Linear(hidden_dim, 1)   # mean
-        self.nu = nn.Linear(hidden_dim, 1)      # precision (>0)
-        self.alpha = nn.Linear(hidden_dim, 1)   # shape (>1)
-        self.beta = nn.Linear(hidden_dim, 1)    # scale (>0)
+        self.gamma = nn.Linear(hidden_dim, 1)  # mean
+        self.nu = nn.Linear(hidden_dim, 1)  # precision (>0)
+        self.alpha = nn.Linear(hidden_dim, 1)  # shape (>1)
+        self.beta = nn.Linear(hidden_dim, 1)  # scale (>0)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         h = self.shared(x)
         gamma = self.gamma(h)
         nu = F.softplus(self.nu(h)) + 1.0
@@ -96,7 +99,9 @@ class ProgressEstimator(nn.Module):
         # Encoder
         self.encoder = AutoModel.from_pretrained(
             encoder_name,
-            dtype=torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float32,
+            dtype=torch.bfloat16
+            if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+            else torch.float32,
             device_map=device_map,
         )
         if freeze_encoder:
@@ -181,7 +186,9 @@ class ProgressEstimator(nn.Module):
             outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
             # Mean pool over valid tokens
             mask_expanded = attention_mask.unsqueeze(-1).float()
-            pooled = (outputs.last_hidden_state * mask_expanded).sum(1) / mask_expanded.sum(1).clamp_min(1e-6)
+            pooled = (outputs.last_hidden_state * mask_expanded).sum(
+                1
+            ) / mask_expanded.sum(1).clamp_min(1e-6)
 
         if step_count is not None:
             step_emb = self._step_count_embedding(step_count.clamp(0, 99))
@@ -253,6 +260,7 @@ class ProgressEstimator(nn.Module):
 # -----------------------------
 # Loss functions
 # -----------------------------
+
 
 def ranking_loss(
     progress_i: torch.Tensor,
@@ -338,9 +346,7 @@ def progress_estimator_loss(
         if "progress_label" in batch and pooled is not None:
             label = batch["progress_label"]
             gamma, nu, alpha, beta = model.uncertainty_head(pooled)
-            nll = EvidentialLayer.nll_loss(
-                label.unsqueeze(-1), gamma, nu, alpha, beta
-            )
+            nll = EvidentialLayer.nll_loss(label.unsqueeze(-1), gamma, nu, alpha, beta)
             total_loss += weights.get("nll", 0.5) * nll
             metrics["nll"] = nll.item()
 

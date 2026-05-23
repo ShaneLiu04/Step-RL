@@ -31,8 +31,13 @@ def main():
     steps = traj.get("steps", [])[:3]
     all_examples = []
     for step in steps:
-        prompt = f"Task: {traj.get('task_goal', '')}\nPage: {step.get('observation', '')}"
-        response = json.dumps({"thought": step.get("thought", ""), "action": step.get("action", "")}, ensure_ascii=False)
+        prompt = (
+            f"Task: {traj.get('task_goal', '')}\nPage: {step.get('observation', '')}"
+        )
+        response = json.dumps(
+            {"thought": step.get("thought", ""), "action": step.get("action", "")},
+            ensure_ascii=False,
+        )
         all_examples.append({"prompt": prompt, "response": response})
 
     print(f"Examples: {len(all_examples)}")
@@ -42,18 +47,27 @@ def main():
     def preprocess(examples):
         prompts = examples["prompt"]
         responses = examples["response"]
-        texts = [f"{p}\n{tokenizer.eos_token}\n{r}\n{tokenizer.eos_token}" for p, r in zip(prompts, responses)]
-        model_inputs = tokenizer(texts, truncation=True, max_length=max_seq_length, padding="max_length")
+        texts = [
+            f"{p}\n{tokenizer.eos_token}\n{r}\n{tokenizer.eos_token}"
+            for p, r in zip(prompts, responses)
+        ]
+        model_inputs = tokenizer(
+            texts, truncation=True, max_length=max_seq_length, padding="max_length"
+        )
         labels = model_inputs["input_ids"].copy()
         for i, prompt in enumerate(prompts):
-            prompt_tokens = tokenizer(prompt, truncation=True, max_length=max_seq_length)["input_ids"]
+            prompt_tokens = tokenizer(
+                prompt, truncation=True, max_length=max_seq_length
+            )["input_ids"]
             prompt_len = len(prompt_tokens)
             labels[i][:prompt_len] = [-100] * prompt_len
         model_inputs["labels"] = labels
         return model_inputs
 
     hf_dataset = HFDataset.from_list(all_examples)
-    tokenized = hf_dataset.map(preprocess, batched=True, remove_columns=hf_dataset.column_names)
+    tokenized = hf_dataset.map(
+        preprocess, batched=True, remove_columns=hf_dataset.column_names
+    )
 
     # Load model
     bnb = BitsAndBytesConfig(
@@ -72,9 +86,20 @@ def main():
     model = prepare_model_for_kbit_training(model)
 
     lora_config = LoraConfig(
-        r=64, lora_alpha=32,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-        lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
+        r=64,
+        lora_alpha=32,
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
     )
     model = get_peft_model(model, lora_config)
     model.config.use_cache = False
@@ -123,6 +148,7 @@ def main():
     except Exception as e:
         print(f"  [FAIL] {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Test 2: default collator
@@ -154,6 +180,7 @@ def main():
     except Exception as e:
         print(f"  [FAIL] {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
 
 

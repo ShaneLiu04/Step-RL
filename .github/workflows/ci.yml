@@ -40,6 +40,8 @@ jobs:
 
       - name: Run unit tests with coverage
         run: pytest tests/ -v --tb=short --cov=step_rl --cov-report=xml --cov-report=term-missing
+        env:
+          PYTHONPATH: ${{ github.workspace }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -51,6 +53,7 @@ jobs:
         run: python scripts/end_to_end_test.py
         env:
           HF_HOME: /tmp/huggingface
+          PYTHONPATH: ${{ github.workspace }}
 
   lint:
     runs-on: ubuntu-latest

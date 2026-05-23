@@ -33,12 +33,15 @@ from step_rl.reward.progress_estimator import ProgressEstimator, progress_estima
 from step_rl.training.curriculum_scheduler import CurriculumScheduler, Task
 
 MODEL_PATH = "./models/Qwen2.5-7B-Instruct/qwen/Qwen2.5-7B-Instruct"
-USE_REAL_MODEL = False  # Set to True to use Qwen (requires GPU VRAM). False = mock policy for demo.
+USE_REAL_MODEL = (
+    False  # Set to True to use Qwen (requires GPU VRAM). False = mock policy for demo.
+)
 
 
 # =============================================================================
 # Mock Environment
 # =============================================================================
+
 
 @dataclass
 class MockObservation:
@@ -51,12 +54,36 @@ class MockWebEnv:
     """Deterministic mock web environment for fast demonstration."""
 
     PAGES = [
-        ("Homepage: search box, navigation bar, login button", "https://shop.example.com", "Shop Home"),
-        ("Search results: iPhone 15, Samsung Galaxy, Xiaomi 14 | filter: price, brand", "https://shop.example.com/search?q=iphone", "Search Results"),
-        ("Product detail: iPhone 15 256GB Blue | price: $899 | Buy Now button, Add to Cart button", "https://shop.example.com/item/iphone15", "iPhone 15"),
-        ("Shopping cart: iPhone 15 x1 | total: $899 | Checkout button", "https://shop.example.com/cart", "Shopping Cart"),
-        ("Order confirmation: address form, payment method, Submit Order button", "https://shop.example.com/checkout", "Checkout"),
-        ("Success page: Order #12345 confirmed | thank you message", "https://shop.example.com/success", "Order Success"),
+        (
+            "Homepage: search box, navigation bar, login button",
+            "https://shop.example.com",
+            "Shop Home",
+        ),
+        (
+            "Search results: iPhone 15, Samsung Galaxy, Xiaomi 14 | filter: price, brand",
+            "https://shop.example.com/search?q=iphone",
+            "Search Results",
+        ),
+        (
+            "Product detail: iPhone 15 256GB Blue | price: $899 | Buy Now button, Add to Cart button",
+            "https://shop.example.com/item/iphone15",
+            "iPhone 15",
+        ),
+        (
+            "Shopping cart: iPhone 15 x1 | total: $899 | Checkout button",
+            "https://shop.example.com/cart",
+            "Shopping Cart",
+        ),
+        (
+            "Order confirmation: address form, payment method, Submit Order button",
+            "https://shop.example.com/checkout",
+            "Checkout",
+        ),
+        (
+            "Success page: Order #12345 confirmed | thank you message",
+            "https://shop.example.com/success",
+            "Order Success",
+        ),
     ]
 
     def __init__(self):
@@ -92,6 +119,7 @@ class MockWebEnv:
 # Banner & Helpers
 # =============================================================================
 
+
 def banner(title: str):
     print(f"\n{'='*70}")
     print(f"  {title}")
@@ -107,6 +135,7 @@ def section(title: str):
 # =============================================================================
 # Demo 1: Curriculum Scheduler
 # =============================================================================
+
 
 def demo_curriculum():
     banner("DEMO 1: Curriculum Scheduler")
@@ -134,9 +163,11 @@ def demo_curriculum():
         scheduler.step_epoch()
         if epoch in (0, 5, 10, 15, 19):
             weights = scheduler.get_reward_weights(epoch)
-            print(f"  Epoch {epoch+1:2d}: level={scheduler.current_level} | "
-                  f"progress_w={weights['alpha']:.1f} grounding_w={weights['beta']:.1f} "
-                  f"sparse_w={weights['gamma']:.1f}")
+            print(
+                f"  Epoch {epoch+1:2d}: level={scheduler.current_level} | "
+                f"progress_w={weights['alpha']:.1f} grounding_w={weights['beta']:.1f} "
+                f"sparse_w={weights['gamma']:.1f}"
+            )
 
     print(f"\n[OK] Curriculum reached level {scheduler.current_level} after 20 epochs.")
 
@@ -144,6 +175,7 @@ def demo_curriculum():
 # =============================================================================
 # Demo 2: Grounding Validator
 # =============================================================================
+
 
 def demo_grounding():
     banner("DEMO 2: Grounding Validator")
@@ -172,12 +204,17 @@ def demo_grounding():
 # Demo 3: State Memory
 # =============================================================================
 
+
 def demo_state_memory():
     banner("DEMO 3: State Memory (Loop Detection & Novelty)")
     print("Tracks visited states to detect loops and encourage exploration.")
 
-    memory = StateMemory(hash_method="minhash", max_states=100,
-                         loop_penalty_base=-0.1, novelty_bonus_base=0.05)
+    memory = StateMemory(
+        hash_method="minhash",
+        max_states=100,
+        loop_penalty_base=-0.1,
+        novelty_bonus_base=0.05,
+    )
 
     # Simulate an agent trajectory
     states = [
@@ -185,7 +222,7 @@ def demo_state_memory():
         "Search results iPhone Samsung",
         "Product detail iPhone 15",
         "Search results iPhone Samsung",  # loop back!
-        "Product detail iPhone 15",       # loop again!
+        "Product detail iPhone 15",  # loop again!
         "Shopping cart iPhone 15",
         "Checkout address payment",
     ]
@@ -203,7 +240,9 @@ def demo_state_memory():
             marker = " [NOVEL +bonus]"
         elif r_loop < 0:
             marker = " [LOOP -penalty]"
-        print(f"  Step {i+1}: {state_text[:40]:40s} | visit#{info['visit_count']}{marker}")
+        print(
+            f"  Step {i+1}: {state_text[:40]:40s} | visit#{info['visit_count']}{marker}"
+        )
 
     print(f"\n  Total novelty reward: {total_novelty:.3f}")
     print(f"  Total loop penalty: {total_loop:.3f}")
@@ -214,6 +253,7 @@ def demo_state_memory():
 # =============================================================================
 # Demo 4: Progress Estimator
 # =============================================================================
+
 
 def demo_progress_estimator(device):
     banner("DEMO 4: Progress Estimator (Dense Reward + Uncertainty)")
@@ -247,11 +287,15 @@ def demo_progress_estimator(device):
 
     prev_progress = 0.0
     for text, expected in scenarios:
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=64).to(device)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=64).to(
+            device
+        )
         with torch.no_grad():
             out = model(enc["input_ids"], enc["attention_mask"])
         delta = out.progress.item() - prev_progress
-        print(f"  {text[:46]:46s}  {out.progress.item():>9.3f}  {out.uncertainty.item():>11.3f}  {delta:>7.3f}")
+        print(
+            f"  {text[:46]:46s}  {out.progress.item():>9.3f}  {out.uncertainty.item():>11.3f}  {delta:>7.3f}"
+        )
         prev_progress = out.progress.item()
 
     print("\n[OK] Progress estimator predicts dense intermediate rewards.")
@@ -261,10 +305,13 @@ def demo_progress_estimator(device):
 # Demo 5: End-to-End Agent Decision Chain (with Qwen2.5-7B)
 # =============================================================================
 
+
 async def demo_agent_chain(device):
     banner("DEMO 5: End-to-End Agent Decision Chain")
     print("Full loop: Observation -> Policy -> Action -> Reward -> Next Step")
-    print(f"Using model: {'Qwen2.5-7B-Instruct (4-bit)' if USE_REAL_MODEL else 'Mock policy'}")
+    print(
+        f"Using model: {'Qwen2.5-7B-Instruct (4-bit)' if USE_REAL_MODEL else 'Mock policy'}"
+    )
 
     env = MockWebEnv()
     grounding = GroundingValidator()
@@ -312,19 +359,26 @@ async def demo_agent_chain(device):
 
     for step in range(6):
         # Build prompt
-        history_str = "\n".join([f"{i+1}. [{h['action']}] {h['thought'][:30]}" for i, h in enumerate(history[-5:])])
+        history_str = "\n".join(
+            [
+                f"{i+1}. [{h['action']}] {h['thought'][:30]}"
+                for i, h in enumerate(history[-5:])
+            ]
+        )
         prompt = (
             f"You are a Web automation assistant. Task: {tasks[0].goal}\n"
             f"History:\n{history_str if history else 'None'}\n"
             f"Current page: {obs.url}\n"
             f"Title: {obs.title}\n"
             f"Content:\n{obs.text[:200]}\n"
-            f"Respond with JSON: {{\"thought\": \"...\", \"action\": \"...\", \"params\": {{...}}}}"
+            f'Respond with JSON: {{"thought": "...", "action": "...", "params": {{...}}}}'
         )
 
         # Generate action
         if policy is not None:
-            inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).to(policy.device)
+            inputs = tokenizer(
+                prompt, return_tensors="pt", truncation=True, max_length=2048
+            ).to(policy.device)
             with torch.no_grad():
                 generated = policy.generate(
                     **inputs,
@@ -333,23 +387,47 @@ async def demo_agent_chain(device):
                     temperature=0.7,
                     pad_token_id=tokenizer.pad_token_id,
                 )
-            response_ids = generated[0, inputs["input_ids"].shape[1]:]
+            response_ids = generated[0, inputs["input_ids"].shape[1] :]
             response_text = tokenizer.decode(response_ids, skip_special_tokens=True)
             try:
                 action_dict = json.loads(response_text)
             except json.JSONDecodeError:
-                action_dict = {"thought": "Proceed to next step", "action": "click", "params": {"element_text": "Next"}}
+                action_dict = {
+                    "thought": "Proceed to next step",
+                    "action": "click",
+                    "params": {"element_text": "Next"},
+                }
         else:
             # Mock policy
             mock_actions = [
-                {"thought": "I need to search for iPhone 15", "action": "click", "params": {"element_text": "Search"}},
-                {"thought": "Found iPhone 15, go to product page", "action": "click", "params": {"element_text": "iPhone 15"}},
-                {"thought": "Add to cart", "action": "click", "params": {"element_text": "Add to Cart"}},
-                {"thought": "Proceed to checkout", "action": "click", "params": {"element_text": "Checkout"}},
-                {"thought": "Fill address and submit", "action": "click", "params": {"element_text": "Submit Order"}},
+                {
+                    "thought": "I need to search for iPhone 15",
+                    "action": "click",
+                    "params": {"element_text": "Search"},
+                },
+                {
+                    "thought": "Found iPhone 15, go to product page",
+                    "action": "click",
+                    "params": {"element_text": "iPhone 15"},
+                },
+                {
+                    "thought": "Add to cart",
+                    "action": "click",
+                    "params": {"element_text": "Add to Cart"},
+                },
+                {
+                    "thought": "Proceed to checkout",
+                    "action": "click",
+                    "params": {"element_text": "Checkout"},
+                },
+                {
+                    "thought": "Fill address and submit",
+                    "action": "click",
+                    "params": {"element_text": "Submit Order"},
+                },
                 {"thought": "Task complete", "action": "finish", "params": {}},
             ]
-            action_dict = mock_actions[min(step, len(mock_actions)-1)]
+            action_dict = mock_actions[min(step, len(mock_actions) - 1)]
 
         # Grounding validation
         valid, r_ground, corrected, msg = await grounding.validate_and_correct(
@@ -365,10 +443,15 @@ async def demo_agent_chain(device):
             def __init__(self, ad):
                 self.action = ad["action"]
                 self.params = ad.get("params", {})
+
         success, info = await env.execute_action(MockAction(action_dict))
 
         # Compose reward
-        r_sparse = -0.02 if not info.get("terminal") else (1.0 if info.get("success") else -0.5)
+        r_sparse = (
+            -0.02
+            if not info.get("terminal")
+            else (1.0 if info.get("success") else -0.5)
+        )
         r_total = r_ground + r_sparse + r_novelty + r_loop
         total_reward += r_total
 
@@ -376,26 +459,33 @@ async def demo_agent_chain(device):
         if corrected and corrected.get("action") != action_dict["action"]:
             action_display += f" -> {corrected['action']}"
 
-        print(f"  {step+1:>3d} | {action_display:<20s} | {r_total:>+7.3f} | {action_dict['thought'][:40]}")
+        print(
+            f"  {step+1:>3d} | {action_display:<20s} | {r_total:>+7.3f} | {action_dict['thought'][:40]}"
+        )
 
-        history.append({
-            "action": action_dict["action"],
-            "thought": action_dict.get("thought", ""),
-            "reward": r_total,
-        })
+        history.append(
+            {
+                "action": action_dict["action"],
+                "thought": action_dict.get("thought", ""),
+                "reward": r_total,
+            }
+        )
 
         if info.get("terminal"):
             break
 
         obs = await env.get_observation()
 
-    print(f"\n  Episode complete: {len(history)} steps, total_reward={total_reward:.3f}")
+    print(
+        f"\n  Episode complete: {len(history)} steps, total_reward={total_reward:.3f}"
+    )
     print("\n[OK] End-to-end decision chain demonstrated.")
 
 
 # =============================================================================
 # Demo 6: Benchmark
 # =============================================================================
+
 
 def demo_benchmark():
     banner("DEMO 6: Benchmark & Ablation Study")
@@ -406,7 +496,15 @@ def demo_benchmark():
     config = {"model": {"base_model": "Qwen2.5-7B"}}
     benchmark = Benchmark(config, output_dir="./outputs/demo_benchmark")
 
-    configs = ["sft_baseline", "sparse_ppo", "progress_only", "grounding_only", "fixed_weight", "full_v2", "grpo"]
+    configs = [
+        "sft_baseline",
+        "sparse_ppo",
+        "progress_only",
+        "grounding_only",
+        "fixed_weight",
+        "full_v2",
+        "grpo",
+    ]
     mock_results = generate_mock_results(configs, num_episodes=50)
     for name, eps in mock_results.items():
         benchmark.add_result(name, eps)
@@ -420,12 +518,15 @@ def demo_benchmark():
     benchmark.plot_multi_metric_dashboard()
 
     print(f"\n[OK] Benchmark outputs saved to {benchmark.output_dir}")
-    print("  Files: ablation_table.csv, ablation_table.md, success_rate_comparison.png, dashboard.png")
+    print(
+        "  Files: ablation_table.csv, ablation_table.md, success_rate_comparison.png, dashboard.png"
+    )
 
 
 # =============================================================================
 # Demo 7: Continual Learning
 # =============================================================================
+
 
 def demo_continual_learning():
     banner("DEMO 7: Continual Learning Pipeline")
@@ -438,10 +539,22 @@ def demo_continual_learning():
 
     # Simulate episodes
     episodes = [
-        {"success": True, "confidence": 0.98, "steps": [{"observation": "home", "progress_label": 0.2}]},
-        {"success": True, "confidence": 0.95, "steps": [{"observation": "search", "progress_label": 0.4}]},
+        {
+            "success": True,
+            "confidence": 0.98,
+            "steps": [{"observation": "home", "progress_label": 0.2}],
+        },
+        {
+            "success": True,
+            "confidence": 0.95,
+            "steps": [{"observation": "search", "progress_label": 0.4}],
+        },
         {"success": False, "confidence": 0.3, "steps": [{"observation": "error page"}]},
-        {"success": True, "confidence": 0.97, "steps": [{"observation": "cart", "progress_label": 0.8}]},
+        {
+            "success": True,
+            "confidence": 0.97,
+            "steps": [{"observation": "cart", "progress_label": 0.8}],
+        },
     ]
 
     print(f"\nProcessing {len(episodes)} episodes...")
@@ -468,6 +581,7 @@ def demo_continual_learning():
 # Main
 # =============================================================================
 
+
 async def main():
     print("=" * 70)
     print("  Step-RL v2.0: Full System Demonstration")
@@ -478,7 +592,9 @@ async def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"\nDevice: {device}")
     if device.type == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name(0)} ({torch.cuda.get_device_properties(0).total_memory/1e9:.1f} GB)")
+        print(
+            f"GPU: {torch.cuda.get_device_name(0)} ({torch.cuda.get_device_properties(0).total_memory/1e9:.1f} GB)"
+        )
 
     random.seed(42)
     np.random.seed(42)

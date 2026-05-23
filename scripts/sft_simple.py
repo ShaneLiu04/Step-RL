@@ -32,15 +32,16 @@ def format_examples(trajectories, tokenizer, max_length=512):
         goal = traj["task_goal"]
         for step in traj.get("steps", []):
             prompt = (
-                f"任务: {goal}\n"
-                f"页面: {step['observation']}\n"
-                f"请输出 JSON 格式的思考与动作。\n"
+                f"任务: {goal}\n" f"页面: {step['observation']}\n" f"请输出 JSON 格式的思考与动作。\n"
             )
-            response = json.dumps({
-                "thought": step.get("thought", ""),
-                "action": step["action"],
-                "params": step.get("params", {}),
-            }, ensure_ascii=False)
+            response = json.dumps(
+                {
+                    "thought": step.get("thought", ""),
+                    "action": step["action"],
+                    "params": step.get("params", {}),
+                },
+                ensure_ascii=False,
+            )
             full_text = prompt + response + tokenizer.eos_token
             examples.append(full_text)
     return examples
@@ -74,20 +75,34 @@ def main():
     print(f"Total examples: {len(examples)}")
 
     # Model
-    model = AutoModelForCausalLM.from_pretrained(args.base_model, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.base_model, trust_remote_code=True
+    )
 
     # Auto-detect LoRA targets
-    default_targets = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    default_targets = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ]
     gpt2_targets = ["c_attn", "c_proj", "c_fc"]
     if "gpt2" in args.base_model.lower():
         target_modules = gpt2_targets
     else:
         model_modules = [name for name, _ in model.named_modules()]
-        target_modules = [t for t in default_targets if any(t in m for m in model_modules)]
+        target_modules = [
+            t for t in default_targets if any(t in m for m in model_modules)
+        ]
         if not target_modules:
             target_modules = default_targets
 
-    lora_config = LoraConfig(r=8, lora_alpha=16, target_modules=target_modules, lora_dropout=0.05)
+    lora_config = LoraConfig(
+        r=8, lora_alpha=16, target_modules=target_modules, lora_dropout=0.05
+    )
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
     model.to(device)
@@ -101,9 +116,17 @@ def main():
         total_loss = 0.0
         num_batches = 0
 
-        for i in tqdm(range(0, len(examples), args.batch_size), desc=f"Epoch {epoch+1}"):
-            batch_texts = examples[i:i + args.batch_size]
-            enc = tokenizer(batch_texts, return_tensors="pt", padding=True, truncation=True, max_length=args.max_length)
+        for i in tqdm(
+            range(0, len(examples), args.batch_size), desc=f"Epoch {epoch+1}"
+        ):
+            batch_texts = examples[i : i + args.batch_size]
+            enc = tokenizer(
+                batch_texts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=args.max_length,
+            )
             enc = {k: v.to(device) for k, v in enc.items()}
 
             outputs = model(**enc, labels=enc["input_ids"])

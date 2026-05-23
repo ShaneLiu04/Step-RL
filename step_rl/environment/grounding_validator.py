@@ -42,7 +42,7 @@ class ElementCandidate:
         return {
             "element_text": self.text,
             "xpath": self.xpath,
-            "coordinates": list(self.coords)
+            "coordinates": list(self.coords),
         }
 
 
@@ -82,7 +82,7 @@ class GroundingValidator:
             return GroundingResult(
                 valid=True,
                 reward=0.0,
-                message=f"Action '{action}' does not require grounding."
+                message=f"Action '{action}' does not require grounding.",
             )
 
         if action == "goto":
@@ -92,15 +92,21 @@ class GroundingValidator:
                     valid=False,
                     reward=self.reward_failed,
                     corrected_action=self._wait_action(),
-                    message="Invalid URL format."
+                    message="Invalid URL format.",
                 )
-            return GroundingResult(valid=True, reward=self.reward_valid, message="URL valid.")
+            return GroundingResult(
+                valid=True, reward=self.reward_valid, message="URL valid."
+            )
 
         if action == "scroll":
-            return GroundingResult(valid=True, reward=self.reward_valid, message="Scroll is always valid.")
+            return GroundingResult(
+                valid=True, reward=self.reward_valid, message="Scroll is always valid."
+            )
 
         # For click / type: need element
-        locator, match_info = await robust_locate(page, params, multi_attribute_match=self.multi_attribute_match)
+        locator, match_info = await robust_locate(
+            page, params, multi_attribute_match=self.multi_attribute_match
+        )
 
         if locator is not None:
             # Element found — now check interactivity
@@ -111,7 +117,7 @@ class GroundingValidator:
                     reward=self.reward_valid,
                     locator=locator,
                     match_info=match_info,
-                    message=f"Element valid and interactive. ({match_info.get('method', 'unknown')})"
+                    message=f"Element valid and interactive. ({match_info.get('method', 'unknown')})",
                 )
             else:
                 # Element exists but not interactive — try to find similar interactive one
@@ -121,20 +127,23 @@ class GroundingValidator:
                 if candidate and candidate.similarity >= self.similarity_threshold:
                     corrected = {
                         "action": action,
-                        "params": {**params, **candidate.to_action()}
+                        "params": {**params, **candidate.to_action()},
                     }
                     return GroundingResult(
                         valid=False,
                         reward=self.reward_corrected,
                         corrected_action=corrected,
                         message=f"Original not interactive. Auto-corrected to: {candidate.text}",
-                        match_info={"method": "auto_corrected", "similarity": candidate.similarity}
+                        match_info={
+                            "method": "auto_corrected",
+                            "similarity": candidate.similarity,
+                        },
                     )
                 return GroundingResult(
                     valid=False,
                     reward=self.reward_failed,
                     corrected_action=self._wait_action(),
-                    message=f"Element not interactive: {interactivity.get('reason', 'unknown')}"
+                    message=f"Element not interactive: {interactivity.get('reason', 'unknown')}",
                 )
 
         # Element not found — try auto-correction via similarity
@@ -144,14 +153,17 @@ class GroundingValidator:
         if candidate and candidate.similarity >= self.similarity_threshold:
             corrected = {
                 "action": action,
-                "params": {**params, **candidate.to_action()}
+                "params": {**params, **candidate.to_action()},
             }
             return GroundingResult(
                 valid=False,
                 reward=self.reward_corrected,
                 corrected_action=corrected,
                 message=f"Target not found. Auto-corrected to similar element: {candidate.text}",
-                match_info={"method": "similarity_match", "similarity": candidate.similarity}
+                match_info={
+                    "method": "similarity_match",
+                    "similarity": candidate.similarity,
+                },
             )
 
         # Complete failure: degrade to wait
@@ -160,7 +172,7 @@ class GroundingValidator:
             reward=self.reward_failed,
             corrected_action=self._wait_action(),
             message="No matching element found. Degraded to wait.",
-            match_info={"method": "none"}
+            match_info={"method": "none"},
         )
 
     def _wait_action(self) -> Dict[str, Any]:
@@ -189,7 +201,11 @@ class GroundingValidator:
                     "el => el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable"
                 )
                 if not editable:
-                    return {"ok": False, "reason": "not_editable", "expected_role": "textbox"}
+                    return {
+                        "ok": False,
+                        "reason": "not_editable",
+                        "expected_role": "textbox",
+                    }
 
             return {"ok": True}
         except Exception as e:
@@ -214,9 +230,15 @@ class GroundingValidator:
         target_bigrams = self._bigrams(target_text)
 
         interactive_selectors = [
-            "button", "a", "input", "textarea", "select",
-            "[role='button']", "[role='link']", "[role='textbox']",
-            "[onclick]"
+            "button",
+            "a",
+            "input",
+            "textarea",
+            "select",
+            "[role='button']",
+            "[role='link']",
+            "[role='textbox']",
+            "[onclick]",
         ]
         candidates: List[ElementCandidate] = []
 
@@ -236,20 +258,24 @@ class GroundingValidator:
                         bbox = await loc.bounding_box()
                         coords = (int(bbox["x"]), int(bbox["y"])) if bbox else (0, 0)
 
-                        sim = self._text_similarity_cached(target_text, text, target_bigrams)
+                        sim = self._text_similarity_cached(
+                            target_text, text, target_bigrams
+                        )
                         # Boost if role matches (exact match, not substring)
                         if expected_role and expected_role == tag:
                             sim = min(1.0, sim + 0.1)
 
-                        candidates.append(ElementCandidate(
-                            locator=loc,
-                            text=text,
-                            role=tag,
-                            tag=tag,
-                            similarity=sim,
-                            xpath=f"//{tag}[contains(text(), '{escape_xpath_string(text[:20])}')]",
-                            coords=coords
-                        ))
+                        candidates.append(
+                            ElementCandidate(
+                                locator=loc,
+                                text=text,
+                                role=tag,
+                                tag=tag,
+                                similarity=sim,
+                                xpath=f"//{tag}[contains(text(), '{escape_xpath_string(text[:20])}')]",
+                                coords=coords,
+                            )
+                        )
                     except Exception as e:
                         logger.debug(f"Candidate evaluation failed: {e}")
                         continue
@@ -262,16 +288,20 @@ class GroundingValidator:
 
         candidates.sort(key=lambda c: c.similarity, reverse=True)
         best = candidates[0]
-        return best if best.similarity >= 0.5 else None  # lower threshold for suggestion
+        return (
+            best if best.similarity >= 0.5 else None
+        )  # lower threshold for suggestion
 
     @staticmethod
     def _bigrams(s: str) -> set:
         """Compute character bigrams for a string."""
         s = s.lower().strip()
-        return set(s[i:i+2] for i in range(len(s)-1))
+        return set(s[i : i + 2] for i in range(len(s) - 1))
 
     @classmethod
-    def _text_similarity_cached(cls, a: str, b: str, a_bigrams: Optional[set] = None) -> float:
+    def _text_similarity_cached(
+        cls, a: str, b: str, a_bigrams: Optional[set] = None
+    ) -> float:
         """Jaccard similarity on character bigrams with optional cached bigrams for `a`."""
         if not a or not b:
             return 0.0
@@ -294,8 +324,10 @@ class GroundingValidator:
         b = b.lower().strip()
         if a == b:
             return 1.0
+
         def bigrams(s):
-            return set(s[i:i+2] for i in range(len(s)-1))
+            return set(s[i : i + 2] for i in range(len(s) - 1))
+
         bg_a = bigrams(a)
         bg_b = bigrams(b)
         inter = len(bg_a & bg_b)

@@ -9,7 +9,6 @@ from step_rl.training.curriculum_scheduler import CurriculumScheduler, Task
 
 
 class TestCurriculumScheduler(unittest.TestCase):
-
     def setUp(self):
         self.scheduler = CurriculumScheduler(
             total_epochs=100,

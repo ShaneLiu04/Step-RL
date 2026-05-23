@@ -50,39 +50,73 @@ def main():
     success = True
 
     # Stage 1: SFT
-    success &= run_cmd([
-        sys.executable, "-m", "step_rl.training.sft_warmup",
-        "--config", "config.yaml",
-        "--data_dir", "./data/sft",
-        "--output_dir", "./outputs/sft_ecommerce",
-        "--base_model", MODEL_DIR,
-        "--num_epochs", "3",
-        "--batch_size", "1",
-        "--gradient_accumulation_steps", "4",
-        "--max_seq_length", "2048",
-        "--learning_rate", "2e-4",
-        "--use_4bit",
-    ], "SFT Warmup")
+    success &= run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "step_rl.training.sft_warmup",
+            "--config",
+            "config.yaml",
+            "--data_dir",
+            "./data/sft",
+            "--output_dir",
+            "./outputs/sft_ecommerce",
+            "--base_model",
+            MODEL_DIR,
+            "--num_epochs",
+            "3",
+            "--batch_size",
+            "1",
+            "--gradient_accumulation_steps",
+            "4",
+            "--max_seq_length",
+            "2048",
+            "--learning_rate",
+            "2e-4",
+            "--use_4bit",
+        ],
+        "SFT Warmup",
+    )
 
     # Stage 2: Progress Estimator
-    success &= run_cmd([
-        sys.executable, "-m", "step_rl.reward.train_reward_model",
-        "--config", "config.yaml",
-        "--data_path", "./data/progress/ecommerce_labels.json",
-        "--output_dir", "./checkpoints/progress_estimator",
-        "--base_model", MODEL_DIR,
-        "--epochs", "5",
-        "--batch_size", "2",
-    ], "Progress Estimator")
+    success &= run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "step_rl.reward.train_reward_model",
+            "--config",
+            "config.yaml",
+            "--data_path",
+            "./data/progress/ecommerce_labels.json",
+            "--output_dir",
+            "./checkpoints/progress_estimator",
+            "--base_model",
+            MODEL_DIR,
+            "--epochs",
+            "5",
+            "--batch_size",
+            "2",
+        ],
+        "Progress Estimator",
+    )
 
     # Stage 3: GRPO
-    success &= run_cmd([
-        sys.executable, "-m", "step_rl.training.grpo_trainer",
-        "--config", "config.yaml",
-        "--sft_adapter", "./outputs/sft_ecommerce/sft_adapter",
-        "--progress_model", "./checkpoints/progress_estimator/best_model.pt",
-        "--output_dir", "./checkpoints/grpo",
-    ], "GRPO Training")
+    success &= run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "step_rl.training.grpo_trainer",
+            "--config",
+            "config.yaml",
+            "--sft_adapter",
+            "./outputs/sft_ecommerce/sft_adapter",
+            "--progress_model",
+            "./checkpoints/progress_estimator/best_model.pt",
+            "--output_dir",
+            "./checkpoints/grpo",
+        ],
+        "GRPO Training",
+    )
 
     print(f"\n{'='*60}")
     print("Pipeline complete!" if success else "Pipeline finished with errors.")

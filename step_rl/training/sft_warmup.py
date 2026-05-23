@@ -37,8 +37,17 @@ def set_seed(seed: int = 42):
         torch.cuda.manual_seed_all(seed)
 
 
-def build_prompt(task_goal: str, difficulty_level: int, action_history: List[str], observation_text: str) -> str:
-    history_str = "\n".join([f"{i+1}. {a}" for i, a in enumerate(action_history[-10:])]) if action_history else "None"
+def build_prompt(
+    task_goal: str,
+    difficulty_level: int,
+    action_history: List[str],
+    observation_text: str,
+) -> str:
+    history_str = (
+        "\n".join([f"{i+1}. {a}" for i, a in enumerate(action_history[-10:])])
+        if action_history
+        else "None"
+    )
     return (
         f"You are a Web automation assistant. Generate the next action based on the task goal and current page state.\n"
         f"Task: {task_goal}\n"
@@ -66,11 +75,14 @@ def format_trajectory(trajectory: Dict[str, Any]) -> List[Dict[str, str]]:
         params = step.get("params", {})
 
         prompt = build_prompt(task, level, action_history, obs_text)
-        response = json.dumps({
-            "thought": thought,
-            "action": action,
-            "params": params,
-        }, ensure_ascii=False)
+        response = json.dumps(
+            {
+                "thought": thought,
+                "action": action,
+                "params": params,
+            },
+            ensure_ascii=False,
+        )
 
         examples.append({"prompt": prompt, "response": response})
         action_history.append(f"{thought} -> {action}")
@@ -95,7 +107,9 @@ def load_trajectories(data_dir: str) -> List[Dict[str, Any]]:
     return trajectories
 
 
-def stratified_sample(trajectories: List[Dict], ratios: Optional[Dict[int, float]] = None) -> List[Dict]:
+def stratified_sample(
+    trajectories: List[Dict], ratios: Optional[Dict[int, float]] = None
+) -> List[Dict]:
     """Sample trajectories by difficulty level to maintain curriculum balance."""
     if ratios is None:
         ratios = {1: 0.3, 2: 0.3, 3: 0.2, 4: 0.2}
@@ -165,20 +179,29 @@ def main():
     def preprocess(examples):
         prompts = examples["prompt"]
         responses = examples["response"]
-        texts = [f"{p}\n{tokenizer.eos_token}\n{r}\n{tokenizer.eos_token}" for p, r in zip(prompts, responses)]
-        model_inputs = tokenizer(texts, truncation=True, max_length=args.max_seq_length, padding="max_length")
+        texts = [
+            f"{p}\n{tokenizer.eos_token}\n{r}\n{tokenizer.eos_token}"
+            for p, r in zip(prompts, responses)
+        ]
+        model_inputs = tokenizer(
+            texts, truncation=True, max_length=args.max_seq_length, padding="max_length"
+        )
         # FIX: Use deep copy for batched lists (list.copy() is shallow for 2D)
         labels = [row.copy() for row in model_inputs["input_ids"]]
         # Mask prompt portion in labels (approximate by prompt length)
         for i, prompt in enumerate(prompts):
-            prompt_tokens = tokenizer(prompt, truncation=True, max_length=args.max_seq_length)["input_ids"]
+            prompt_tokens = tokenizer(
+                prompt, truncation=True, max_length=args.max_seq_length
+            )["input_ids"]
             prompt_len = len(prompt_tokens)
             labels[i][:prompt_len] = [-100] * prompt_len
         model_inputs["labels"] = labels
         return model_inputs
 
     hf_dataset = HFDataset.from_list(all_examples)
-    tokenized = hf_dataset.map(preprocess, batched=True, remove_columns=hf_dataset.column_names)
+    tokenized = hf_dataset.map(
+        preprocess, batched=True, remove_columns=hf_dataset.column_names
+    )
 
     # Model
     logger.info(f"Loading base model: {args.base_model}...")
@@ -193,6 +216,7 @@ def main():
     }
     if args.use_4bit:
         from transformers import BitsAndBytesConfig
+
         load_kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch.bfloat16,
@@ -205,14 +229,24 @@ def main():
         model = prepare_model_for_kbit_training(model)
 
     # Auto-detect LoRA target modules based on model architecture
-    default_targets = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    default_targets = [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ]
     gpt2_targets = ["c_attn", "c_proj", "c_fc"]
     model_name_lower = args.base_model.lower()
     if "gpt2" in model_name_lower:
         target_modules = gpt2_targets
     else:
         model_modules = [name for name, _ in model.named_modules()]
-        target_modules = [t for t in default_targets if any(t in m for m in model_modules)]
+        target_modules = [
+            t for t in default_targets if any(t in m for m in model_modules)
+        ]
         if not target_modules:
             target_modules = default_targets
 
@@ -250,6 +284,7 @@ def main():
     # Simple custom collator for already-tokenized causal LM data
     def custom_data_collator(features):
         import torch
+
         batch = {}
         keys = features[0].keys()
         for k in keys:

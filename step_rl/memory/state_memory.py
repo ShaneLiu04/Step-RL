@@ -16,6 +16,7 @@ import numpy as np
 @dataclass
 class StateSignature:
     """Compact representation of a state for deduplication."""
+
     url_hash: str = ""
     dom_hash: str = ""
     visual_hash: Optional[str] = None
@@ -115,7 +116,7 @@ class StateMemory:
         band_size = 4
         bands = []
         for i in range(0, num_perm, band_size):
-            band = tuple(hashes[i:i+band_size])
+            band = tuple(hashes[i : i + band_size])
             band_hash = hashlib.md5(str(band).encode()).hexdigest()[:4]
             bands.append(band_hash)
         url_h = hashlib.md5(url.encode()).hexdigest()[:8]
@@ -134,7 +135,7 @@ class StateMemory:
         self._visit_count[state_hash] = self._visit_count.get(state_hash, 0) + 1
 
         # Loop detection: check if state_hash appeared in recent window
-        recent = list(self._state_history)[-self.loop_window:]
+        recent = list(self._state_history)[-self.loop_window :]
         loop_count = recent.count(state_hash) - 1  # exclude current
         r_loop = 0.0
         if loop_count > 0:
@@ -162,7 +163,7 @@ class StateMemory:
 
     def is_looping(self, state_hash: str, threshold: int = 2) -> bool:
         """Check if currently in a detected loop."""
-        recent = list(self._state_history)[-self.loop_window * 2:]
+        recent = list(self._state_history)[-self.loop_window * 2 :]
         return recent.count(state_hash) >= threshold
 
     def reset(self) -> None:

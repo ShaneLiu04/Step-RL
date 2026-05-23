@@ -61,7 +61,9 @@ class ProgressDataset(Dataset):
             "attention_mask": encoding["attention_mask"].squeeze(0),
         }
         if "progress" in item:
-            result["progress_label"] = torch.tensor(item["progress"], dtype=torch.float32)
+            result["progress_label"] = torch.tensor(
+                item["progress"], dtype=torch.float32
+            )
         if "step_count" in item:
             result["step_count"] = torch.tensor(item["step_count"], dtype=torch.long)
         # trajectory_id is a string identifier; do NOT convert to tensor
@@ -97,7 +99,9 @@ def load_data(path: str) -> List[Dict[str, Any]]:
         raise ValueError(f"Unsupported format: {ext}")
 
 
-def build_contrastive_pairs(data: List[Dict[str, Any]], margin: float = 0.1) -> List[Dict[str, Any]]:
+def build_contrastive_pairs(
+    data: List[Dict[str, Any]], margin: float = 0.1
+) -> List[Dict[str, Any]]:
     """
     Build contrastive ranking pairs from trajectories.
     States from successful trajectories should have higher progress than failed ones.
@@ -118,15 +122,17 @@ def build_contrastive_pairs(data: List[Dict[str, Any]], margin: float = 0.1) -> 
         for s in success_items:
             for f in failure_items:
                 if s.get("step_count", 0) == f.get("step_count", 0):
-                    pairs_data.append({
-                        "text": s["text"],
-                        "progress": s.get("progress", 0.5),
-                        "step_count": s.get("step_count", 0),
-                        "pair_text": f["text"],
-                        "pair_progress": f.get("progress", 0.2),
-                        "pair_step_count": f.get("step_count", 0),
-                        "target": 1.0,
-                    })
+                    pairs_data.append(
+                        {
+                            "text": s["text"],
+                            "progress": s.get("progress", 0.5),
+                            "step_count": s.get("step_count", 0),
+                            "pair_text": f["text"],
+                            "pair_progress": f.get("progress", 0.2),
+                            "pair_step_count": f.get("step_count", 0),
+                            "target": 1.0,
+                        }
+                    )
     return pairs_data
 
 
@@ -141,7 +147,9 @@ def train_epoch(
 ) -> Dict[str, float]:
     model.train()
     total_metrics: Dict[str, float] = {}
-    scaler = torch.cuda.amp.GradScaler() if use_amp and torch.cuda.is_available() else None
+    scaler = (
+        torch.cuda.amp.GradScaler() if use_amp and torch.cuda.is_available() else None
+    )
 
     for batch in tqdm(dataloader, desc="Training"):
         for k in list(batch.keys()):
@@ -215,7 +223,9 @@ def main():
     parser.add_argument("--config", type=str, default="config.yaml")
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--val_path", type=str, default=None)
-    parser.add_argument("--output_dir", type=str, default="./checkpoints/progress_estimator")
+    parser.add_argument(
+        "--output_dir", type=str, default="./checkpoints/progress_estimator"
+    )
     parser.add_argument("--base_model", type=str, default="Qwen/Qwen3-8B-Instruct")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=8)
@@ -223,8 +233,18 @@ def main():
     parser.add_argument("--max_length", type=int, default=2048)
     parser.add_argument("--seed", type=int, default=42)
     # FIX: Use type=str_to_bool instead of store_true + default=True
-    parser.add_argument("--freeze_encoder", type=str_to_bool, default=True, help="Freeze encoder weights (yes/no)")
-    parser.add_argument("--use_uncertainty", type=str_to_bool, default=True, help="Use uncertainty estimation (yes/no)")
+    parser.add_argument(
+        "--freeze_encoder",
+        type=str_to_bool,
+        default=True,
+        help="Freeze encoder weights (yes/no)",
+    )
+    parser.add_argument(
+        "--use_uncertainty",
+        type=str_to_bool,
+        default=True,
+        help="Use uncertainty estimation (yes/no)",
+    )
     parser.add_argument("--uncertainty_method", type=str, default="evidential")
     args = parser.parse_args()
 
@@ -272,7 +292,9 @@ def main():
     )
     total_steps = len(train_loader) * args.epochs
     scheduler = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=int(0.1 * total_steps), num_training_steps=total_steps
+        optimizer,
+        num_warmup_steps=int(0.1 * total_steps),
+        num_training_steps=total_steps,
     )
 
     weights = {"mse": 1.0, "rank": 0.5, "mono": 0.3, "nll": 0.5}
@@ -280,7 +302,9 @@ def main():
 
     for epoch in range(args.epochs):
         logger.info(f"=== Epoch {epoch + 1}/{args.epochs} ===")
-        train_metrics = train_epoch(model, train_loader, optimizer, scheduler, device, weights)
+        train_metrics = train_epoch(
+            model, train_loader, optimizer, scheduler, device, weights
+        )
         logger.info(f"Train metrics: {train_metrics}")
 
         val_metrics = eval_epoch(model, val_loader, device, weights)
@@ -289,21 +313,27 @@ def main():
         if val_metrics.get("total", float("inf")) < best_val:
             best_val = val_metrics["total"]
             ckpt_path = os.path.join(args.output_dir, "best_model.pt")
-            torch.save({
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "val_metrics": val_metrics,
-            }, ckpt_path)
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "val_metrics": val_metrics,
+                },
+                ckpt_path,
+            )
             logger.info(f"Saved best model to {ckpt_path}")
 
         # Periodic save
         ckpt_path = os.path.join(args.output_dir, f"checkpoint_epoch_{epoch}.pt")
-        torch.save({
-            "epoch": epoch,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-        }, ckpt_path)
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+            },
+            ckpt_path,
+        )
 
 
 if __name__ == "__main__":

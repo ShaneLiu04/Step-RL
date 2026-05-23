@@ -111,7 +111,9 @@ class PPOTrainer(BaseTrainer):
         result = await super()._policy_forward(prompt_text)
 
         # Compute value using last non-pad token hidden state of the *prompt*
-        inputs = self.tokenizer(prompt_text, return_tensors="pt", truncation=True, max_length=4096)
+        inputs = self.tokenizer(
+            prompt_text, return_tensors="pt", truncation=True, max_length=4096
+        )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
@@ -172,7 +174,13 @@ class PPOTrainer(BaseTrainer):
         recomputed here by concatenating prompt + response and indexing
         the last token with the *actual* sampled token id (not argmax).
         """
-        all_obs, all_responses, all_old_log_probs, all_advantages, all_returns = [], [], [], [], []
+        all_obs, all_responses, all_old_log_probs, all_advantages, all_returns = (
+            [],
+            [],
+            [],
+            [],
+            [],
+        )
 
         for traj in trajectories:
             advantages, returns = self.compute_gae(traj)
@@ -212,9 +220,21 @@ class PPOTrainer(BaseTrainer):
 
                 batch_obs = [all_obs[i] for i in batch_idx]
                 batch_responses = [all_responses[i] for i in batch_idx]
-                batch_advantages = torch.tensor([all_advantages[i] for i in batch_idx], dtype=torch.float32, device=self.device)
-                batch_returns = torch.tensor([all_returns[i] for i in batch_idx], dtype=torch.float32, device=self.device)
-                batch_old_log_probs = torch.tensor([all_old_log_probs[i] for i in batch_idx], dtype=torch.float32, device=self.device)
+                batch_advantages = torch.tensor(
+                    [all_advantages[i] for i in batch_idx],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                batch_returns = torch.tensor(
+                    [all_returns[i] for i in batch_idx],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+                batch_old_log_probs = torch.tensor(
+                    [all_old_log_probs[i] for i in batch_idx],
+                    dtype=torch.float32,
+                    device=self.device,
+                )
 
                 # Compute new log-prob of the *last generated token* under current policy
                 new_log_probs = self._get_update_log_probs(batch_obs, batch_responses)
@@ -222,11 +242,16 @@ class PPOTrainer(BaseTrainer):
                 # KL with reference (last-token approximation)
                 inputs = self.tokenizer(
                     [obs + resp for obs, resp in zip(batch_obs, batch_responses)],
-                    return_tensors="pt", padding=True, truncation=True, max_length=4096,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=4096,
                 )
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 seq_lengths = inputs["attention_mask"].sum(dim=1) - 1
-                batch_indices = torch.arange(inputs["input_ids"].size(0), device=self.device)
+                batch_indices = torch.arange(
+                    inputs["input_ids"].size(0), device=self.device
+                )
 
                 outputs = self.policy(**inputs, output_hidden_states=True)
                 last_logits = outputs.logits[batch_indices, seq_lengths]
@@ -247,7 +272,10 @@ class PPOTrainer(BaseTrainer):
                 # PPO surrogate loss
                 ratio = torch.exp(new_log_probs - batch_old_log_probs)
                 surr1 = ratio * batch_advantages
-                surr2 = torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range) * batch_advantages
+                surr2 = (
+                    torch.clamp(ratio, 1.0 - self.clip_range, 1.0 + self.clip_range)
+                    * batch_advantages
+                )
                 policy_loss = -torch.min(surr1, surr2).mean()
 
                 # Value loss (last-token hidden state)
@@ -256,13 +284,22 @@ class PPOTrainer(BaseTrainer):
                 values = self.value_model(last_hidden)
                 value_loss = F.mse_loss(values.squeeze(-1), batch_returns)
 
-                loss = policy_loss + self.vf_coef * value_loss + self.kl_coef * kl - self.entropy_coef * entropy
+                loss = (
+                    policy_loss
+                    + self.vf_coef * value_loss
+                    + self.kl_coef * kl
+                    - self.entropy_coef * entropy
+                )
 
                 self.policy_optimizer.zero_grad()
                 self.value_optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
-                torch.nn.utils.clip_grad_norm_(self.value_model.parameters(), self.max_grad_norm)
+                torch.nn.utils.clip_grad_norm_(
+                    self.policy.parameters(), self.max_grad_norm
+                )
+                torch.nn.utils.clip_grad_norm_(
+                    self.value_model.parameters(), self.max_grad_norm
+                )
                 self.policy_optimizer.step()
                 self.value_optimizer.step()
 
@@ -291,16 +328,19 @@ class PPOTrainer(BaseTrainer):
 
     def save_checkpoint(self, save_dir: str, epoch: int) -> None:
         path = f"{save_dir}/checkpoint_epoch_{epoch}.pt"
-        torch.save({
-            "epoch": epoch,
-            "global_step": self.global_step,
-            "policy_state_dict": self.policy.state_dict(),
-            "value_state_dict": self.value_model.state_dict(),
-            "policy_optimizer": self.policy_optimizer.state_dict(),
-            "value_optimizer": self.value_optimizer.state_dict(),
-            "kl_coef": self.kl_coef,
-            "algorithm": "ppo",
-        }, path)
+        torch.save(
+            {
+                "epoch": epoch,
+                "global_step": self.global_step,
+                "policy_state_dict": self.policy.state_dict(),
+                "value_state_dict": self.value_model.state_dict(),
+                "policy_optimizer": self.policy_optimizer.state_dict(),
+                "value_optimizer": self.value_optimizer.state_dict(),
+                "kl_coef": self.kl_coef,
+                "algorithm": "ppo",
+            },
+            path,
+        )
         logger.info(f"Checkpoint saved: {path}")
 
     def load_checkpoint(self, path: str) -> None:
@@ -319,13 +359,23 @@ class PPOTrainer(BaseTrainer):
 # Entry point
 # -----------------------------
 
+
 def main():
     parser = _build_base_parser("PPO Training for Step-RL")
     args = parser.parse_args()
 
-    config, device, env, grounding, state_memory, curriculum, tokenizer, policy, ref_model, progress_estimator = (
-        _load_config_and_components(args, "ppo")
-    )
+    (
+        config,
+        device,
+        env,
+        grounding,
+        state_memory,
+        curriculum,
+        tokenizer,
+        policy,
+        ref_model,
+        progress_estimator,
+    ) = _load_config_and_components(args, "ppo")
 
     value_model = ValueHead(policy.config.hidden_size)
 
