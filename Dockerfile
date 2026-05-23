@@ -53,8 +53,8 @@ COPY --from=builder /root/.local /home/appuser/.local
 ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Copy Playwright browsers from builder
-COPY --from=builder /root/.cache/ms-playwright /home/appuser/.cache/ms-playwright
-ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+COPY --from=builder /ms-playwright /home/appuser/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/ms-playwright
 
 # Copy project code
 COPY --chown=appuser:appgroup . .
