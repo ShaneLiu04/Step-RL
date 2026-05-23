@@ -99,9 +99,11 @@ class ProgressEstimator(nn.Module):
         # Encoder
         self.encoder = AutoModel.from_pretrained(
             encoder_name,
-            dtype=torch.bfloat16
-            if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-            else torch.float32,
+            dtype=(
+                torch.bfloat16
+                if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+                else torch.float32
+            ),
             device_map=device_map,
         )
         if freeze_encoder:

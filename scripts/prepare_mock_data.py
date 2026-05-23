@@ -25,7 +25,10 @@ def generate_sft_trajectory(task_id: str, goal: str, level: int, num_steps: int)
                 "xpath": "//a[contains(text(),'iPhone 15')]",
             },
         ),
-        ("click", {"element_text": "加入购物车", "xpath": "//button[text()='加入购物车']"}),
+        (
+            "click",
+            {"element_text": "加入购物车", "xpath": "//button[text()='加入购物车']"},
+        ),
         ("click", {"element_text": "去结算", "xpath": "//a[text()='去结算']"}),
         ("click", {"element_text": "提交订单", "xpath": "//button[text()='提交订单']"}),
         ("finish", {}),

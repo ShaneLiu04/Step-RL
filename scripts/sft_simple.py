@@ -32,7 +32,9 @@ def format_examples(trajectories, tokenizer, max_length=512):
         goal = traj["task_goal"]
         for step in traj.get("steps", []):
             prompt = (
-                f"任务: {goal}\n" f"页面: {step['observation']}\n" f"请输出 JSON 格式的思考与动作。\n"
+                f"任务: {goal}\n"
+                f"页面: {step['observation']}\n"
+                f"请输出 JSON 格式的思考与动作。\n"
             )
             response = json.dumps(
                 {

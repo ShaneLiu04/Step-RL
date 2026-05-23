@@ -157,9 +157,11 @@ async def _coordinate_fallback(
                 }
         # Last resort: tag at coordinates via nth-of-type is fragile;
         # use JS click via page.evaluate as a reliable fallback
-        return page.locator(f"{tag}").filter(
-            has_text=text if text else None
-        ).first if text else page.locator(tag).first, {
+        return (
+            page.locator(f"{tag}").filter(has_text=text if text else None).first
+            if text
+            else page.locator(tag).first
+        ), {
             "method": "coordinate_fallback",
             "coords": [x, y],
             "by": "tag",

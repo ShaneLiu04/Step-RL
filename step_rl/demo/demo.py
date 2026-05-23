@@ -37,9 +37,9 @@ class StepRLDemo:
 
         self.policy = AutoModelForCausalLM.from_pretrained(
             base_model,
-            torch_dtype=torch.bfloat16
-            if torch.cuda.is_bf16_supported()
-            else torch.float32,
+            torch_dtype=(
+                torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
+            ),
             trust_remote_code=True,
         )
         if os.path.isdir(policy_path):
@@ -192,9 +192,12 @@ def build_gradio_ui(demo: StepRLDemo) -> gr.Blocks:
         with gr.Row():
             with gr.Column(scale=1):
                 task_input = gr.Textbox(
-                    label="任务指令", placeholder="例如：在京东搜索 iPhone 15 并加入购物车"
+                    label="任务指令",
+                    placeholder="例如：在京东搜索 iPhone 15 并加入购物车",
                 )
-                url_input = gr.Textbox(label="起始 URL (可选)", placeholder="https://...")
+                url_input = gr.Textbox(
+                    label="起始 URL (可选)", placeholder="https://..."
+                )
                 start_btn = gr.Button("开始任务", variant="primary")
                 step_btn = gr.Button("Agent 自动执行一步")
                 manual_input = gr.Textbox(
