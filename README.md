@@ -189,7 +189,7 @@ graph TB
 ### 安装
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/ShaneLiu04/step-rl.git
 cd step-rl
 pip install -r requirements.txt
 playwright install chromium
@@ -404,6 +404,28 @@ python -m step_rl.evaluation.benchmark --config config.yaml --mock
 | **`full_v2 (PPO)`** | **86%** | **95.8%** | **6%** | **完整系统 PPO** |
 | **`grpo`** | **91%** | **95.2%** | **4%** | **GRPO 算法 (最优)** |
 
+### 训练结果可视化
+
+#### 奖励曲线
+
+![奖励曲线](docs/images/reward_curve.png)
+
+#### 成功率对比
+
+![成功率对比](docs/images/success_rate_comparison.png)
+
+#### VRAM 占用对比
+
+![VRAM 占用对比](docs/images/vram_comparison.png)
+
+#### 课程进度
+
+![课程进度](docs/images/curriculum_progression.png)
+
+#### 评测仪表盘
+
+![评测仪表盘](docs/images/dashboard.png)
+
 ---
 
 ## 项目结构
@@ -536,7 +558,7 @@ step-rl/
   title = {Step-RL: LLM Agent Long-Horizon Decision Optimization via RL},
   version = {2.0},
   year = {2026},
-  url = {<repository-url>}
+  url = {https://github.com/ShaneLiu04/step-rl}
 }
 ```
 
