@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 Step-RL v2.0
+# Step-RL v2.0
 
 **基于强化学习的 LLM Agent 长链路决策优化系统**
 
@@ -9,17 +9,21 @@
 [![Transformers](https://img.shields.io/badge/Transformers-4.57+-yellow.svg)](https://huggingface.co/docs/transformers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **解决 LLM Agent 三大核心难题：稀疏奖励、动作幻觉、错误累积**
+> 解决 LLM Agent 在长链路任务中的三大核心难题：稀疏奖励、动作幻觉、错误累积。
 
 <p align="center">
-  <strong>稠密进度奖励</strong> · <strong>动作前置校验</strong> · <strong>课程动态调度</strong> · <strong>状态记忆循环检测</strong> · <strong>PPO/GRPO 策略优化</strong>
+  <strong>稠密进度奖励</strong> ·
+  <strong>动作前置校验</strong> ·
+  <strong>课程动态调度</strong> ·
+  <strong>状态记忆循环检测</strong> ·
+  <strong>PPO / GRPO 策略优化</strong>
 </p>
 
 </div>
 
 ---
 
-## 📋 目录
+## 目录
 
 - [项目简介](#项目简介)
 - [核心架构](#核心架构)
@@ -40,21 +44,22 @@
 
 ## 项目简介
 
-Step-RL v2.0 是一个面向 **Web 自动化 Agent** 的强化学习训练框架，针对 LLM-based Agent 在长链路任务中的固有缺陷——**稀疏终局奖励**、**动作锚定幻觉**、**早期错误累积**——提出了五位一体的系统级解决方案。
+Step-RL v2.0 是一个面向 Web 自动化 Agent 的强化学习训练框架，针对 LLM-based Agent 在长链路任务中的结构性缺陷——稀疏终局奖励、动作锚定幻觉、早期错误累积——提出了一套系统级解决方案。
 
-传统方案仅依赖单步 Prompt + 稀疏成功/失败信号，导致：
-- ❌ **信用分配困难**：部分正确的轨迹得不到正向反馈
-- ❌ **动作幻觉严重**：生成的动作指向不存在的页面元素
-- ❌ **错误滚雪球**：早期小错在长链路中被指数级放大
+传统方案仅依赖单步提示和稀疏的成功/失败信号，难以支撑复杂任务：
 
-Step-RL 通过 **稠密进度估计**、**动作前置校验与自动修正**、**课程化难度调度**、**状态记忆与循环检测**、**GRPO/PPO 策略优化** 五大组件协同工作，将任务完成率从基线的 **58%** 提升至 **86%~91%** (+57% 相对提升)。
+- **信用分配困难**：部分正确的轨迹得不到正向反馈，模型无法区分优质动作与劣质动作。
+- **动作幻觉严重**：生成的动作指向不存在的页面元素，导致执行失败。
+- **错误滚雪球**：早期的小偏差在长链路任务中被指数级放大，最终无法收敛。
+
+Step-RL 通过稠密进度估计、动作前置校验与自动修正、课程化难度调度、状态记忆与循环检测、GRPO/PPO 策略优化五大组件的协同作用，将任务完成率从基线的 58% 提升至 86% ~ 91%（相对提升约 57%）。
 
 | 指标 | 基线 (SFT) | Step-RL v2.0 | 提升 |
 |------|-----------|-------------|------|
-| 任务完成率 | 58% | **86~91%** | +57% |
+| 任务完成率 | 58% | **86 ~ 91%** | +57% |
 | 动作锚定准确率 | 87.5% | **95.8%** | +9.5% |
-| 平均完成步数 | 24.5 | **11.5~13.2** | -46% |
-| 循环检测率 | 32% | **4~6%** | -87% |
+| 平均完成步数 | 24.5 | **11.5 ~ 13.2** | -46% |
+| 循环检测率 | 32% | **4 ~ 6%** | -87% |
 
 ---
 
@@ -64,57 +69,52 @@ Step-RL 通过 **稠密进度估计**、**动作前置校验与自动修正**、
 
 ```mermaid
 graph LR
-    subgraph ENV["🌐 Web Environment"]
+    subgraph ENV["Web Environment"]
         direction TB
         PW["Playwright Browser"]
         DOM["JS DOM Extractor"]
         LOC["Shared Locator Module"]
     end
 
-    subgraph AGENT["🤖 Agent Core"]
+    subgraph AGENT["Agent Core"]
         direction TB
-        POL["Qwen2.5/3-7B<br/>+ LoRA Adapter"]
+        POL["Qwen2.5/3-7B + LoRA Adapter"]
         TOK["Tokenizer"]
     end
 
-    subgraph REWARD["💰 Reward Stack"]
+    subgraph REWARD["Reward Stack"]
         direction TB
-        RE["Progress Estimator<br/>Dense [0,1]"]
+        RE["Progress Estimator Dense [0, 1]"]
         GV["Grounding Validator"]
-        SM["State Memory<br/>Loop + Novelty"]
+        SM["State Memory Loop + Novelty"]
         SP["Sparse Reward"]
         EF["Efficiency Bonus"]
     end
 
-    subgraph CTRL["📚 Control"]
+    subgraph CTRL["Control"]
         direction TB
-        CS["Curriculum<br/>Scheduler"]
+        CS["Curriculum Scheduler"]
         CL["Continual Learning"]
     end
 
-    SUM["🎯 Reward<br/>Summation"]
+    SUM["Reward Summation"]
 
-    %% Environment <-> Agent
     PW -->|Observation| POL
     POL -->|Action JSON| PW
     LOC -.->|Locator| PW
     LOC -.->|Locator| GV
 
-    %% Agent -> Reward signals
     PW -->|State Hash| SM
     POL -->|Action Params| GV
 
-    %% Reward -> Summation
     RE -->|r_progress| SUM
     GV -->|r_ground| SUM
     SM -->|r_loop + r_novel| SUM
     SP -->|r_sparse| SUM
     EF -->|r_eff| SUM
 
-    %% Summation -> Agent
     SUM -->|Total Reward| POL
 
-    %% Control -> Agent / Reward
     CS -->|Task + Weights| POL
     CL -->|Approved Data| RE
 
@@ -145,7 +145,7 @@ graph TB
 | **Grounding Validator** | 动作执行前校验元素存在性与可交互性 | 多属性级联匹配 + 相似元素自动修正（共享 Locator） |
 | **Curriculum Scheduler** | 动态调整任务难度与奖励权重 | 成功率阈值晋升 + 三阶段权重调度 |
 | **State Memory** | 检测循环状态并给予探索奖励 | 确定性 MinHash（预计算排列加速）+ LRU 淘汰 |
-| **GRPO/PPO Trainer** | 策略优化与 KL 约束（基于 BaseTrainer） | Group-Relative Advantage / GAE + 一致的 last-token log-prob |
+| **GRPO / PPO Trainer** | 策略优化与 KL 约束（基于 BaseTrainer） | Group-Relative Advantage / GAE + 一致的 last-token log-prob |
 
 ---
 
@@ -153,17 +153,17 @@ graph TB
 
 ### 已验证能力
 
-- [x] **端到端训练流水线**：SFT Warmup -> Progress Estimator -> GRPO/PPO
-- [x] **8GB VRAM 友好**：GRPO + 4-bit NF4 量化，单卡 RTX 4060 可训练 7B 模型
-- [x] **确定性状态哈希**：MinHash 使用 `hashlib` + 预计算排列替代 MD5 循环，跨进程一致且高效
-- [x] **安全沙箱**：精确域名匹配（非子串）、CSS/XPath 完整转义、`torch.load(weights_only=True)`
-- [x] **共享定位模块**：`environment/locator.py` 统一 PlaywrightEnv 与 GroundingValidator 的元素定位逻辑
-- [x] **训练器抽象基类**：`BaseTrainer` 抽取 PPO/GRPO 公共逻辑（rollout、奖励计算、checkpoint），消除 80% 重复代码
-- [x] **完整评测套件**：消融研究、多指标仪表板、自动可视化
-- [x] **持续学习接口**：高置信度自动标注 + 人工审核队列
-- [x] **Gradio 交互 Demo**：实时观察 Agent 推理与操作过程
-- [x] **Docker 容器化部署**：多阶段构建、非 root 用户、一键启动
-- [x] **52 项单元测试全覆盖**：pytest + pytest-asyncio + pytest-cov
+- **端到端训练流水线**：SFT Warmup -> Progress Estimator -> GRPO/PPO
+- **8GB VRAM 友好**：GRPO + 4-bit NF4 量化，单卡 RTX 4060 可训练 7B 模型
+- **确定性状态哈希**：MinHash 使用 `hashlib` + 预计算排列替代 MD5 循环，跨进程一致且高效
+- **安全沙箱**：精确域名匹配（非子串）、CSS/XPath 完整转义、`torch.load(weights_only=True)`
+- **共享定位模块**：`environment/locator.py` 统一 PlaywrightEnv 与 GroundingValidator 的元素定位逻辑
+- **训练器抽象基类**：`BaseTrainer` 抽取 PPO/GRPO 公共逻辑（rollout、奖励计算、checkpoint），消除 80% 重复代码
+- **完整评测套件**：消融研究、多指标仪表板、自动可视化
+- **持续学习接口**：高置信度自动标注 + 人工审核队列
+- **Gradio 交互 Demo**：实时观察 Agent 推理与操作过程
+- **Docker 容器化部署**：多阶段构建、非 root 用户、一键启动
+- **52 项单元测试全覆盖**：pytest + pytest-asyncio + pytest-cov
 
 ### 安全加固
 
@@ -183,14 +183,14 @@ graph TB
 ### 环境要求
 
 - Python 3.10+
-- CUDA 11.8+ (GPU 训练)
-- 8GB+ VRAM (推荐 GRPO + 4-bit 模式)
+- CUDA 11.8+（GPU 训练）
+- 8GB+ VRAM（推荐 GRPO + 4-bit 模式）
 
 ### 安装
 
 ```bash
-git clone https://github.com/ShaneLiu04/step-rl.git
-cd step-rl
+git clone https://github.com/ShaneLiu04/Step-RL.git
+cd Step-RL
 pip install -r requirements.txt
 playwright install chromium
 ```
@@ -202,6 +202,7 @@ python scripts/prepare_mock_data.py
 ```
 
 生成：
+
 - `data/sft/` — 演示轨迹（126 条 SFT 样本）
 - `data/progress/` — 进度标注（41 个标签）
 
@@ -284,7 +285,7 @@ docker-compose --profile demo up       # 前台 Demo
 
 ## 训练流水线
 
-### Stage 1: SFT Warmup（监督微调）
+### Stage 1：SFT Warmup（监督微调）
 
 ```bash
 python -m step_rl.training.sft_warmup \
@@ -300,7 +301,7 @@ python -m step_rl.training.sft_warmup \
   --use_4bit
 ```
 
-### Stage 2: Progress Estimator（进度估计器）
+### Stage 2：Progress Estimator（进度估计器）
 
 ```bash
 python -m step_rl.reward.train_reward_model \
@@ -318,7 +319,7 @@ python -m step_rl.reward.train_reward_model \
 
 **设备同步**：当 `device_map="auto"` 将 encoder 分配到 GPU 时，`_sync_device()` 自动将所有自定义回归头同步到同一设备。
 
-### Stage 3: GRPO 强化学习（推荐）
+### Stage 3：GRPO 强化学习（推荐）
 
 ```bash
 python -m step_rl.training.grpo_trainer \
@@ -329,16 +330,17 @@ python -m step_rl.training.grpo_trainer \
 ```
 
 **核心算法正确性保证**：
-- `BaseTrainer._get_update_log_probs()` 在 rollout 和 update 阶段均计算 **response 最后一个实际生成 token** 的 log-prob
-- 避免了旧版实现中使用 `argmax` 导致的 importance ratio 计算错误
-- PPO/GRPO 共享 `BaseTrainer` 的 rollout、奖励合成、checkpoint 逻辑
+
+- `BaseTrainer._get_update_log_probs()` 在 rollout 和 update 阶段均计算 response 最后一个实际生成 token 的 log-prob。
+- 避免了旧版实现中使用 `argmax` 导致的 importance ratio 计算错误。
+- PPO/GRPO 共享 `BaseTrainer` 的 rollout、奖励合成、checkpoint 逻辑。
 
 ### 为何选择 GRPO？
 
 | 算法 | 模型数量 | FP16 VRAM | 4-bit VRAM | 适用场景 |
 |------|---------|-----------|------------|----------|
-| PPO | 3 (Policy + Ref + Value) | ~24 GB | ~10-12 GB | 16GB+ GPU |
-| GRPO | 2 (Policy + Ref) | ~16 GB | **~6-7 GB** | **8GB GPU** |
+| PPO | 3（Policy + Ref + Value） | ~24 GB | ~10-12 GB | 16GB+ GPU |
+| GRPO | 2（Policy + Ref） | ~16 GB | **~6-7 GB** | **8GB GPU** |
 
 ---
 
@@ -402,7 +404,7 @@ python -m step_rl.evaluation.benchmark --config config.yaml --mock
 | `+grounding_only` | 71% | 96.5% | 16% | 仅动作校验 |
 | `+fixed_weight` | 79% | 93.5% | 10% | 静态权重组合 |
 | **`full_v2 (PPO)`** | **86%** | **95.8%** | **6%** | **完整系统 PPO** |
-| **`grpo`** | **91%** | **95.2%** | **4%** | **GRPO 算法 (最优)** |
+| **`grpo`** | **91%** | **95.2%** | **4%** | **GRPO 算法（最优）** |
 
 ### 训练结果可视化
 
@@ -435,6 +437,7 @@ step-rl/
 ├── config.yaml                      # 全局配置
 ├── requirements.txt                 # 依赖
 ├── README.md                        # 本文件
+├── LICENSE                          # MIT 许可证
 ├── Dockerfile                       # 多阶段构建、非 root 用户
 ├── docker-compose.yml               # Docker Compose 编排
 ├── .dockerignore                    # 排除大文件与缓存
@@ -558,7 +561,7 @@ step-rl/
   title = {Step-RL: LLM Agent Long-Horizon Decision Optimization via RL},
   version = {2.0},
   year = {2026},
-  url = {https://github.com/ShaneLiu04/step-rl}
+  url = {https://github.com/ShaneLiu04/Step-RL}
 }
 ```
 
@@ -566,14 +569,14 @@ step-rl/
 
 ## 许可证
 
-[MIT License](LICENSE)
+本项目基于 [MIT License](LICENSE) 开源。
 
 ---
 
 <div align="center">
 
-**Built with** love **using Transformers · PEFT · TRL · Playwright**
+Built with Transformers · PEFT · TRL · Playwright
 
-**基座模型**: Qwen by Alibaba Cloud
+基座模型：Qwen by Alibaba Cloud
 
 </div>
