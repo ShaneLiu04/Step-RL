@@ -8,6 +8,7 @@ Playwright Web Environment for Step-RL v2.0
 
 import base64
 import json
+import asyncio
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -15,8 +16,15 @@ from typing import Any, Dict, List, Optional
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
 from step_rl.environment.locator import robust_locate
+from step_rl.environment.smart_wait import smart_wait
 from step_rl.utils.logging_utils import get_logger
-from step_rl.utils.security_utils import validate_url
+from step_rl.utils.resource_guard import timeout
+from step_rl.utils.security_utils import (
+    validate_url,
+    validate_url_strict,
+    validate_action_json,
+    validate_selector,
+)
 
 logger = get_logger(__name__)
 
@@ -98,6 +106,8 @@ class PlaywrightWebEnv:
         allowed_domains: Optional[List[str]] = None,
         blocked_domains: Optional[List[str]] = None,
         sandbox_mode: bool = True,
+        enable_screenshot: bool = False,
+        screenshot_interval: int = 1,
     ):
         self.browser_type = browser_type
         self.headless = headless
@@ -112,6 +122,8 @@ class PlaywrightWebEnv:
             d.lower().strip() for d in (blocked_domains or []) if d
         )
         self.sandbox_mode = sandbox_mode
+        self.enable_screenshot = enable_screenshot
+        self.screenshot_interval = screenshot_interval
 
         self._playwright = None
         self._browser: Optional[Browser] = None
@@ -119,6 +131,13 @@ class PlaywrightWebEnv:
         self._page: Optional[Page] = None
         self._step_count = 0
         self._task_goal = ""
+
+        # Set process resource limits (Unix-only, gracefully skipped on Windows)
+        try:
+            from step_rl.utils.security_utils import set_resource_limits
+            set_resource_limits()
+        except Exception:
+            pass
 
     # -----------------------------
     # Lifecycle
@@ -168,6 +187,7 @@ class PlaywrightWebEnv:
         self._context = None
         self._playwright = None
 
+    @timeout(60)
     async def reset(
         self, task_goal: str = "", start_url: Optional[str] = None
     ) -> Observation:
@@ -183,7 +203,12 @@ class PlaywrightWebEnv:
                 await self.stop()
                 await self.start()
         if start_url:
-            await self._safe_goto(start_url)
+            if self.sandbox_mode and not validate_url_strict(
+                start_url, self.blocked_domains, self.allowed_domains
+            ):
+                logger.warning(f"Blocked start URL: {start_url}")
+            else:
+                await self._safe_goto(start_url)
         await self._wait_for_page_ready()
         return await self.get_observation()
 
@@ -191,7 +216,7 @@ class PlaywrightWebEnv:
     # Observation
     # -----------------------------
 
-    async def get_observation(self, include_screenshot: bool = False) -> Observation:
+    async def get_observation(self, force_screenshot: bool = False) -> Observation:
         page = self._page
         if page is None:
             raise RuntimeError(
@@ -200,8 +225,15 @@ class PlaywrightWebEnv:
 
         compressed = await self._extract_page_text(page)
 
+        # Determine if screenshot should be captured based on config
+        should_capture = force_screenshot or (
+            self.enable_screenshot
+            and self.screenshot_interval > 0
+            and self._step_count % self.screenshot_interval == 0
+        )
+
         screenshot_b64 = None
-        if include_screenshot:
+        if should_capture:
             try:
                 screenshot_bytes = await page.screenshot(type="jpeg", quality=50)
                 screenshot_b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
@@ -301,6 +333,7 @@ class PlaywrightWebEnv:
     # Action Execution
     # -----------------------------
 
+    @timeout(30)
     async def execute_action(self, action: Action) -> tuple[bool, Dict[str, Any]]:
         """
         Execute an action. Returns (success, info_dict).
@@ -314,6 +347,12 @@ class PlaywrightWebEnv:
         params = action.params
         info = {"step": self._step_count, "action": action.action, "params": params}
 
+        # Validate action JSON before execution
+        action_json = action.to_json()
+        if not validate_action_json(action_json):
+            logger.warning(f"Invalid action JSON: {action_json}")
+            return False, {**info, "error": "Invalid action JSON"}
+
         try:
             if action.action == "goto":
                 url = params.get("url", "about:blank")
@@ -321,6 +360,8 @@ class PlaywrightWebEnv:
                 info["success"] = success
 
             elif action.action == "click":
+                if "selector" in params and not validate_selector(params["selector"]):
+                    return False, {**info, "error": "Invalid selector"}
                 locator = await robust_locate(page, params)
                 if locator[0] is None:
                     return False, {**info, "error": "Element not found for click"}
@@ -328,6 +369,8 @@ class PlaywrightWebEnv:
                 info["success"] = True
 
             elif action.action == "type":
+                if "selector" in params and not validate_selector(params["selector"]):
+                    return False, {**info, "error": "Invalid selector"}
                 locator = await robust_locate(page, params)
                 if locator[0] is None:
                     return False, {**info, "error": "Element not found for type"}
@@ -358,7 +401,8 @@ class PlaywrightWebEnv:
 
             # Post-action wait for SPA stability
             if action.action in ("click", "type", "goto"):
-                await self._wait_for_page_ready()
+                spa_ready, elapsed = await smart_wait(page, params, max_wait_ms=5000)
+                info["spa_wait_ms"] = elapsed
 
             return info.get("success", False), info
 
@@ -373,7 +417,7 @@ class PlaywrightWebEnv:
     async def _safe_goto(self, url: str) -> bool:
         """Navigate to URL with security validation."""
         if self.sandbox_mode:
-            if not validate_url(url, self.blocked_domains, self.allowed_domains):
+            if not validate_url_strict(url, self.blocked_domains, self.allowed_domains):
                 logger.warning(f"Blocked navigation to: {url}")
                 return False
         try:

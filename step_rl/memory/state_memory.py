@@ -6,6 +6,11 @@ State Memory Module v2.0
 """
 
 import hashlib
+try:
+    import xxhash
+    HAS_XXHASH = True
+except ImportError:
+    HAS_XXHASH = False
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from typing import Any, Deque, Dict, Optional, Tuple
@@ -54,6 +59,7 @@ class StateMemory:
         self._state_history: Deque[str] = deque(maxlen=200)
         self._loop_counter: Dict[str, int] = {}
         self._visit_count: Dict[str, int] = {}
+        self._hash_cache: OrderedDict[str, str] = OrderedDict()  # LRU cache for compute_hash
 
     # -----------------------------
     # Hashing
@@ -65,13 +71,24 @@ class StateMemory:
         url: str = "",
         screenshot: Optional[np.ndarray] = None,
     ) -> str:
-        """Compute a deterministic hash for the current state."""
+        """Compute a deterministic hash for the current state with LRU caching."""
+        cache_key = hashlib.md5(f"{url}|{observation_text[:200]}".encode()).hexdigest()
+        if cache_key in self._hash_cache:
+            # Move to end for LRU
+            self._hash_cache.move_to_end(cache_key)
+            return self._hash_cache[cache_key]
+
         if self.hash_method == "simple":
-            return self._simple_hash(observation_text, url)
+            h = self._simple_hash(observation_text, url)
         elif self.hash_method == "minhash":
-            return self._minhash(observation_text, url)
+            h = self._minhash(observation_text, url)
         else:
-            return self._simple_hash(observation_text, url)
+            h = self._simple_hash(observation_text, url)
+
+        self._hash_cache[cache_key] = h
+        if len(self._hash_cache) > self.max_states:
+            self._hash_cache.popitem(last=False)
+        return h
 
     def _simple_hash(self, text: str, url: str) -> str:
         """Fast but coarse-grained hash."""
@@ -105,8 +122,10 @@ class StateMemory:
             b = (seed * 9876543211 + 1) & 0xFFFFFFFFFFFFFFFF
             min_val = p
             for s in shingles:
-                # Fast deterministic hash of string
-                h = int(hashlib.md5(s.encode()).hexdigest(), 16)
+                if HAS_XXHASH:
+                    h = xxhash.xxh64(s, seed=seed).intdigest()
+                else:
+                    h = int(hashlib.md5(s.encode()).hexdigest(), 16)
                 perm = ((h * a + b) & 0xFFFFFFFFFFFFFFFF) % p
                 if perm < min_val:
                     min_val = perm

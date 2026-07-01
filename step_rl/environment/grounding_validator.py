@@ -10,8 +10,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from playwright.async_api import Locator, Page
 
-from step_rl.environment.locator import robust_locate
+from step_rl.environment.element_fingerprint import ElementFingerprintDB
+from step_rl.environment.page_mutation import PageMutationDetector
+from step_rl.environment.locator import robust_locate, remove_dynamic_suffix, find_similar_by_structure
 from step_rl.utils.logging_utils import get_logger
+from step_rl.environment.grounding_cache import GroundingCache
 from step_rl.utils.security_utils import escape_xpath_string
 
 logger = get_logger(__name__)
@@ -59,6 +62,7 @@ class GroundingValidator:
         reward_corrected: float = -0.05,
         reward_failed: float = -0.2,
         spa_wait_ms: int = 1000,
+        fingerprint_db_path: str = "./data/element_fingerprints.json",
     ):
         self.multi_attribute_match = multi_attribute_match
         self.similarity_threshold = similarity_threshold
@@ -66,6 +70,10 @@ class GroundingValidator:
         self.reward_corrected = reward_corrected
         self.reward_failed = reward_failed
         self.spa_wait_ms = spa_wait_ms
+        self._cache = GroundingCache()
+        self._last_url = ""
+        self._fingerprint_db = ElementFingerprintDB(fingerprint_db_path)
+        self._mutation_detector = PageMutationDetector()
 
     async def validate(
         self,
@@ -76,7 +84,19 @@ class GroundingValidator:
         """
         Main entry point: validate an action and optionally suggest correction.
         Returns a GroundingResult with reward and corrected action.
+        Results are cached per (page_url, action_params) with automatic
+        invalidation on URL changes.
         """
+        current_url = page.url
+        if current_url != self._last_url:
+            self._cache.invalidate_url(self._last_url)
+            self._last_url = current_url
+
+        # Detect page mutations (SPA navigation, DOM changes)
+        mutated = await self._mutation_detector.detect_mutation(page)
+        if mutated:
+            logger.debug(f"Page mutation detected on {current_url}")
+
         if action in ("wait", "finish"):
             return GroundingResult(
                 valid=True,
@@ -102,6 +122,11 @@ class GroundingValidator:
                 valid=True, reward=self.reward_valid, message="Scroll is always valid."
             )
 
+        # For click / type: check cache first
+        cached = self._cache.get(current_url, params)
+        if cached is not None:
+            return cached
+
         # For click / type: need element
         locator, match_info = await robust_locate(
             page, params, multi_attribute_match=self.multi_attribute_match
@@ -111,13 +136,17 @@ class GroundingValidator:
             # Element found — now check interactivity
             interactivity = await self._check_interactivity(page, locator, action)
             if interactivity["ok"]:
-                return GroundingResult(
+                result = GroundingResult(
                     valid=True,
                     reward=self.reward_valid,
                     locator=locator,
                     match_info=match_info,
                     message=f"Element valid and interactive. ({match_info.get('method', 'unknown')})",
                 )
+                self._cache.set(current_url, params, result)
+                # Record successful pattern in fingerprint DB
+                self._fingerprint_db.record(current_url, params, success=True, action_type=action)
+                return result
             else:
                 # Element exists but not interactive — try to find similar interactive one
                 candidate = await self._find_similar_interactive(
@@ -128,7 +157,7 @@ class GroundingValidator:
                         "action": action,
                         "params": {**params, **candidate.to_action()},
                     }
-                    return GroundingResult(
+                    result = GroundingResult(
                         valid=False,
                         reward=self.reward_corrected,
                         corrected_action=corrected,
@@ -138,12 +167,97 @@ class GroundingValidator:
                             "similarity": candidate.similarity,
                         },
                     )
-                return GroundingResult(
+                    self._cache.set(current_url, params, result)
+                    return result
+                result = GroundingResult(
                     valid=False,
                     reward=self.reward_failed,
                     corrected_action=self._wait_action(),
                     message=f"Element not interactive: {interactivity.get('reason', 'unknown')}",
                 )
+                self._cache.set(current_url, params, result)
+                return result
+
+        # Try fingerprint DB suggestion before full failure
+        suggested = self._fingerprint_db.suggest(current_url, action, target_text=params.get("element_text", ""))
+        if suggested:
+            logger.debug(f"Fingerprint DB suggestion: {suggested}")
+            suggested_params = dict(params)
+            if suggested["type"] == "id":
+                suggested_params["element_id"] = suggested["value"]
+            elif suggested["type"] == "text":
+                suggested_params["element_text"] = suggested["value"]
+            elif suggested["type"] == "xpath":
+                suggested_params["xpath"] = suggested["value"]
+            elif suggested["type"] == "css":
+                suggested_params["css_selector"] = suggested["value"]
+            locator, match_info = await robust_locate(
+                page, suggested_params, multi_attribute_match=self.multi_attribute_match
+            )
+            if locator is not None:
+                interactivity = await self._check_interactivity(page, locator, action)
+                if interactivity["ok"]:
+                    result = GroundingResult(
+                        valid=True,
+                        reward=self.reward_valid,
+                        locator=locator,
+                        match_info={**match_info, "method": "fingerprint_suggest"},
+                        message=f"Element found via fingerprint suggestion. ({match_info.get('method', 'unknown')})",
+                    )
+                    self._cache.set(current_url, params, result)
+                    self._fingerprint_db.record(current_url, suggested_params, success=True, action_type=action)
+                    return result
+
+        # Try dynamic suffix removal for CSS selectors / IDs
+        if params.get("css_selector") or params.get("element_id"):
+            original_sel = params.get("css_selector") or f"#{params.get('element_id', '')}"
+            cleaned = remove_dynamic_suffix(original_sel)
+            if cleaned:
+                cleaned_params = dict(params)
+                if params.get("css_selector"):
+                    cleaned_params["css_selector"] = cleaned
+                else:
+                    cleaned_params["element_id"] = cleaned.lstrip("#")
+                locator, match_info = await robust_locate(
+                    page, cleaned_params, multi_attribute_match=self.multi_attribute_match
+                )
+                if locator is not None:
+                    interactivity = await self._check_interactivity(page, locator, action)
+                    if interactivity["ok"]:
+                        result = GroundingResult(
+                            valid=True,
+                            reward=self.reward_valid,
+                            locator=locator,
+                            match_info={**match_info, "method": "dynamic_suffix_removed"},
+                            message=f"Element found via cleaned selector: {cleaned}",
+                        )
+                        self._cache.set(current_url, params, result)
+                        self._fingerprint_db.record(current_url, cleaned_params, success=True, action_type=action)
+                        return result
+
+        # Try structural similarity matching
+        target_text = params.get("element_text", "")
+        target_tag = params.get("tag", "")
+        if target_text and target_tag:
+            similar_loc = await find_similar_by_structure(page, target_tag, target_text)
+            if similar_loc is not None:
+                try:
+                    count = await similar_loc.count()
+                    if count > 0:
+                        interactivity = await self._check_interactivity(page, similar_loc, action)
+                        if interactivity["ok"]:
+                            result = GroundingResult(
+                                valid=True,
+                                reward=self.reward_valid,
+                                locator=similar_loc,
+                                match_info={"method": "structural_similarity", "tag": target_tag, "text": target_text},
+                                message=f"Element found via structural similarity matching.",
+                            )
+                            self._cache.set(current_url, params, result)
+                            self._fingerprint_db.record(current_url, params, success=True, action_type=action)
+                            return result
+                except Exception as e:
+                    logger.debug(f"Structural similarity check failed: {e}")
 
         # Element not found — try auto-correction via similarity
         candidate = await self._find_similar_interactive(
@@ -154,7 +268,7 @@ class GroundingValidator:
                 "action": action,
                 "params": {**params, **candidate.to_action()},
             }
-            return GroundingResult(
+            result = GroundingResult(
                 valid=False,
                 reward=self.reward_corrected,
                 corrected_action=corrected,
@@ -164,15 +278,19 @@ class GroundingValidator:
                     "similarity": candidate.similarity,
                 },
             )
+            self._cache.set(current_url, params, result)
+            return result
 
         # Complete failure: degrade to wait
-        return GroundingResult(
+        result = GroundingResult(
             valid=False,
             reward=self.reward_failed,
             corrected_action=self._wait_action(),
             message="No matching element found. Degraded to wait.",
             match_info={"method": "none"},
         )
+        self._cache.set(current_url, params, result)
+        return result
 
     def _wait_action(self) -> Dict[str, Any]:
         """Return a safe wait action."""

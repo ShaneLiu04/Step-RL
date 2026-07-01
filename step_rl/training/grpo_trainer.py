@@ -24,6 +24,8 @@ from step_rl.training.base_trainer import (
     _load_config_and_components,
     logger,
 )
+from step_rl.training.kl_controller import AdaptiveKLController
+from step_rl.training.trl_adapters import is_trl_available, StepRLGRPOAdapter
 
 
 class GRPOTrainer(BaseTrainer):
@@ -64,11 +66,28 @@ class GRPOTrainer(BaseTrainer):
         self.group_size = grpo_cfg["group_size"]
         self.clip_range = grpo_cfg["clip_range"]
         self.kl_coef = grpo_cfg["kl_coef"]
+        self.kl_target = grpo_cfg.get("kl_target", 0.1)
+        self.kl_adaptive = grpo_cfg.get("kl_adaptive", False)
         self.gamma = grpo_cfg["gamma"]
         self.policy_lr = grpo_cfg["policy_lr"]
         self.max_grad_norm = grpo_cfg.get("max_grad_norm", 1.0)
         self.num_epochs_per_update = grpo_cfg.get("num_epochs_per_update", 4)
         self.mini_batch_size = grpo_cfg.get("mini_batch_size", 2)
+
+        # Step-RL v2.1 extension flags
+        self.use_trl_adapter = grpo_cfg.get("use_trl_adapter", False)
+
+        # Adaptive KL controller (optional, backward-compatible)
+        if self.kl_adaptive:
+            kl_controller = AdaptiveKLController(
+                init_kl_coef=self.kl_coef,
+                target_kl=self.kl_target,
+            )
+            self.setup_kl_controller(kl_controller)
+            logger.info(
+                f"AdaptiveKLController enabled for GRPO: init_kl={self.kl_coef}, "
+                f"target_kl={self.kl_target}"
+            )
 
         self.policy_optimizer = torch.optim.AdamW(
             self.policy.parameters(), lr=self.policy_lr, weight_decay=0.01
@@ -217,34 +236,50 @@ class GRPOTrainer(BaseTrainer):
 
         for k in metrics:
             metrics[k] /= max(num_updates, 1)
+
+        # Adaptive KL — use AdaptiveKLController if mounted, else fall back to scalar heuristic
+        if self.kl_controller is not None:
+            updated_kl_coef = self.kl_controller.update(metrics["kl"])
+            self.kl_coef = updated_kl_coef
+            metrics["kl_coef"] = updated_kl_coef
+        elif self.kl_adaptive:
+            if metrics["kl"] > self.kl_target * 2:
+                self.kl_coef *= 1.5
+            elif metrics["kl"] < self.kl_target / 2:
+                self.kl_coef /= 1.5
+            self.kl_coef = max(0.01, min(self.kl_coef, 1.0))
+            metrics["kl_coef"] = self.kl_coef
+
         return metrics
 
     # -----------------------------
     # Checkpointing (extend base)
     # -----------------------------
 
-    def save_checkpoint(self, save_dir: str, epoch: int) -> None:
+    def save_checkpoint(self, save_dir: str, epoch: int) -> None:  # noqa: D401
         path = f"{save_dir}/checkpoint_epoch_{epoch}.pt"
-        torch.save(
-            {
-                "epoch": epoch,
-                "global_step": self.global_step,
-                "policy_state_dict": self.policy.state_dict(),
-                "policy_optimizer": self.policy_optimizer.state_dict(),
-                "kl_coef": self.kl_coef,
-                "algorithm": "grpo",
-            },
-            path,
-        )
+        ckpt = {
+            "epoch": epoch,
+            "global_step": self.global_step,
+            "policy_state_dict": self.policy.state_dict(),
+            "policy_optimizer": self.policy_optimizer.state_dict(),
+            "kl_coef": self.kl_coef,
+            "algorithm": "grpo",
+        }
+        if self.kl_controller is not None:
+            ckpt["kl_controller_state"] = self.kl_controller.state_dict()
+        torch.save(ckpt, path)
         logger.info(f"Checkpoint saved: {path}")
 
-    def load_checkpoint(self, path: str) -> None:
+    def load_checkpoint(self, path: str) -> None:  # noqa: D401
         ckpt = torch.load(path, map_location=self.device, weights_only=True)
         self.policy.load_state_dict(ckpt["policy_state_dict"])
         self.policy_optimizer.load_state_dict(ckpt["policy_optimizer"])
         self.epoch = ckpt["epoch"]
         self.global_step = ckpt["global_step"]
         self.kl_coef = ckpt.get("kl_coef", self.kl_coef)
+        if self.kl_controller is not None and "kl_controller_state" in ckpt:
+            self.kl_controller.load_state_dict(ckpt["kl_controller_state"])
         logger.info(f"Checkpoint loaded: {path}")
 
 

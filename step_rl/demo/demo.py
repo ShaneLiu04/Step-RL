@@ -14,9 +14,9 @@ from typing import Any, Dict, List, Optional
 import gradio as gr
 import torch
 import yaml
-from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer
 
+from step_rl.inference import create_backend, HuggingFaceBackend, VLLMBackend
 from step_rl.environment.grounding_validator import GroundingValidator
 from step_rl.environment.playwright_env import Action, Observation, PlaywrightWebEnv
 
@@ -28,24 +28,49 @@ class StepRLDemo:
         self.config = config
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
 
-        base_model = config["model"]["base_model"]
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            base_model, trust_remote_code=True
-        )
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+        model_cfg = config.get("model", {})
+        backend_type = model_cfg.get("backend", "huggingface")
 
-        self.policy = AutoModelForCausalLM.from_pretrained(
-            base_model,
-            torch_dtype=(
-                torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
-            ),
-            trust_remote_code=True,
-        )
-        if os.path.isdir(policy_path):
-            self.policy = PeftModel.from_pretrained(self.policy, policy_path)
-        self.policy.to(self.device)
-        self.policy.eval()
+        # 构建 backend 配置，支持通过 config 切换后端
+        backend_cfg = {
+            "model_name": model_cfg.get("base_model", "Qwen/Qwen3-8B-Instruct"),
+            "device": device,
+            "dtype": model_cfg.get("dtype", "bf16"),
+        }
+
+        # 对于 vLLM 后端，如果 policy_path 指向包含模型权重的目录，则直接使用它
+        if backend_type == "vllm" and os.path.isdir(policy_path):
+            has_weights = any(
+                f.endswith((".safetensors", ".bin", ".pt"))
+                for f in os.listdir(policy_path)
+            )
+            if has_weights:
+                backend_cfg["model_name"] = policy_path
+                backend_cfg["tensor_parallel_size"] = model_cfg.get("tensor_parallel_size", 1)
+                backend_cfg["dtype"] = model_cfg.get("dtype", "bfloat16")
+
+        # 对于 GPT-4o 后端
+        if backend_type == "gpt4o":
+            backend_cfg["api_key"] = model_cfg.get("api_key")
+            backend_cfg["model"] = model_cfg.get("base_model", "gpt-4o")
+
+        self.backend = create_backend(backend_cfg)
+
+        # 获取 tokenizer（HF 后端直接使用内置的；其他后端单独加载）
+        if hasattr(self.backend, "tokenizer"):
+            self.tokenizer = self.backend.tokenizer
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_cfg.get("base_model", "Qwen/Qwen3-8B-Instruct"),
+                trust_remote_code=True,
+            )
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        # 对于 HF 后端，如果 policy_path 是 adapter 目录，则加载 LoRA adapter
+        if backend_type == "huggingface" and os.path.isdir(policy_path):
+            if os.path.exists(os.path.join(policy_path, "adapter_config.json")):
+                self.backend.load(policy_path)
 
         self.env = PlaywrightWebEnv(**config["environment"])
         self.grounding = GroundingValidator(**config["reward"]["grounding"])
@@ -135,22 +160,35 @@ class StepRLDemo:
         )
 
     async def _generate_action(self, prompt: str) -> Dict[str, Any]:
-        inputs = self.tokenizer(
-            prompt, return_tensors="pt", truncation=True, max_length=4096
-        )
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-        with torch.no_grad():
-            generated = self.policy.generate(
-                **inputs,
-                max_new_tokens=256,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=self.tokenizer.pad_token_id,
+        # 使用 backend 进行生成，根据不同后端类型处理
+        if isinstance(self.backend, HuggingFaceBackend):
+            inputs = self.tokenizer(
+                prompt, return_tensors="pt", truncation=True, max_length=4096
             )
-        response_ids = generated[0, inputs["input_ids"].shape[1] :]
-        response_text = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+            with torch.no_grad():
+                generated = self.backend.model.generate(
+                    **inputs,
+                    max_new_tokens=256,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                )
+            response_ids = generated[0, inputs["input_ids"].shape[1] :]
+            response_text = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+        else:
+            # vLLM 或 GPT-4o 后端，generate 返回纯文本
+            import inspect
+            kwargs = {"temperature": 0.7, "top_p": 0.9}
+            if isinstance(self.backend, VLLMBackend):
+                kwargs = {"temperature": 0.7, "top_p": 0.9}
+            if inspect.iscoroutinefunction(self.backend.generate):
+                responses = await self.backend.generate([prompt], **kwargs)
+            else:
+                responses = self.backend.generate([prompt], **kwargs)
+            response_text = responses[0]
 
         try:
             return json.loads(response_text)

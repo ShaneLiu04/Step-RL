@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 class ProgressOutput:
     progress: float = 0.0
     uncertainty: float = 0.0
+    subgoals: Optional[torch.Tensor] = None
     encoded: Optional[torch.Tensor] = None
 
 
@@ -90,11 +91,16 @@ class ProgressEstimator(nn.Module):
         uncertainty_method: str = "evidential",  # evidential, mc_dropout
         freeze_encoder: bool = True,
         device_map: str = "auto",
+        num_subgoals: int = 10,
+        tokenizer=None,
     ):
         super().__init__()
         self.use_uncertainty = use_uncertainty
         self.uncertainty_method = uncertainty_method
         self.freeze_encoder = freeze_encoder
+        self.encoder_name = encoder_name
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
 
         # Encoder
         self.encoder = AutoModel.from_pretrained(
@@ -148,6 +154,16 @@ class ProgressEstimator(nn.Module):
         self._step_count_embedding = nn.Embedding(100, 64)
         self._projector = nn.Linear(encoder_dim + 64, encoder_dim)
 
+        # Subgoal prediction head
+        self.num_subgoals = num_subgoals
+        self.subgoal_head = nn.Sequential(
+            nn.Linear(encoder_dim, 512), nn.ReLU(), nn.Dropout(0.1),
+            nn.Linear(512, num_subgoals), nn.Sigmoid()
+        )
+        self._subgoal_threshold = 0.5
+        self.tokenizer = tokenizer
+        self.multimodal_fusion = None  # Lazy init when vision_embedding is provided
+
         # Sync custom heads to the encoder's actual device.
         # When device_map="auto" is used, the encoder may land on GPU while
         # nn.Module sub-layers default to CPU. We detect the encoder device
@@ -168,6 +184,7 @@ class ProgressEstimator(nn.Module):
             self.progress_head = self.progress_head.to(encoder_device)
             self._step_count_embedding = self._step_count_embedding.to(encoder_device)
             self._projector = self._projector.to(encoder_device)
+            self.subgoal_head = self.subgoal_head.to(encoder_device)
             if self.use_uncertainty:
                 if self.uncertainty_method == "evidential":
                     self.uncertainty_head = self.uncertainty_head.to(encoder_device)
@@ -203,8 +220,20 @@ class ProgressEstimator(nn.Module):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         step_count: Optional[torch.Tensor] = None,
+        vision_embedding: Optional[torch.Tensor] = None,
     ) -> ProgressOutput:
         pooled = self.encode_observation(input_ids, attention_mask, step_count)
+
+        # Multimodal fusion if vision embedding is provided
+        if vision_embedding is not None:
+            if self.multimodal_fusion is None:
+                from step_rl.inference.multimodal_encoder import MultimodalObservationEncoder
+                self.multimodal_fusion = MultimodalObservationEncoder(
+                    text_dim=pooled.size(-1),
+                    vision_dim=vision_embedding.size(-1),
+                    fusion_dim=pooled.size(-1),
+                ).to(pooled.device)
+            pooled = self.multimodal_fusion(pooled, vision_embedding)
 
         if self.use_uncertainty:
             if self.uncertainty_method == "evidential":
@@ -225,9 +254,12 @@ class ProgressEstimator(nn.Module):
             progress = torch.sigmoid(self.progress_head(pooled).squeeze(-1))
             uncertainty = torch.zeros_like(progress)
 
+        subgoals = self.subgoal_head(pooled)
+
         return ProgressOutput(
             progress=progress,
             uncertainty=uncertainty,
+            subgoals=subgoals,
             encoded=pooled,
         )
 
@@ -257,6 +289,28 @@ class ProgressEstimator(nn.Module):
         mean = preds.mean(dim=-1)
         var = preds.var(dim=-1)
         return ProgressOutput(progress=mean, uncertainty=var)
+
+    def forward_text(self, observation_text: str, goal: str, step_count: int = 0, history: str = "", vision_embedding: Optional[torch.Tensor] = None) -> ProgressOutput:
+        """Convenience text-based inference (requires tokenizer)."""
+        if self.tokenizer is None:
+            raise ValueError("Tokenizer is required for forward_text. Pass tokenizer to __init__.")
+        text = f"Task: {goal}\n"
+        if history:
+            text += f"History: {history}\n"
+        text += f"Page: {observation_text}"
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+        device = next(self.encoder.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        step_t = torch.tensor([step_count], dtype=torch.long, device=device)
+        return self.forward(inputs["input_ids"], inputs["attention_mask"], step_t, vision_embedding=vision_embedding)
+
+    def predict_subgoal(self, observation_text: str, goal: str, step_count: int = 0) -> int:
+        out = self.forward_text(observation_text, goal, step_count)
+        subgoals = out.subgoals.squeeze()
+        for i in range(self.num_subgoals):
+            if subgoals[i] < self._subgoal_threshold:
+                return i
+        return self.num_subgoals - 1
 
 
 # -----------------------------

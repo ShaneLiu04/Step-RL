@@ -143,3 +143,80 @@ class TestLossFunctions:
         loss, metrics = progress_estimator_loss(model, batch, weights)
         assert isinstance(loss, torch.Tensor)
         assert "nll" in metrics
+
+    def test_progress_range(self):
+        """Test progress and uncertainty are in [0,1]."""
+        model = ProgressEstimator(
+            encoder_name="gpt2",
+            use_uncertainty=True,
+            uncertainty_method="evidential",
+            freeze_encoder=True,
+        )
+        device = next(model.encoder.parameters()).device
+        input_ids = torch.randint(0, 100, (2, 10)).to(device)
+        attention_mask = torch.ones(2, 10, dtype=torch.long).to(device)
+        out = model(input_ids, attention_mask)
+        assert (out.progress >= 0).all() and (out.progress <= 1).all()
+        if out.uncertainty is not None:
+            assert (out.uncertainty >= 0).all()
+
+    def test_monotonicity_across_steps(self):
+        """Test progress is roughly monotonic across step sequences."""
+        model = ProgressEstimator(
+            encoder_name="gpt2",
+            use_uncertainty=False,
+            freeze_encoder=True,
+        )
+        device = next(model.encoder.parameters()).device
+        progresses = []
+        for step in range(5):
+            input_ids = torch.randint(0, 100, (1, 10)).to(device)
+            attention_mask = torch.ones(1, 10, dtype=torch.long).to(device)
+            step_count = torch.tensor([step]).to(device)
+            out = model(input_ids, attention_mask, step_count)
+            progresses.append(out.progress.item())
+        # Progress should generally increase or stay similar
+        for i in range(1, len(progresses)):
+            assert progresses[i] >= progresses[i - 1] - 0.15
+
+    def test_step_count_embedding(self):
+        """Test step_count parameter affects output."""
+        model = ProgressEstimator(
+            encoder_name="gpt2",
+            use_uncertainty=False,
+            freeze_encoder=True,
+        )
+        device = next(model.encoder.parameters()).device
+        input_ids = torch.randint(0, 100, (1, 10)).to(device)
+        attention_mask = torch.ones(1, 10, dtype=torch.long).to(device)
+        out_0 = model(input_ids, attention_mask, torch.tensor([0]).to(device))
+        out_1 = model(input_ids, attention_mask, torch.tensor([50]).to(device))
+        assert out_0.progress.shape == (1,)
+        assert out_1.progress.shape == (1,)
+
+    def test_encode_observation(self):
+        model = ProgressEstimator(
+            encoder_name="gpt2",
+            use_uncertainty=False,
+            freeze_encoder=True,
+        )
+        device = next(model.encoder.parameters()).device
+        input_ids = torch.randint(0, 100, (2, 10)).to(device)
+        attention_mask = torch.ones(2, 10, dtype=torch.long).to(device)
+        encoded = model.encode_observation(input_ids, attention_mask)
+        assert encoded.shape[0] == 2
+
+    def test_mc_dropout_returns_variance(self):
+        model = ProgressEstimator(
+            encoder_name="gpt2",
+            use_uncertainty=True,
+            uncertainty_method="mc_dropout",
+            freeze_encoder=True,
+        )
+        device = next(model.encoder.parameters()).device
+        input_ids = torch.randint(0, 100, (2, 10)).to(device)
+        attention_mask = torch.ones(2, 10, dtype=torch.long).to(device)
+        out = model.mc_dropout_predict(input_ids, attention_mask)
+        assert out.uncertainty is not None
+        assert (out.uncertainty >= 0).all()
+

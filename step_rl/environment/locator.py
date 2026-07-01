@@ -174,3 +174,22 @@ async def _coordinate_fallback(
             "status": "error",
             "error": str(e),
         }
+
+
+def remove_dynamic_suffix(selector: str) -> Optional[str]:
+    """Remove dynamic suffix from selector (e.g., #buy-now-12345 -> #buy-now)."""
+    import re
+    # Match patterns like id-12345, btn_abc123, etc.
+    cleaned = re.sub(r'[-_][a-z0-9]{5,}$', '', selector)
+    if cleaned != selector:
+        return cleaned
+    return None
+
+
+async def find_similar_by_structure(page: Page, target_tag: str, target_text: str) -> Optional[Locator]:
+    """Find element with same tag and similar text."""
+    # Try fuzzy text match
+    loc = page.locator(f"{target_tag}:has-text('{target_text}')")
+    if await loc.count() > 0:
+        return loc.first
+    return None

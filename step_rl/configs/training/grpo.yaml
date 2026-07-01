@@ -1,0 +1,14 @@
+# @package _global_
+# GRPO training configuration (recommended for <=8GB VRAM)
+
+training:
+  algorithm: "grpo"
+  grpo:
+    group_size: 4
+    clip_range: 0.2
+    kl_coef: 0.1
+    policy_lr: 1e-5
+    gamma: 0.99
+    max_grad_norm: 1.0
+    num_epochs_per_update: 4
+    mini_batch_size: 2

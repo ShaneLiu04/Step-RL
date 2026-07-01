@@ -100,6 +100,8 @@ class ContinualLearner:
 
         self._episode_count = 0
         self._collected_since_retrain = 0
+        self._feedback_collector = FeedbackCollector(self.store)
+        self._llm_judge = LLMJudge()
 
     def process_episode(self, trajectory: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -135,6 +137,85 @@ class ContinualLearner:
             "auto_labeled": auto_labeled,
             "status": "approved" if auto_labeled else "pending",
         }
+
+    def process_episode_with_feedback(
+        self, trajectory: Dict[str, Any], human_feedback: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Process episode with optional human feedback."""
+        result = self.process_episode(trajectory)
+
+        if human_feedback:
+            self._feedback_collector.record(
+                traj_id=result["traj_id"], feedback=human_feedback
+            )
+
+        # LLM-as-Judge for unreviewed trajectories
+        if not result["auto_labeled"] and human_feedback is None:
+            quality_score = self._llm_judge.score(trajectory)
+            if quality_score > 0.8:
+                self.store.move(result["traj_id"], "pending", "approved")
+                result["llm_approved"] = True
+
+        return result
+
+    def incremental_train(self, min_samples: int = 100) -> Dict[str, Any]:
+        """Run incremental training when enough new samples are collected."""
+        approved = self.store.list_by_status("approved")
+        if len(approved) < min_samples:
+            return {"trained": False, "reason": f"Only {len(approved)} approved samples"}
+
+        # Load approved trajectories and fine-tune
+        data = []
+        for path in approved:
+            with open(path, "r", encoding="utf-8") as f:
+                traj = json.load(f)
+            for step in traj.get("steps", []):
+                if "progress_label" in step:
+                    data.append(
+                        {
+                            "text": step.get("observation", ""),
+                            "progress": step["progress_label"],
+                            "step_count": step.get("step_index", 0),
+                            "task_id": traj.get("task_id", "unknown"),
+                        }
+                    )
+
+        if len(data) < 10:
+            return {"trained": False, "reason": "Not enough labeled steps"}
+
+        dataset = ProgressDataset(data, self.tokenizer, max_length=2048)
+        loader = DataLoader(dataset, batch_size=8, shuffle=True, collate_fn=collate_fn)
+
+        optimizer = torch.optim.AdamW(
+            filter(lambda p: p.requires_grad, self.model.parameters()),
+            lr=1e-5,
+        )
+
+        from step_rl.reward.progress_estimator import progress_estimator_loss
+
+        self.model.train()
+        total_metrics: Dict[str, float] = {}
+        for epoch in range(3):
+            for batch in loader:
+                for k in list(batch.keys()):
+                    if isinstance(batch[k], torch.Tensor):
+                        batch[k] = batch[k].to(self.device)
+                optimizer.zero_grad()
+                loss, metrics = progress_estimator_loss(
+                    self.model, batch, {"mse": 1.0, "rank": 0.5, "mono": 0.3}
+                )
+                loss.backward()
+                optimizer.step()
+                for k, v in metrics.items():
+                    total_metrics.setdefault(k, 0.0)
+                    total_metrics[k] += v
+
+        for k in total_metrics:
+            total_metrics[k] /= max(len(loader) * 3, 1)
+
+        self.model.eval()
+        self._collected_since_retrain = 0
+        return {"trained": True, "samples_used": len(data), "metrics": total_metrics}
 
     def review_pending(
         self,
@@ -251,6 +332,52 @@ class ContinualLearner:
     def save_checkpoint(self, path: str) -> None:
         if self.model:
             torch.save({"model_state_dict": self.model.state_dict()}, path)
+
+
+class FeedbackCollector:
+    """Collect and manage human feedback."""
+
+    def __init__(self, store):
+        self.store = store
+        self.feedback_log = []
+
+    def record(self, traj_id: str, feedback: Dict[str, Any]):
+        self.feedback_log.append(
+            {
+                "traj_id": traj_id,
+                "rating": feedback.get("rating", 0),  # -1 to 1
+                "correction": feedback.get("correction", None),
+                "timestamp": feedback.get("timestamp"),
+            }
+        )
+
+    def get_positive_examples(self, min_rating: float = 0.5) -> List[str]:
+        return [
+            f["traj_id"]
+            for f in self.feedback_log
+            if f["rating"] >= min_rating
+        ]
+
+
+class LLMJudge:
+    """LLM-as-Judge for trajectory quality scoring."""
+
+    def __init__(self, model: str = "gpt-4o-mini"):
+        self.model = model
+
+    def score(self, trajectory: Dict[str, Any]) -> float:
+        """Score trajectory quality on a scale of 0-1."""
+        # In production, this would call an LLM API
+        # Simplified: use success rate and efficiency as proxy
+        success = trajectory.get("success", False)
+        steps = len(trajectory.get("steps", []))
+
+        if success and steps <= 10:
+            return 0.9
+        elif success:
+            return 0.7
+        else:
+            return 0.2
 
 
 def main():

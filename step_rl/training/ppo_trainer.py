@@ -30,6 +30,10 @@ from step_rl.training.base_trainer import (
     _load_config_and_components,
     logger,
 )
+from step_rl.training.gae_utils import adaptive_gae_lambda
+from step_rl.training.kl_controller import AdaptiveKLController
+from step_rl.training.trl_adapters import is_trl_available, StepRLPPOAdapter
+
 
 
 class ValueHead(nn.Module):
@@ -99,6 +103,22 @@ class PPOTrainer(BaseTrainer):
         self.policy_lr = ppo_cfg["policy_lr"]
         self.value_lr = ppo_cfg["value_lr"]
 
+        # Step-RL v2.1 extension flags
+        self.use_adaptive_gae = ppo_cfg.get("use_adaptive_gae", False)
+        self.use_trl_adapter = ppo_cfg.get("use_trl_adapter", False)
+
+        # Adaptive KL controller (replaces simple scalar heuristic when enabled)
+        if self.kl_adaptive:
+            kl_controller = AdaptiveKLController(
+                init_kl_coef=self.kl_coef,
+                target_kl=self.kl_target,
+            )
+            self.setup_kl_controller(kl_controller)
+            logger.info(
+                f"AdaptiveKLController enabled: init_kl={self.kl_coef}, "
+                f"target_kl={self.kl_target}"
+            )
+
         self.policy_optimizer = torch.optim.AdamW(
             self.policy.parameters(), lr=self.policy_lr, weight_decay=0.01
         )
@@ -131,11 +151,25 @@ class PPOTrainer(BaseTrainer):
     # -----------------------------
 
     def compute_gae(self, trajectory: Trajectory) -> Tuple[List[float], List[float]]:
-        """Compute GAE advantages and returns."""
+        """Compute GAE advantages and returns.
+
+        When ``use_adaptive_gae`` is enabled the GAE lambda is computed
+        dynamically based on training progress and average episode length.
+        """
         rewards = np.array(trajectory.rewards, dtype=np.float64)
         values = np.array(trajectory.values, dtype=np.float64)
         dones = np.array(trajectory.dones, dtype=np.float64)
         T = len(rewards)
+
+        # Adaptive lambda override
+        if self.use_adaptive_gae:
+            gae_lambda = adaptive_gae_lambda(
+                epoch=self.epoch,
+                total_epochs=self.config["curriculum"]["total_epochs"],
+                avg_episode_length=self._avg_episode_length,
+            )
+        else:
+            gae_lambda = self.gae_lambda
 
         advantages = np.zeros(T, dtype=np.float64)
         returns = np.zeros(T, dtype=np.float64)
@@ -150,7 +184,7 @@ class PPOTrainer(BaseTrainer):
                 next_non_terminal = 1.0 - dones[t]
 
             delta = rewards[t] + self.gamma * next_value * next_non_terminal - values[t]
-            gae = delta + self.gamma * self.gae_lambda * next_non_terminal * gae
+            gae = delta + self.gamma * gae_lambda * next_non_terminal * gae
             advantages[t] = gae
             returns[t] = gae + values[t]
 
@@ -312,13 +346,18 @@ class PPOTrainer(BaseTrainer):
         for k in metrics:
             metrics[k] /= max(num_updates, 1)
 
-        # Adaptive KL
-        if self.kl_adaptive:
+        # Adaptive KL — use AdaptiveKLController if mounted, else fall back to scalar heuristic
+        if self.kl_controller is not None:
+            updated_kl_coef = self.kl_controller.update(metrics["kl"])
+            self.kl_coef = updated_kl_coef
+            metrics["kl_coef"] = updated_kl_coef
+        elif self.kl_adaptive:
             if metrics["kl"] > self.kl_target * 2:
                 self.kl_coef *= 1.5
             elif metrics["kl"] < self.kl_target / 2:
                 self.kl_coef /= 1.5
             self.kl_coef = max(0.01, min(self.kl_coef, 1.0))
+            metrics["kl_coef"] = self.kl_coef
 
         return metrics
 
@@ -326,24 +365,24 @@ class PPOTrainer(BaseTrainer):
     # Checkpointing (extend base)
     # -----------------------------
 
-    def save_checkpoint(self, save_dir: str, epoch: int) -> None:
+    def save_checkpoint(self, save_dir: str, epoch: int) -> None:  # noqa: D401
         path = f"{save_dir}/checkpoint_epoch_{epoch}.pt"
-        torch.save(
-            {
-                "epoch": epoch,
-                "global_step": self.global_step,
-                "policy_state_dict": self.policy.state_dict(),
-                "value_state_dict": self.value_model.state_dict(),
-                "policy_optimizer": self.policy_optimizer.state_dict(),
-                "value_optimizer": self.value_optimizer.state_dict(),
-                "kl_coef": self.kl_coef,
-                "algorithm": "ppo",
-            },
-            path,
-        )
+        ckpt = {
+            "epoch": epoch,
+            "global_step": self.global_step,
+            "policy_state_dict": self.policy.state_dict(),
+            "value_state_dict": self.value_model.state_dict(),
+            "policy_optimizer": self.policy_optimizer.state_dict(),
+            "value_optimizer": self.value_optimizer.state_dict(),
+            "kl_coef": self.kl_coef,
+            "algorithm": "ppo",
+        }
+        if self.kl_controller is not None:
+            ckpt["kl_controller_state"] = self.kl_controller.state_dict()
+        torch.save(ckpt, path)
         logger.info(f"Checkpoint saved: {path}")
 
-    def load_checkpoint(self, path: str) -> None:
+    def load_checkpoint(self, path: str) -> None:  # noqa: D401
         ckpt = torch.load(path, map_location=self.device, weights_only=True)
         self.policy.load_state_dict(ckpt["policy_state_dict"])
         self.value_model.load_state_dict(ckpt["value_state_dict"])
@@ -352,6 +391,8 @@ class PPOTrainer(BaseTrainer):
         self.epoch = ckpt["epoch"]
         self.global_step = ckpt["global_step"]
         self.kl_coef = ckpt.get("kl_coef", self.kl_coef)
+        if self.kl_controller is not None and "kl_controller_state" in ckpt:
+            self.kl_controller.load_state_dict(ckpt["kl_controller_state"])
         logger.info(f"Checkpoint loaded: {path}")
 
 

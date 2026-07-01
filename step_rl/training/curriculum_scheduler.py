@@ -164,7 +164,7 @@ class CurriculumScheduler:
     # Promotion Logic
     # -----------------------------
 
-    def record_episode_result(self, level: int, success: bool) -> None:
+    def record_episode_result(self, level: int, success: bool, reward: float = 0.0) -> None:
         self._level_success_rates[level].append(1.0 if success else 0.0)
         # Keep sliding window of last 20
         self._level_success_rates[level] = self._level_success_rates[level][-20:]
@@ -203,3 +203,104 @@ class CurriculumScheduler:
             if rates:
                 stats[f"level_{lvl}_success"] = sum(rates) / len(rates)
         return stats
+
+
+class BanditCurriculumScheduler(CurriculumScheduler):
+    """UCB-based curriculum scheduler with exploration-exploitation."""
+
+    def __init__(
+        self,
+        total_epochs: int = 100,
+        levels: Optional[Dict[int, Dict[str, Any]]] = None,
+        promotion_threshold: float = 0.90,
+        seed: int = 42,
+        epsilon: float = 0.1,
+        use_bandit: bool = False,
+    ):
+        super().__init__(
+            total_epochs=total_epochs,
+            levels=levels,
+            promotion_threshold=promotion_threshold,
+            seed=seed,
+        )
+        self.use_bandit = use_bandit
+        self.epsilon = epsilon
+        self._level_rewards = {lvl: [] for lvl in self.levels}
+        self._level_counts = {lvl: 0 for lvl in self.levels}
+
+    def sample_task(self, epoch: Optional[int] = None) -> Optional[Task]:
+        if not self.use_bandit:
+            return super().sample_task(epoch)
+
+        epoch = epoch if epoch is not None else self._epoch
+
+        # ε-greedy
+        if random.random() < self.epsilon:
+            eligible = [t for t in self.tasks if t.level <= self._current_level + 1]
+            return random.choice(eligible) if eligible else None
+
+        # UCB1
+        best_level = None
+        best_ucb = -float("inf")
+        total_n = sum(self._level_counts.values()) + 1
+        for lvl in self.levels:
+            if lvl > self._current_level + 1:
+                continue
+            n = self._level_counts[lvl]
+            if n == 0:
+                return self._sample_from_level(lvl)
+            avg_reward = np.mean(self._level_rewards[lvl]) if self._level_rewards[lvl] else 0.0
+            ucb = avg_reward + np.sqrt(2 * np.log(total_n) / n)
+            if ucb > best_ucb:
+                best_ucb = ucb
+                best_level = lvl
+        return self._sample_from_level(best_level) if best_level else None
+
+    def record_episode_result(self, level: int, success: bool, reward: float = 0.0):
+        super().record_episode_result(level, success, reward=reward)
+        self._level_counts[level] += 1
+        self._level_rewards[level].append(reward if reward else (1.0 if success else 0.0))
+
+    def _sample_from_level(self, level: int) -> Optional[Task]:
+        eligible = [t for t in self.tasks if t.level == level]
+        return random.choice(eligible) if eligible else None
+
+
+class BanditTaskSelector:
+    """UCB-based task selection for exploration-exploitation in curriculum.
+    
+    Uses Upper Confidence Bound (UCB1) algorithm to select tasks based on
+    historical success rates, balancing exploration and exploitation.
+    """
+
+    def __init__(self, num_arms: int = 4, seed: int = 42):
+        self.rng = np.random.RandomState(seed)
+        self.num_arms = num_arms
+        self.counts = np.zeros(num_arms, dtype=np.float64)
+        self.values = np.zeros(num_arms, dtype=np.float64)
+        self.total_pulls = 0
+
+    def select(self) -> int:
+        """Select an arm using UCB1 algorithm."""
+        self.total_pulls += 1
+        # Explore un-pulled arms first
+        for i in range(self.num_arms):
+            if self.counts[i] == 0:
+                return i
+        # UCB formula: value + sqrt(2 * ln(total) / count)
+        ucb = self.values + np.sqrt(2 * np.log(self.total_pulls) / self.counts)
+        return int(np.argmax(ucb))
+
+    def update(self, arm: int, reward: float) -> None:
+        """Update arm statistics with observed reward."""
+        self.counts[arm] += 1
+        n = self.counts[arm]
+        self.values[arm] = ((n - 1) / n) * self.values[arm] + (1 / n) * reward
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Return current arm statistics."""
+        return {
+            "counts": self.counts.tolist(),
+            "values": self.values.tolist(),
+            "total_pulls": self.total_pulls,
+        }

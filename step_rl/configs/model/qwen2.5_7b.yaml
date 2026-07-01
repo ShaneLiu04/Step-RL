@@ -1,0 +1,7 @@
+# @package _global_
+# Qwen2.5-7B model configuration
+
+model:
+  base_model: "Qwen/Qwen2.5-7B-Instruct"
+  dtype: "bf16"
+  use_4bit: true

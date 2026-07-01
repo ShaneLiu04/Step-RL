@@ -1,0 +1,16 @@
+# @package _global_
+# Offline training / SFT-only configuration
+
+training:
+  algorithm: "offline"
+  sft:
+    data_path: "./data/sft"
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 4
+    num_train_epochs: 5
+    learning_rate: 2.0e-4
+    max_seq_length: 4096
+    warmup_ratio: 0.03
+    logging_steps: 10
+    save_steps: 500
+    gradient_checkpointing: true

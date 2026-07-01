@@ -5,7 +5,7 @@ Tests: task sampling, reward weight scheduling, promotion logic.
 
 import unittest
 
-from step_rl.training.curriculum_scheduler import CurriculumScheduler, Task
+from step_rl.training.curriculum_scheduler import BanditTaskSelector, CurriculumScheduler, Task
 
 
 class TestCurriculumScheduler(unittest.TestCase):
@@ -63,6 +63,65 @@ class TestCurriculumScheduler(unittest.TestCase):
         self.scheduler.record_episode_result(1, success=True)
         stats = self.scheduler.get_stats()
         self.assertIn("level_1_success", stats)
+
+
+class TestBanditTaskSelector(unittest.TestCase):
+    def setUp(self):
+        self.selector = BanditTaskSelector(num_arms=4, seed=42)
+
+    def test_initial_select(self):
+        arm = self.selector.select()
+        self.assertEqual(arm, 0)  # first un-pulled arm
+
+    def test_exploration_all_arms(self):
+        arms = []
+        for _ in range(4):
+            arm = self.selector.select()
+            arms.append(arm)
+            self.selector.update(arm, 1.0)
+        self.assertEqual(len(set(arms)), 4)  # all arms explored
+
+    def test_ucb_exploitation(self):
+        # Update arm 0 with high reward, arm 1 with low reward
+        self.selector.select()
+        self.selector.update(0, 1.0)
+        self.selector.select()
+        self.selector.update(1, 0.0)
+        # After many pulls, should favor arm 0
+        for _ in range(20):
+            arm = self.selector.select()
+            self.selector.update(arm, 1.0 if arm == 0 else 0.0)
+        self.assertEqual(self.selector.values[0], 1.0)
+
+    def test_ucb_exploration(self):
+        # Update arm 0 with high reward, leave arm 2 un-pulled
+        for _ in range(10):
+            self.selector.select()
+            self.selector.update(0, 1.0)
+        # After some time, UCB should explore an un-pulled arm first
+        arm = self.selector.select()
+        self.assertIn(arm, [1, 2, 3])  # un-pulled arms get priority
+
+    def test_stats(self):
+        self.selector.select()
+        self.selector.update(0, 1.0)
+        stats = self.selector.get_stats()
+        self.assertEqual(stats["total_pulls"], 1)
+        self.assertEqual(stats["counts"], [1.0, 0.0, 0.0, 0.0])
+        self.assertEqual(stats["values"], [1.0, 0.0, 0.0, 0.0])
+
+    def test_update_decreases_value(self):
+        self.selector.select()
+        self.selector.update(0, 1.0)
+        self.selector.select()
+        self.selector.update(0, 0.0)
+        self.assertEqual(self.selector.values[0], 0.5)
+
+    def test_multiple_updates(self):
+        for _ in range(10):
+            arm = self.selector.select()
+            self.selector.update(arm, 0.5)
+        self.assertEqual(self.selector.total_pulls, 10)
 
 
 if __name__ == "__main__":

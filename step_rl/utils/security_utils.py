@@ -68,3 +68,81 @@ def validate_url(url: str, blocked_domains: set, allowed_domains: set) -> bool:
         return False  # allowed_domains specified but no match
 
     return True
+
+
+# ---------------------------------------------------------------------------
+# Additional security hardening utilities
+# ---------------------------------------------------------------------------
+
+
+def set_resource_limits(max_cpu_seconds: int = 300, max_memory_gb: float = 8.0):
+    """Set process resource limits (CPU & memory)."""
+    try:
+        import resource
+
+        resource.setrlimit(
+            resource.RLIMIT_CPU, (max_cpu_seconds, max_cpu_seconds)
+        )
+        max_mem_bytes = int(max_memory_gb * 1024 * 1024 * 1024)
+        resource.setrlimit(resource.RLIMIT_AS, (max_mem_bytes, max_mem_bytes))
+    except (ValueError, OSError, ImportError):
+        pass  # May not be available on all platforms (e.g. Windows)
+
+
+def validate_action_json(action_json: str) -> bool:
+    """Validate action JSON format and content."""
+    import json
+
+    try:
+        data = json.loads(action_json)
+        if "action" not in data:
+            return False
+        allowed_actions = {"click", "type", "scroll", "goto", "wait", "finish"}
+        if data["action"] not in allowed_actions:
+            return False
+        if "params" in data and not isinstance(data["params"], dict):
+            return False
+        return True
+    except json.JSONDecodeError:
+        return False
+
+
+def validate_url_strict(
+    url: str, blocked_domains: set, allowed_domains: set
+) -> bool:
+    """Strict URL validation with additional checks."""
+    if not validate_url(url, blocked_domains, allowed_domains):
+        return False
+
+    # Block data URLs
+    if url.startswith("data:"):
+        return False
+
+    # Block javascript URLs
+    if url.startswith("javascript:"):
+        return False
+
+    # Block extremely long URLs (potential buffer overflow)
+    if len(url) > 2048:
+        return False
+
+    return True
+
+
+def validate_selector(selector: str) -> bool:
+    """Validate CSS/XPath selector to prevent injection."""
+    import re
+
+    # Block dangerous patterns
+    dangerous_patterns = [
+        r"<script",
+        r"javascript:",
+        r"on\w+=",  # Event handlers
+        r"url\s*\(",
+        r"expression\s*\(",  # CSS expressions
+    ]
+    for pattern in dangerous_patterns:
+        if re.search(pattern, selector, re.IGNORECASE):
+            return False
+    return True
+

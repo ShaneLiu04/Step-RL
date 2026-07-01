@@ -138,6 +138,12 @@ def main():
     parser.add_argument("--gradient_accumulation_steps", type=int, default=4)
     parser.add_argument("--learning_rate", type=float, default=2e-4)
     parser.add_argument("--use_4bit", action="store_true", default=False)
+    parser.add_argument(
+        "--merge_lora",
+        action="store_true",
+        default=False,
+        help="Merge LoRA adapter into base model and save merged checkpoint",
+    )
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -304,6 +310,20 @@ def main():
     model.save_pretrained(os.path.join(args.output_dir, "sft_adapter"))
     tokenizer.save_pretrained(os.path.join(args.output_dir, "sft_adapter"))
     logger.info(f"SFT adapter saved to {os.path.join(args.output_dir, 'sft_adapter')}")
+
+    # Optionally merge LoRA weights into base model
+    if args.merge_lora:
+        from step_rl.inference.lora_utils import merge_lora_weights
+
+        merged_path = os.path.join(args.output_dir, "merged_model")
+        logger.info("Merging LoRA adapter into base model...")
+        merge_lora_weights(
+            base_model_path=args.base_model,
+            adapter_path=os.path.join(args.output_dir, "sft_adapter"),
+            output_path=merged_path,
+        )
+        tokenizer.save_pretrained(merged_path)
+        logger.info(f"Merged model saved to {merged_path}")
 
 
 if __name__ == "__main__":

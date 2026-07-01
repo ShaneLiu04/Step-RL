@@ -14,7 +14,7 @@ import random
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Deque, Dict, List, Optional, Tuple
+from typing import Any, Deque, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -27,7 +27,9 @@ from step_rl.environment.grounding_validator import GroundingValidator
 from step_rl.environment.playwright_env import Action, Observation, PlaywrightWebEnv
 from step_rl.memory.state_memory import StateMemory
 from step_rl.reward.progress_estimator import ProgressEstimator
-from step_rl.training.curriculum_scheduler import CurriculumScheduler, Task
+from step_rl.reward.subgoal_reward import compute_subgoal_reward
+from step_rl.training.curriculum_scheduler import BanditCurriculumScheduler, CurriculumScheduler, Task
+from step_rl.training.per_buffer import PrioritizedReplayBuffer
 from step_rl.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -91,8 +93,29 @@ class BaseTrainer(ABC):
 
         # Replay buffer
         rb_cfg = config["training"]["replay_buffer"]
-        self.replay_buffer: Deque[Trajectory] = deque(maxlen=rb_cfg["capacity"])
+        if rb_cfg.get("use_prioritized", True):
+            self.replay_buffer: Union[Deque[Trajectory], PrioritizedReplayBuffer] = (
+                PrioritizedReplayBuffer(
+                    capacity=rb_cfg["capacity"],
+                    alpha=rb_cfg.get("alpha_prioritized", 0.6),
+                    beta=rb_cfg.get("beta_prioritized", 0.4),
+                )
+            )
+        else:
+            self.replay_buffer: Deque[Trajectory] = deque(maxlen=rb_cfg["capacity"])
         self.replay_ratio = rb_cfg.get("history_ratio", 0.25)
+
+        # Cache last PER sampling metadata for priority updates in subclasses
+        self._last_replay_indices: Optional[np.ndarray] = None
+        self._last_replay_weights: Optional[np.ndarray] = None
+
+        # --- Step-RL v2.1 extension hooks (预留接口) ---
+        self.kl_controller: Optional[Any] = None
+        self.use_adaptive_gae: bool = False
+        self.per_enabled: bool = rb_cfg.get("enabled", True)
+        self.per_alpha: float = rb_cfg.get("alpha_prioritized", 0.6)
+        self.per_beta: float = rb_cfg.get("beta_prioritized", 0.4)
+        self._avg_episode_length: float = 0.0
 
     # -----------------------------
     # Rollout
@@ -106,7 +129,7 @@ class BaseTrainer(ABC):
                 continue
             traj = await self._run_episode(task)
             trajectories.append(traj)
-            self.curriculum.record_episode_result(task.level, traj.success)
+            self.curriculum.record_episode_result(task.level, traj.success, reward=traj.total_return)
         return trajectories
 
     async def _run_episode(self, task: Task) -> Trajectory:
@@ -114,6 +137,7 @@ class BaseTrainer(ABC):
         self.state_memory.reset()
 
         prev_progress = 0.0
+        previous_subgoal_idx = 0
         trajectory = Trajectory()
 
         for step in range(self.max_steps):
@@ -143,11 +167,20 @@ class BaseTrainer(ABC):
 
             r_progress = 0.0
             uncertainty = 0.0
+            current_subgoal_idx = 0
             if self.progress_estimator is not None:
                 r_progress, uncertainty = self._compute_progress_reward(
                     obs, task.goal, step, prev_progress
                 )
                 prev_progress += r_progress
+                if hasattr(self.progress_estimator, "predict_subgoal"):
+                    text = f"Task: {task.goal}\nPage: {obs.url}\n{obs.text[:1500]}"
+                    current_subgoal_idx = self.progress_estimator.predict_subgoal(text, task.goal, step)
+
+            r_subgoal = compute_subgoal_reward(
+                task, trajectory.actions, current_subgoal_idx, previous_subgoal_idx, r_progress
+            )
+            previous_subgoal_idx = current_subgoal_idx
 
             r_sparse = self.config["reward"]["sparse"]["step_penalty"]
             done = False
@@ -167,14 +200,8 @@ class BaseTrainer(ABC):
                     "bonus_per_saved_step", 0.01
                 )
 
-            weights = self.curriculum.get_reward_weights(self.epoch)
-            r_total = (
-                weights["alpha"] * r_progress * (1.0 - uncertainty)
-                + weights["beta"] * r_grounding
-                + weights["gamma"] * r_sparse
-                + weights["delta"] * r_efficiency
-                + weights["epsilon"] * r_novelty
-                + weights["zeta"] * r_loop
+            r_total, reward_info = self._compute_total_reward(
+                r_progress, uncertainty, r_grounding, r_loop, r_novelty, r_sparse, r_efficiency, r_subgoal, step
             )
 
             trajectory.observations.append(prompt_text)
@@ -192,7 +219,10 @@ class BaseTrainer(ABC):
                     "novelty": r_novelty,
                     "sparse": r_sparse,
                     "uncertainty": uncertainty,
+                    "subgoal": r_subgoal,
+                    "subgoal_idx": current_subgoal_idx,
                     "message": msg,
+                    **reward_info,
                 }
             )
 
@@ -313,22 +343,140 @@ class BaseTrainer(ABC):
         delta = progress - prev_progress
         return max(0.0, delta), uncertainty
 
+    def _compute_total_reward(self, r_progress, uncertainty, r_grounding, r_loop, r_novelty, r_sparse, r_eff, r_subgoal, step):
+        """Compose total reward with uncertainty clipping and subgoal bonus."""
+        # 不确定性裁剪
+        if uncertainty > 0.7:
+            weights = self.curriculum.get_reward_weights(self.epoch)
+            weights = {k: v for k, v in weights.items()}  # shallow copy
+            weights["alpha"] = weights["alpha"] * 0.1  # 大幅降低进度奖励权重
+            info = {"high_uncertainty": True, "skipped_update": True}
+        else:
+            weights = self.curriculum.get_reward_weights(self.epoch)
+            weights = {k: v for k, v in weights.items()}  # shallow copy
+            info = {}
+
+        total = (
+            weights["alpha"] * r_progress
+            + weights["beta"] * r_grounding
+            + weights["gamma"] * r_sparse
+            + weights["delta"] * r_eff
+            + weights["epsilon"] * r_novelty
+            + weights["zeta"] * r_loop
+        )
+
+        # Add subgoal completion bonus directly
+        total += r_subgoal
+
+        return total, info
+
     # -----------------------------
     # Replay Buffer
     # -----------------------------
 
     def store_trajectories(self, trajectories: List[Trajectory]) -> None:
-        for traj in trajectories:
-            self.replay_buffer.append(traj)
+        """Store trajectories into the replay buffer.
+
+        For :class:`PrioritizedReplayBuffer`, uses ``|total_return - batch_mean|``
+        as the initial priority.  For uniform deque, appends directly.
+        """
+        if isinstance(self.replay_buffer, PrioritizedReplayBuffer):
+            baseline: float = (
+                np.mean([t.total_return for t in trajectories])
+                if trajectories
+                else 0.0
+            )
+            for traj in trajectories:
+                priority: float = abs(traj.total_return - baseline)
+                self.replay_buffer.add(traj, priority=priority)
+        else:
+            for traj in trajectories:
+                self.replay_buffer.append(traj)
 
     def sample_replay_trajectories(self, n: int) -> List[Trajectory]:
+        """Sample *n* trajectories from the replay buffer.
+
+        For :class:`PrioritizedReplayBuffer`, the returned indices and IS
+        weights are cached as ``self._last_replay_indices`` and
+        ``self._last_replay_weights`` so that subclasses can call
+        ``update_priorities`` after training.
+
+        Args:
+            n: Number of trajectories to sample.
+
+        Returns:
+            List of sampled trajectories (empty if buffer is empty).
+        """
         if len(self.replay_buffer) == 0:
             return []
+        if isinstance(self.replay_buffer, PrioritizedReplayBuffer):
+            batch_size: int = min(n, len(self.replay_buffer))
+            trajectories, indices, weights = self.replay_buffer.sample(batch_size)
+            self._last_replay_indices = indices
+            self._last_replay_weights = weights
+            return trajectories
         return random.sample(list(self.replay_buffer), min(n, len(self.replay_buffer)))
 
-    # -----------------------------
-    # Training Loop
-    # -----------------------------
+    def setup_kl_controller(self, kl_controller: Optional[Any] = None) -> None:
+        """预留接口：挂载自适应 KL 控制器.
+
+        Parameters
+        ----------
+        kl_controller :
+            ``AdaptiveKLController`` 实例或 ``None`` 以卸载。
+        """
+        self.kl_controller = kl_controller
+        logger.info(
+            f"KL controller {'attached' if kl_controller else 'detached'}"
+        )
+
+    def setup_per(
+        self,
+        enabled: Optional[bool] = None,
+        alpha: Optional[float] = None,
+        beta: Optional[float] = None,
+    ) -> None:
+        """预留接口：配置优先经验回放 (PER).
+
+        Parameters
+        ----------
+        enabled :
+            是否启用 PER。
+        alpha :
+            优先级采样指数 (0 = 均匀, 1 = 完全优先)。
+        beta :
+            重要性采样权重指数。
+        """
+        if enabled is not None:
+            self.per_enabled = enabled
+        if alpha is not None:
+            self.per_alpha = alpha
+        if beta is not None:
+            self.per_beta = beta
+        logger.info(
+            f"PER config: enabled={self.per_enabled}, "
+            f"alpha={self.per_alpha}, beta={self.per_beta}"
+        )
+
+    def sample_prioritized_trajectories(self, n: int) -> List[Trajectory]:
+        """预留接口：基于优先级的经验回放采样.
+
+        当前实现委托给 :meth:`sample_replay_trajectories`，后者在
+        ``use_prioritized`` 启用时会执行真正的优先级采样与
+        重要性采样权重计算。
+
+        Parameters
+        ----------
+        n :
+            采样轨迹数量。
+
+        Returns
+        -------
+        List[Trajectory]
+            采样得到的轨迹列表。
+        """
+        return self.sample_replay_trajectories(n)
+
 
     async def train(self, total_epochs: int, save_dir: str = "./checkpoints") -> None:
         os.makedirs(save_dir, exist_ok=True)
@@ -348,6 +496,7 @@ class BaseTrainer(ABC):
                 np.mean([t.total_return for t in trajectories]) if trajectories else 0
             )
             avg_len = np.mean([t.length for t in trajectories]) if trajectories else 0
+            self._avg_episode_length = float(avg_len)
             success_rate = (
                 np.mean([t.success for t in trajectories]) if trajectories else 0
             )
@@ -480,7 +629,10 @@ def _load_config_and_components(args: argparse.Namespace, algorithm: str):
     env = PlaywrightWebEnv(**config["environment"])
     grounding = GroundingValidator(**config["reward"]["grounding"])
     state_memory = StateMemory(**config["reward"]["state_memory"])
-    curriculum = CurriculumScheduler(**config["curriculum"])
+    if config["curriculum"].get("use_bandit", False):
+        curriculum = BanditCurriculumScheduler(**config["curriculum"])
+    else:
+        curriculum = CurriculumScheduler(**config["curriculum"])
 
     base_model_name = config["model"]["base_model"]
     tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
@@ -517,6 +669,7 @@ def _load_config_and_components(args: argparse.Namespace, algorithm: str):
     if args.progress_model:
         progress_estimator = ProgressEstimator(
             encoder_name=base_model_name,
+            tokenizer=tokenizer,
             **config["reward"]["progress_estimator"],
         )
         ckpt = torch.load(args.progress_model, map_location=device, weights_only=True)

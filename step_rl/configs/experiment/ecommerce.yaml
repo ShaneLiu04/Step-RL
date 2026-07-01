@@ -1,0 +1,13 @@
+# @package _global_
+# E-commerce domain experiment
+
+project:
+  name: "step-rl-ecommerce"
+
+environment:
+  allowed_domains: []
+  blocked_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "0.0.0.0"
+    - "file://"

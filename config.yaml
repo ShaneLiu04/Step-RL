@@ -45,6 +45,9 @@ environment:
   timeout_ms: 30000
   action_timeout_ms: 5000
   max_obs_tokens: 2048
+  # Screenshot capture for multimodal observation
+  enable_screenshot: false
+  screenshot_interval: 1  # capture every N steps (0 = disabled)
   # Action space
   actions:
     - "click"
@@ -68,6 +71,8 @@ environment:
 curriculum:
   enabled: true
   total_epochs: 100
+  use_bandit: false
+  epsilon: 0.1
   levels:
     1: { name: "single_page", min_steps: 2, max_steps: 3 }
     2: { name: "cross_page", min_steps: 4, max_steps: 7 }
@@ -102,6 +107,7 @@ reward:
     hidden_dim: 512
     num_layers: 3
     dropout: 0.1
+    num_subgoals: 10
     use_uncertainty: true
     uncertainty_method: "evidential"  # evidential, mc_dropout
     loss_weights:

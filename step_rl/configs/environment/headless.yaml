@@ -1,0 +1,6 @@
+# @package _global_
+# Headless browser environment (default for training)
+
+environment:
+  headless: true
+  sandbox_mode: true

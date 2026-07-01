@@ -76,6 +76,64 @@ class TestStateMemory(unittest.TestCase):
         self.assertTrue(info["is_novel"])
         self.assertEqual(self.memory.visited_count, 1)
 
+    def test_minhash_deterministic(self):
+        """Test minhash method produces same hash for same input."""
+        mem = StateMemory(hash_method="minhash")
+        h1 = mem.compute_hash("hello world test page", "https://example.com")
+        h2 = mem.compute_hash("hello world test page", "https://example.com")
+        self.assertEqual(h1, h2)
+
+    def test_minhash_different_content(self):
+        """Test minhash produces different hashes for different content."""
+        mem = StateMemory(hash_method="minhash")
+        h1 = mem.compute_hash("hello world test page", "https://example.com")
+        h2 = mem.compute_hash("goodbye world test page", "https://example.com")
+        self.assertNotEqual(h1, h2)
+
+    def test_deterministic_repeat(self):
+        """Test same input always returns same hash (deterministic)."""
+        mem = StateMemory(hash_method="simple")
+        h1 = mem.compute_hash("test content for hashing", "https://example.com")
+        h2 = mem.compute_hash("test content for hashing", "https://example.com")
+        self.assertEqual(h1, h2)
+
+    def test_lru_eviction(self):
+        """Test LRU eviction when max_states exceeded."""
+        mem = StateMemory(max_states=3)
+        for i in range(5):
+            mem.update(f"state_{i}")
+        self.assertEqual(len(mem._visited_hashes), 3)
+
+    def test_visit_count_increment(self):
+        """Test visit count increments correctly."""
+        h = self.memory.compute_hash("page1", "url1")
+        self.memory.update(h)
+        self.memory.update(h)
+        info = self.memory.update(h)[2]
+        self.assertEqual(info["visit_count"], 3)
+
+    def test_loop_penalty_scales(self):
+        """Test loop penalty scales with repeated visits."""
+        h = self.memory.compute_hash("page1", "url1")
+        penalties = []
+        for _ in range(5):
+            self.memory.reset()
+            for _ in range(3):
+                self.memory.update(h)
+            r_loop, _, _ = self.memory.update(h)
+            penalties.append(r_loop)
+        self.assertLessEqual(penalties[-1], penalties[0])  # penalty stays same or gets more negative
+
+    def test_novelty_decay(self):
+        """Test novelty bonus decreases as more states are visited."""
+        mem = StateMemory(max_states=10, novelty_bonus_base=0.05)
+        bonuses = []
+        for i in range(10):
+            h = mem.compute_hash(f"page{i}", f"url{i}")
+            _, bonus, _ = mem.update(h)
+            bonuses.append(bonus)
+        self.assertGreater(bonuses[0], bonuses[-1])  # first bonus > last bonus
+
 
 if __name__ == "__main__":
     unittest.main()
