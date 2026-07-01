@@ -1,6 +1,6 @@
 """Distributed training configuration for DeepSpeed and FSDP."""
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 import torch
 

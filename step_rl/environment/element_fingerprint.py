@@ -1,10 +1,10 @@
 """Element fingerprint database for robust selector learning."""
 
-import json
 import hashlib
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+import json
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class ElementFingerprintDB:

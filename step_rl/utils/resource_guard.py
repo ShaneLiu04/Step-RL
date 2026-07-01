@@ -2,8 +2,8 @@
 
 import asyncio
 import signal
-from typing import Any, Callable
 from functools import wraps
+from typing import Any, Callable
 
 
 def timeout(seconds: int):

@@ -1,8 +1,9 @@
 """Hierarchical state memory: episodic + semantic + abstraction layers."""
 
-from collections import deque, defaultdict
-from typing import Dict, List, Tuple, Any, Optional
 import hashlib
+from collections import defaultdict, deque
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 

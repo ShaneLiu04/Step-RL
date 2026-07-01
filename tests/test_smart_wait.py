@@ -1,7 +1,8 @@
 """Unit tests for smart wait."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
+
+import pytest
 
 from step_rl.environment.smart_wait import smart_wait
 

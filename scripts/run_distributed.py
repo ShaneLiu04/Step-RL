@@ -125,10 +125,7 @@ def run_fsdp(rank: int, world_size: int, config_path: str, algorithm: str) -> No
             _load_config_and_components,
         )
     else:
-        from step_rl.training.ppo_trainer import (
-            PPOTrainer,
-            _load_config_and_components,
-        )
+        from step_rl.training.ppo_trainer import PPOTrainer, _load_config_and_components
 
     (
         config,

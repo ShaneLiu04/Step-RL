@@ -4,8 +4,8 @@ Multi-backend model abstraction supporting HuggingFace, vLLM, and GPT-4o (API).
 """
 
 from step_rl.inference.model_backend import (
-    PolicyModelBackend,
     HuggingFaceBackend,
+    PolicyModelBackend,
     create_backend,
 )
 

@@ -16,9 +16,9 @@ import torch
 import yaml
 from transformers import AutoTokenizer
 
-from step_rl.inference import create_backend, HuggingFaceBackend, VLLMBackend
 from step_rl.environment.grounding_validator import GroundingValidator
 from step_rl.environment.playwright_env import Action, Observation, PlaywrightWebEnv
+from step_rl.inference import HuggingFaceBackend, VLLMBackend, create_backend
 
 
 class StepRLDemo:

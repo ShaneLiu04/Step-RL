@@ -15,7 +15,7 @@ from typing import Any, Callable, Dict, List, Optional
 import torch
 
 try:
-    from trl import PPOTrainer, PPOConfig, GRPOTrainer, GRPOConfig
+    from trl import GRPOConfig, GRPOTrainer, PPOConfig, PPOTrainer
 
     _TRL_AVAILABLE = True
 except ImportError:  # pragma: no cover
