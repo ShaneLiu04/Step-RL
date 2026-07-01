@@ -219,4 +219,3 @@ class TestLossFunctions:
         out = model.mc_dropout_predict(input_ids, attention_mask)
         assert out.uncertainty is not None
         assert (out.uncertainty >= 0).all()
-

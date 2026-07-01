@@ -35,7 +35,6 @@ from step_rl.training.kl_controller import AdaptiveKLController
 from step_rl.training.trl_adapters import is_trl_available, StepRLPPOAdapter
 
 
-
 class ValueHead(nn.Module):
     """Value head on top of LLM last-token hidden states."""
 

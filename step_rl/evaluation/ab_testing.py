@@ -1,4 +1,5 @@
 """A/B testing framework for policy variants."""
+
 import hashlib
 import random
 from typing import Dict, List, Any
@@ -18,9 +19,13 @@ class VariantResult:
 class ABTestFramework:
     """Route traffic to different policy variants and compare."""
 
-    def __init__(self, variants: Dict[str, Any], traffic_split: Dict[str, float] = None):
+    def __init__(
+        self, variants: Dict[str, Any], traffic_split: Dict[str, float] = None
+    ):
         self.variants = variants
-        self.traffic_split = traffic_split or {name: 1.0 / len(variants) for name in variants}
+        self.traffic_split = traffic_split or {
+            name: 1.0 / len(variants) for name in variants
+        }
         self.results = {name: VariantResult(name) for name in variants}
 
     def select_variant(self, user_id: str) -> str:
@@ -33,7 +38,9 @@ class ABTestFramework:
                 return name
         return list(self.variants.keys())[-1]
 
-    def record_result(self, variant: str, success: bool, episode_return: float, steps: int):
+    def record_result(
+        self, variant: str, success: bool, episode_return: float, steps: int
+    ):
         result = self.results[variant]
         result.episodes += 1
         if success:
@@ -52,7 +59,9 @@ class ABTestFramework:
             }
         return stats
 
-    def is_significant(self, variant_a: str, variant_b: str, min_episodes: int = 100) -> bool:
+    def is_significant(
+        self, variant_a: str, variant_b: str, min_episodes: int = 100
+    ) -> bool:
         """Check if difference is statistically significant."""
         a = self.results[variant_a]
         b = self.results[variant_b]
@@ -63,6 +72,6 @@ class ABTestFramework:
         p_a = a.successes / a.episodes
         p_b = b.successes / b.episodes
         p_pool = (a.successes + b.successes) / (a.episodes + b.episodes)
-        se = (p_pool * (1 - p_pool) * (1/a.episodes + 1/b.episodes)) ** 0.5
+        se = (p_pool * (1 - p_pool) * (1 / a.episodes + 1 / b.episodes)) ** 0.5
         z = (p_a - p_b) / max(se, 1e-10)
         return abs(z) > 1.96  # 95% confidence

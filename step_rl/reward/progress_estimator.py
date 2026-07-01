@@ -157,8 +157,11 @@ class ProgressEstimator(nn.Module):
         # Subgoal prediction head
         self.num_subgoals = num_subgoals
         self.subgoal_head = nn.Sequential(
-            nn.Linear(encoder_dim, 512), nn.ReLU(), nn.Dropout(0.1),
-            nn.Linear(512, num_subgoals), nn.Sigmoid()
+            nn.Linear(encoder_dim, 512),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(512, num_subgoals),
+            nn.Sigmoid(),
         )
         self._subgoal_threshold = 0.5
         self.tokenizer = tokenizer
@@ -227,7 +230,10 @@ class ProgressEstimator(nn.Module):
         # Multimodal fusion if vision embedding is provided
         if vision_embedding is not None:
             if self.multimodal_fusion is None:
-                from step_rl.inference.multimodal_encoder import MultimodalObservationEncoder
+                from step_rl.inference.multimodal_encoder import (
+                    MultimodalObservationEncoder,
+                )
+
                 self.multimodal_fusion = MultimodalObservationEncoder(
                     text_dim=pooled.size(-1),
                     vision_dim=vision_embedding.size(-1),
@@ -290,21 +296,39 @@ class ProgressEstimator(nn.Module):
         var = preds.var(dim=-1)
         return ProgressOutput(progress=mean, uncertainty=var)
 
-    def forward_text(self, observation_text: str, goal: str, step_count: int = 0, history: str = "", vision_embedding: Optional[torch.Tensor] = None) -> ProgressOutput:
+    def forward_text(
+        self,
+        observation_text: str,
+        goal: str,
+        step_count: int = 0,
+        history: str = "",
+        vision_embedding: Optional[torch.Tensor] = None,
+    ) -> ProgressOutput:
         """Convenience text-based inference (requires tokenizer)."""
         if self.tokenizer is None:
-            raise ValueError("Tokenizer is required for forward_text. Pass tokenizer to __init__.")
+            raise ValueError(
+                "Tokenizer is required for forward_text. Pass tokenizer to __init__."
+            )
         text = f"Task: {goal}\n"
         if history:
             text += f"History: {history}\n"
         text += f"Page: {observation_text}"
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=2048
+        )
         device = next(self.encoder.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
         step_t = torch.tensor([step_count], dtype=torch.long, device=device)
-        return self.forward(inputs["input_ids"], inputs["attention_mask"], step_t, vision_embedding=vision_embedding)
+        return self.forward(
+            inputs["input_ids"],
+            inputs["attention_mask"],
+            step_t,
+            vision_embedding=vision_embedding,
+        )
 
-    def predict_subgoal(self, observation_text: str, goal: str, step_count: int = 0) -> int:
+    def predict_subgoal(
+        self, observation_text: str, goal: str, step_count: int = 0
+    ) -> int:
         out = self.forward_text(observation_text, goal, step_count)
         subgoals = out.subgoals.squeeze()
         for i in range(self.num_subgoals):

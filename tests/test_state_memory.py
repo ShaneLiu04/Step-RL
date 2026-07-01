@@ -122,7 +122,9 @@ class TestStateMemory(unittest.TestCase):
                 self.memory.update(h)
             r_loop, _, _ = self.memory.update(h)
             penalties.append(r_loop)
-        self.assertLessEqual(penalties[-1], penalties[0])  # penalty stays same or gets more negative
+        self.assertLessEqual(
+            penalties[-1], penalties[0]
+        )  # penalty stays same or gets more negative
 
     def test_novelty_decay(self):
         """Test novelty bonus decreases as more states are visited."""

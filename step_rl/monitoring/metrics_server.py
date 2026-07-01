@@ -34,9 +34,7 @@ class MetricsServer:
         self.grounding_acc = Gauge(
             "step_rl_grounding_accuracy", "Current grounding accuracy"
         )
-        self.reward_total = Counter(
-            "step_rl_reward_total", "Cumulative reward sum"
-        )
+        self.reward_total = Counter("step_rl_reward_total", "Cumulative reward sum")
         self.kl_divergence = Gauge(
             "step_rl_kl_divergence", "Current KL divergence estimate"
         )

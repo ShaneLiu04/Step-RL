@@ -164,7 +164,9 @@ class CurriculumScheduler:
     # Promotion Logic
     # -----------------------------
 
-    def record_episode_result(self, level: int, success: bool, reward: float = 0.0) -> None:
+    def record_episode_result(
+        self, level: int, success: bool, reward: float = 0.0
+    ) -> None:
         self._level_success_rates[level].append(1.0 if success else 0.0)
         # Keep sliding window of last 20
         self._level_success_rates[level] = self._level_success_rates[level][-20:]
@@ -249,7 +251,9 @@ class BanditCurriculumScheduler(CurriculumScheduler):
             n = self._level_counts[lvl]
             if n == 0:
                 return self._sample_from_level(lvl)
-            avg_reward = np.mean(self._level_rewards[lvl]) if self._level_rewards[lvl] else 0.0
+            avg_reward = (
+                np.mean(self._level_rewards[lvl]) if self._level_rewards[lvl] else 0.0
+            )
             ucb = avg_reward + np.sqrt(2 * np.log(total_n) / n)
             if ucb > best_ucb:
                 best_ucb = ucb
@@ -259,7 +263,9 @@ class BanditCurriculumScheduler(CurriculumScheduler):
     def record_episode_result(self, level: int, success: bool, reward: float = 0.0):
         super().record_episode_result(level, success, reward=reward)
         self._level_counts[level] += 1
-        self._level_rewards[level].append(reward if reward else (1.0 if success else 0.0))
+        self._level_rewards[level].append(
+            reward if reward else (1.0 if success else 0.0)
+        )
 
     def _sample_from_level(self, level: int) -> Optional[Task]:
         eligible = [t for t in self.tasks if t.level == level]
@@ -268,7 +274,7 @@ class BanditCurriculumScheduler(CurriculumScheduler):
 
 class BanditTaskSelector:
     """UCB-based task selection for exploration-exploitation in curriculum.
-    
+
     Uses Upper Confidence Bound (UCB1) algorithm to select tasks based on
     historical success rates, balancing exploration and exploitation.
     """

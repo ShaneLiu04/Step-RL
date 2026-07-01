@@ -1,4 +1,5 @@
 """Grounding validation result cache."""
+
 import hashlib
 import json
 import time
@@ -15,7 +16,9 @@ class GroundingCache:
 
     def _key(self, page_url: str, action_params: Dict) -> str:
         url_hash = hashlib.md5(page_url.encode()).hexdigest()
-        params_hash = hashlib.md5(json.dumps(action_params, sort_keys=True).encode()).hexdigest()
+        params_hash = hashlib.md5(
+            json.dumps(action_params, sort_keys=True).encode()
+        ).hexdigest()
         return f"{url_hash}_{params_hash}"
 
     def get(self, page_url: str, action_params: Dict) -> Optional[Any]:

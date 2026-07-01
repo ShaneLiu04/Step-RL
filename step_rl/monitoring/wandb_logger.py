@@ -1,4 +1,5 @@
 """WandB + MLflow monitoring integration."""
+
 import os
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -32,9 +33,7 @@ class TrainingMonitor:
             try:
                 import wandb
 
-                self._run = wandb.init(
-                    project=project, name=experiment, config={}
-                )
+                self._run = wandb.init(project=project, name=experiment, config={})
             except ImportError:
                 pass
 
@@ -83,9 +82,7 @@ class TrainingMonitor:
             "episode/return": episode_data.get("total_return", 0),
             "episode/length": episode_data.get("length", 0),
             "episode/success": episode_data.get("success", False),
-            "episode/grounding_accuracy": episode_data.get(
-                "grounding_accuracy", 1.0
-            ),
+            "episode/grounding_accuracy": episode_data.get("grounding_accuracy", 1.0),
             "episode/loop_rate": episode_data.get("loop_rate", 0),
         }
         self.log(metrics, step=episode_data.get("step"))

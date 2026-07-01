@@ -1,4 +1,5 @@
 """Page mutation detection and DOM structure similarity matching."""
+
 import hashlib
 from typing import Dict, List, Optional, Tuple
 from playwright.async_api import Page
@@ -33,9 +34,9 @@ class PageMutationDetector:
         self._last_dom_hash = current_hash
         return False
 
-    async def find_similar_element(self, page: Page,
-                                    original_selector: str,
-                                    original_text: str = "") -> Optional[Dict]:
+    async def find_similar_element(
+        self, page: Page, original_selector: str, original_text: str = ""
+    ) -> Optional[Dict]:
         """Find structurally similar element when original selector fails."""
         # Strategy 1: Try to find by similar text content
         if original_text:

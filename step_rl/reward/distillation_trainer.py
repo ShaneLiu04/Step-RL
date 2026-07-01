@@ -1,4 +1,5 @@
 """Distillation trainer for Progress Estimator (8B teacher -> 1.5B student)."""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,7 +22,9 @@ class DistillationTrainer:
         device: torch.device = None,
         temperature: float = 2.0,
     ):
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.teacher = teacher.to(self.device)
         self.teacher.eval()
         for param in self.teacher.parameters():
@@ -74,17 +77,13 @@ class DistillationTrainer:
             else:
                 teacher_soft = F.softmax(t_unc / self.temperature, dim=-1)
                 student_log_soft = F.log_softmax(s_unc / self.temperature, dim=-1)
-                kl = (
-                    F.kl_div(student_log_soft, teacher_soft, reduction="batchmean")
-                    * (self.temperature ** 2)
+                kl = F.kl_div(student_log_soft, teacher_soft, reduction="batchmean") * (
+                    self.temperature**2
                 )
 
         # Subgoal alignment (if available)
         subgoal_loss = 0.0
-        if (
-            teacher_out.subgoals is not None
-            and student_out.subgoals is not None
-        ):
+        if teacher_out.subgoals is not None and student_out.subgoals is not None:
             subgoal_loss = F.mse_loss(student_out.subgoals, teacher_out.subgoals)
 
         return mse + 0.5 * kl + 0.3 * subgoal_loss
@@ -103,15 +102,23 @@ class DistillationTrainer:
         with torch.no_grad():
             if text_batch is not None and isinstance(text_batch, list):
                 teacher_out = self.teacher.forward_text(
-                    observation_text=text_batch[0] if len(text_batch) == 1 else text_batch,
+                    observation_text=(
+                        text_batch[0] if len(text_batch) == 1 else text_batch
+                    ),
                     goal=goal_batch[0] if isinstance(goal_batch, list) else goal_batch,
-                    step_count=step_count[0].item() if isinstance(step_count, torch.Tensor) else step_count,
+                    step_count=(
+                        step_count[0].item()
+                        if isinstance(step_count, torch.Tensor)
+                        else step_count
+                    ),
                 )
             else:
                 teacher_out = self.teacher(
                     input_ids=batch["input_ids"],
                     attention_mask=batch["attention_mask"],
-                    step_count=step_count if isinstance(step_count, torch.Tensor) else None,
+                    step_count=(
+                        step_count if isinstance(step_count, torch.Tensor) else None
+                    ),
                     vision_embedding=vision_embedding,
                 )
 
@@ -120,7 +127,11 @@ class DistillationTrainer:
             student_out = self.student.forward_text(
                 observation_text=text_batch[0] if len(text_batch) == 1 else text_batch,
                 goal=goal_batch[0] if isinstance(goal_batch, list) else goal_batch,
-                step_count=step_count[0].item() if isinstance(step_count, torch.Tensor) else step_count,
+                step_count=(
+                    step_count[0].item()
+                    if isinstance(step_count, torch.Tensor)
+                    else step_count
+                ),
             )
         else:
             student_out = self.student(
@@ -144,9 +155,7 @@ class DistillationTrainer:
             {
                 "model_state": self.student.state_dict(),
                 "config": {
-                    "encoder_name": getattr(
-                        self.student, "encoder_name", "unknown"
-                    ),
+                    "encoder_name": getattr(self.student, "encoder_name", "unknown"),
                     "hidden_dim": getattr(self.student, "hidden_dim", 512),
                     "num_layers": getattr(self.student, "num_layers", 3),
                 },

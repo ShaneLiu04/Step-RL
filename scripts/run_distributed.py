@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Launch distributed training for Step-RL."""
+
 import argparse
 import os
 import subprocess
@@ -44,7 +45,10 @@ def run_ddp(rank: int, world_size: int, config_path: str, algorithm: str) -> Non
 
     # Import inside the worker so each process gets its own model copy
     if algorithm == "grpo":
-        from step_rl.training.grpo_trainer import GRPOTrainer, _load_config_and_components
+        from step_rl.training.grpo_trainer import (
+            GRPOTrainer,
+            _load_config_and_components,
+        )
     else:
         from step_rl.training.ppo_trainer import PPOTrainer, _load_config_and_components
 

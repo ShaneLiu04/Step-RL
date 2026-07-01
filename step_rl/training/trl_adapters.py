@@ -53,9 +53,7 @@ class StepRLPPOAdapter(PPOTrainer):  # type: ignore[misc]
         **kwargs: Any,
     ) -> None:
         if not _TRL_AVAILABLE:
-            raise RuntimeError(
-                "trl is not installed. Install it with: pip install trl"
-            )
+            raise RuntimeError("trl is not installed. Install it with: pip install trl")
 
         ppo_cfg = config["training"]["ppo"]
         ppo_config = PPOConfig(
@@ -124,9 +122,7 @@ class StepRLGRPOAdapter(GRPOTrainer):  # type: ignore[misc]
         **kwargs: Any,
     ) -> None:
         if not _TRL_AVAILABLE:
-            raise RuntimeError(
-                "trl is not installed. Install it with: pip install trl"
-            )
+            raise RuntimeError("trl is not installed. Install it with: pip install trl")
 
         grpo_cfg = config["training"]["grpo"]
         grpo_config = GRPOConfig(

@@ -12,7 +12,11 @@ from playwright.async_api import Locator, Page
 
 from step_rl.environment.element_fingerprint import ElementFingerprintDB
 from step_rl.environment.page_mutation import PageMutationDetector
-from step_rl.environment.locator import robust_locate, remove_dynamic_suffix, find_similar_by_structure
+from step_rl.environment.locator import (
+    robust_locate,
+    remove_dynamic_suffix,
+    find_similar_by_structure,
+)
 from step_rl.utils.logging_utils import get_logger
 from step_rl.environment.grounding_cache import GroundingCache
 from step_rl.utils.security_utils import escape_xpath_string
@@ -145,7 +149,9 @@ class GroundingValidator:
                 )
                 self._cache.set(current_url, params, result)
                 # Record successful pattern in fingerprint DB
-                self._fingerprint_db.record(current_url, params, success=True, action_type=action)
+                self._fingerprint_db.record(
+                    current_url, params, success=True, action_type=action
+                )
                 return result
             else:
                 # Element exists but not interactive — try to find similar interactive one
@@ -179,7 +185,9 @@ class GroundingValidator:
                 return result
 
         # Try fingerprint DB suggestion before full failure
-        suggested = self._fingerprint_db.suggest(current_url, action, target_text=params.get("element_text", ""))
+        suggested = self._fingerprint_db.suggest(
+            current_url, action, target_text=params.get("element_text", "")
+        )
         if suggested:
             logger.debug(f"Fingerprint DB suggestion: {suggested}")
             suggested_params = dict(params)
@@ -205,12 +213,16 @@ class GroundingValidator:
                         message=f"Element found via fingerprint suggestion. ({match_info.get('method', 'unknown')})",
                     )
                     self._cache.set(current_url, params, result)
-                    self._fingerprint_db.record(current_url, suggested_params, success=True, action_type=action)
+                    self._fingerprint_db.record(
+                        current_url, suggested_params, success=True, action_type=action
+                    )
                     return result
 
         # Try dynamic suffix removal for CSS selectors / IDs
         if params.get("css_selector") or params.get("element_id"):
-            original_sel = params.get("css_selector") or f"#{params.get('element_id', '')}"
+            original_sel = (
+                params.get("css_selector") or f"#{params.get('element_id', '')}"
+            )
             cleaned = remove_dynamic_suffix(original_sel)
             if cleaned:
                 cleaned_params = dict(params)
@@ -219,20 +231,32 @@ class GroundingValidator:
                 else:
                     cleaned_params["element_id"] = cleaned.lstrip("#")
                 locator, match_info = await robust_locate(
-                    page, cleaned_params, multi_attribute_match=self.multi_attribute_match
+                    page,
+                    cleaned_params,
+                    multi_attribute_match=self.multi_attribute_match,
                 )
                 if locator is not None:
-                    interactivity = await self._check_interactivity(page, locator, action)
+                    interactivity = await self._check_interactivity(
+                        page, locator, action
+                    )
                     if interactivity["ok"]:
                         result = GroundingResult(
                             valid=True,
                             reward=self.reward_valid,
                             locator=locator,
-                            match_info={**match_info, "method": "dynamic_suffix_removed"},
+                            match_info={
+                                **match_info,
+                                "method": "dynamic_suffix_removed",
+                            },
                             message=f"Element found via cleaned selector: {cleaned}",
                         )
                         self._cache.set(current_url, params, result)
-                        self._fingerprint_db.record(current_url, cleaned_params, success=True, action_type=action)
+                        self._fingerprint_db.record(
+                            current_url,
+                            cleaned_params,
+                            success=True,
+                            action_type=action,
+                        )
                         return result
 
         # Try structural similarity matching
@@ -244,17 +268,25 @@ class GroundingValidator:
                 try:
                     count = await similar_loc.count()
                     if count > 0:
-                        interactivity = await self._check_interactivity(page, similar_loc, action)
+                        interactivity = await self._check_interactivity(
+                            page, similar_loc, action
+                        )
                         if interactivity["ok"]:
                             result = GroundingResult(
                                 valid=True,
                                 reward=self.reward_valid,
                                 locator=similar_loc,
-                                match_info={"method": "structural_similarity", "tag": target_tag, "text": target_text},
+                                match_info={
+                                    "method": "structural_similarity",
+                                    "tag": target_tag,
+                                    "text": target_text,
+                                },
                                 message=f"Element found via structural similarity matching.",
                             )
                             self._cache.set(current_url, params, result)
-                            self._fingerprint_db.record(current_url, params, success=True, action_type=action)
+                            self._fingerprint_db.record(
+                                current_url, params, success=True, action_type=action
+                            )
                             return result
                 except Exception as e:
                     logger.debug(f"Structural similarity check failed: {e}")
