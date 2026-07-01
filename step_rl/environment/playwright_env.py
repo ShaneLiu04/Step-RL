@@ -6,7 +6,6 @@ Playwright Web Environment for Step-RL v2.0
 - Security sandbox enforcement with proper domain validation
 """
 
-import asyncio
 import base64
 import json
 import re
@@ -22,7 +21,6 @@ from step_rl.utils.resource_guard import timeout
 from step_rl.utils.security_utils import (
     validate_action_json,
     validate_selector,
-    validate_url,
     validate_url_strict,
 )
 

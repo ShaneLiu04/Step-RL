@@ -1,10 +1,9 @@
 """Distillation trainer for Progress Estimator (8B teacher -> 1.5B student)."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 
 from step_rl.reward.progress_estimator import ProgressEstimator, ProgressOutput

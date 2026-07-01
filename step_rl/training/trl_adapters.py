@@ -10,7 +10,7 @@ are still importable but will raise ``RuntimeError`` on instantiation.
 Enable them via the trainer config flag ``use_trl_adapter: true``.
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 import torch
 

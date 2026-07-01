@@ -1,7 +1,5 @@
 """Unit tests for trl adapter wrappers."""
 
-import pytest
-
 from step_rl.training.gae_utils import adaptive_gae_lambda
 from step_rl.training.kl_controller import AdaptiveKLController
 

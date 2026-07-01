@@ -1,9 +1,6 @@
 """Robust checkpoint management with atomic save and automatic recovery."""
 
-import json
 import os
-import shutil
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 

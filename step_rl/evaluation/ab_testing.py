@@ -1,10 +1,8 @@
 """A/B testing framework for policy variants."""
 
 import hashlib
-import random
-from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 @dataclass

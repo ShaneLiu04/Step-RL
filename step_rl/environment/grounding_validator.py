@@ -281,7 +281,7 @@ class GroundingValidator:
                                     "tag": target_tag,
                                     "text": target_text,
                                 },
-                                message=f"Element found via structural similarity matching.",
+                                message="Element found via structural similarity matching.",
                             )
                             self._cache.set(current_url, params, result)
                             self._fingerprint_db.record(

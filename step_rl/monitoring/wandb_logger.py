@@ -1,7 +1,5 @@
 """WandB + MLflow monitoring integration."""
 
-import os
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 
