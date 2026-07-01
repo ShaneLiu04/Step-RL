@@ -1,7 +1,6 @@
 """Unit tests for Prioritized Replay Buffer."""
 
 import numpy as np
-import pytest
 
 from step_rl.training.per_buffer import PrioritizedReplayBuffer, SumTree, Trajectory
 

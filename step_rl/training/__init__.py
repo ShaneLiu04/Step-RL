@@ -10,7 +10,10 @@ try:
 except Exception:
     StepRLGRPOAdapter = None
     StepRLPPOAdapter = None
-    is_trl_available = lambda: False
+
+    def is_trl_available():
+        return False
+
 
 __all__ = [
     "adaptive_gae_lambda",

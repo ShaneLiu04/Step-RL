@@ -1,7 +1,7 @@
 """Page mutation detection and DOM structure similarity matching."""
 
 import hashlib
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 from playwright.async_api import Page
 

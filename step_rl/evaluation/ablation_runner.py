@@ -1,6 +1,5 @@
 """Automated ablation study runner."""
 
-import json
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List
