@@ -49,12 +49,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user with specific UID/GID for security auditing
-#   - UID 1000: common default user ID, avoids root escalation
-#   - GID 1000: common default group ID
+# Create non-root user with specific UID/GID for security auditing.
+# Note: the Playwright base image already reserves UID/GID 1000 (pwuser),
+# so we use 1001/1001 to avoid conflicts.
+#   - UID 1001: common alternative user ID, avoids root escalation
+#   - GID 1001: common alternative group ID
 #   - home directory: provides writable space for caches
-RUN groupadd -r -g 1000 appgroup && \
-    useradd -r -u 1000 -g appgroup -d /home/appuser -s /bin/bash appuser
+ARG APP_UID=1001
+ARG APP_GID=1001
+RUN groupadd -r -g ${APP_GID} appgroup && \
+    useradd -r -u ${APP_UID} -g appgroup -d /home/appuser -s /bin/bash appuser
 
 # Copy installed Python packages from builder
 COPY --from=builder /root/.local /home/appuser/.local
