@@ -1,4 +1,5 @@
 """Regression test suite using golden trajectories."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -21,8 +22,9 @@ class RegressionSuite:
                 tasks.append(json.load(f))
         return tasks
 
-    def register_golden_task(self, task_goal: str, expected_steps: List[str],
-                              expected_success: bool = True):
+    def register_golden_task(
+        self, task_goal: str, expected_steps: List[str], expected_success: bool = True
+    ):
         """Register a known task with expected optimal trajectory."""
         task = {
             "task_goal": task_goal,
@@ -51,10 +53,9 @@ class RegressionSuite:
 
             if not matching_results:
                 report["failed"] += 1
-                report["regressions"].append({
-                    "task": goal,
-                    "reason": "No results found"
-                })
+                report["regressions"].append(
+                    {"task": goal, "reason": "No results found"}
+                )
                 continue
 
             success_rate = np.mean([r["success"] for r in matching_results])
@@ -62,16 +63,20 @@ class RegressionSuite:
 
             if success_rate < task["min_success_rate"]:
                 report["failed"] += 1
-                report["regressions"].append({
-                    "task": goal,
-                    "reason": f"Success rate {success_rate:.2%} < {task['min_success_rate']:.2%}"
-                })
+                report["regressions"].append(
+                    {
+                        "task": goal,
+                        "reason": f"Success rate {success_rate:.2%} < {task['min_success_rate']:.2%}",
+                    }
+                )
             elif avg_steps > task["max_avg_steps"]:
                 report["failed"] += 1
-                report["regressions"].append({
-                    "task": goal,
-                    "reason": f"Avg steps {avg_steps:.1f} > {task['max_avg_steps']:.1f}"
-                })
+                report["regressions"].append(
+                    {
+                        "task": goal,
+                        "reason": f"Avg steps {avg_steps:.1f} > {task['max_avg_steps']:.1f}",
+                    }
+                )
             else:
                 report["passed"] += 1
 

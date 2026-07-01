@@ -1,4 +1,5 @@
 """Multimodal observation encoder (text + vision fusion)."""
+
 import torch
 import torch.nn as nn
 from typing import Optional, Dict, Any
@@ -35,7 +36,9 @@ class MultimodalObservationEncoder(nn.Module):
             vision_embedding = nn.functional.linear(
                 vision_embedding,
                 torch.randn(
-                    vision_embedding.size(-1), self.vision_dim, device=vision_embedding.device
+                    vision_embedding.size(-1),
+                    self.vision_dim,
+                    device=vision_embedding.device,
                 ),
             )
 

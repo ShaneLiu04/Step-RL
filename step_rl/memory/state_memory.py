@@ -6,8 +6,10 @@ State Memory Module v2.0
 """
 
 import hashlib
+
 try:
     import xxhash
+
     HAS_XXHASH = True
 except ImportError:
     HAS_XXHASH = False
@@ -59,7 +61,9 @@ class StateMemory:
         self._state_history: Deque[str] = deque(maxlen=200)
         self._loop_counter: Dict[str, int] = {}
         self._visit_count: Dict[str, int] = {}
-        self._hash_cache: OrderedDict[str, str] = OrderedDict()  # LRU cache for compute_hash
+        self._hash_cache: OrderedDict[str, str] = (
+            OrderedDict()
+        )  # LRU cache for compute_hash
 
     # -----------------------------
     # Hashing

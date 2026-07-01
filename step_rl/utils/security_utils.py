@@ -80,9 +80,7 @@ def set_resource_limits(max_cpu_seconds: int = 300, max_memory_gb: float = 8.0):
     try:
         import resource
 
-        resource.setrlimit(
-            resource.RLIMIT_CPU, (max_cpu_seconds, max_cpu_seconds)
-        )
+        resource.setrlimit(resource.RLIMIT_CPU, (max_cpu_seconds, max_cpu_seconds))
         max_mem_bytes = int(max_memory_gb * 1024 * 1024 * 1024)
         resource.setrlimit(resource.RLIMIT_AS, (max_mem_bytes, max_mem_bytes))
     except (ValueError, OSError, ImportError):
@@ -107,9 +105,7 @@ def validate_action_json(action_json: str) -> bool:
         return False
 
 
-def validate_url_strict(
-    url: str, blocked_domains: set, allowed_domains: set
-) -> bool:
+def validate_url_strict(url: str, blocked_domains: set, allowed_domains: set) -> bool:
     """Strict URL validation with additional checks."""
     if not validate_url(url, blocked_domains, allowed_domains):
         return False
@@ -145,4 +141,3 @@ def validate_selector(selector: str) -> bool:
         if re.search(pattern, selector, re.IGNORECASE):
             return False
     return True
-

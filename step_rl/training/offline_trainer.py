@@ -1,4 +1,5 @@
 """Offline RL trainer (DPO-style) from static trajectory datasets."""
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -96,9 +97,7 @@ class OfflineRLTrainer:
     # DPO loss
     # ------------------------------------------------------------------
 
-    def _get_logprob(
-        self, logits: torch.Tensor, labels: torch.Tensor
-    ) -> torch.Tensor:
+    def _get_logprob(self, logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         """Extract per-token log-probability and sum over sequence.
 
         Parameters

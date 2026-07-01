@@ -28,7 +28,11 @@ from step_rl.environment.playwright_env import Action, Observation, PlaywrightWe
 from step_rl.memory.state_memory import StateMemory
 from step_rl.reward.progress_estimator import ProgressEstimator
 from step_rl.reward.subgoal_reward import compute_subgoal_reward
-from step_rl.training.curriculum_scheduler import BanditCurriculumScheduler, CurriculumScheduler, Task
+from step_rl.training.curriculum_scheduler import (
+    BanditCurriculumScheduler,
+    CurriculumScheduler,
+    Task,
+)
 from step_rl.training.per_buffer import PrioritizedReplayBuffer
 from step_rl.utils.logging_utils import get_logger
 
@@ -129,7 +133,9 @@ class BaseTrainer(ABC):
                 continue
             traj = await self._run_episode(task)
             trajectories.append(traj)
-            self.curriculum.record_episode_result(task.level, traj.success, reward=traj.total_return)
+            self.curriculum.record_episode_result(
+                task.level, traj.success, reward=traj.total_return
+            )
         return trajectories
 
     async def _run_episode(self, task: Task) -> Trajectory:
@@ -175,10 +181,16 @@ class BaseTrainer(ABC):
                 prev_progress += r_progress
                 if hasattr(self.progress_estimator, "predict_subgoal"):
                     text = f"Task: {task.goal}\nPage: {obs.url}\n{obs.text[:1500]}"
-                    current_subgoal_idx = self.progress_estimator.predict_subgoal(text, task.goal, step)
+                    current_subgoal_idx = self.progress_estimator.predict_subgoal(
+                        text, task.goal, step
+                    )
 
             r_subgoal = compute_subgoal_reward(
-                task, trajectory.actions, current_subgoal_idx, previous_subgoal_idx, r_progress
+                task,
+                trajectory.actions,
+                current_subgoal_idx,
+                previous_subgoal_idx,
+                r_progress,
             )
             previous_subgoal_idx = current_subgoal_idx
 
@@ -201,7 +213,15 @@ class BaseTrainer(ABC):
                 )
 
             r_total, reward_info = self._compute_total_reward(
-                r_progress, uncertainty, r_grounding, r_loop, r_novelty, r_sparse, r_efficiency, r_subgoal, step
+                r_progress,
+                uncertainty,
+                r_grounding,
+                r_loop,
+                r_novelty,
+                r_sparse,
+                r_efficiency,
+                r_subgoal,
+                step,
             )
 
             trajectory.observations.append(prompt_text)
@@ -343,7 +363,18 @@ class BaseTrainer(ABC):
         delta = progress - prev_progress
         return max(0.0, delta), uncertainty
 
-    def _compute_total_reward(self, r_progress, uncertainty, r_grounding, r_loop, r_novelty, r_sparse, r_eff, r_subgoal, step):
+    def _compute_total_reward(
+        self,
+        r_progress,
+        uncertainty,
+        r_grounding,
+        r_loop,
+        r_novelty,
+        r_sparse,
+        r_eff,
+        r_subgoal,
+        step,
+    ):
         """Compose total reward with uncertainty clipping and subgoal bonus."""
         # 不确定性裁剪
         if uncertainty > 0.7:
@@ -382,9 +413,7 @@ class BaseTrainer(ABC):
         """
         if isinstance(self.replay_buffer, PrioritizedReplayBuffer):
             baseline: float = (
-                np.mean([t.total_return for t in trajectories])
-                if trajectories
-                else 0.0
+                np.mean([t.total_return for t in trajectories]) if trajectories else 0.0
             )
             for traj in trajectories:
                 priority: float = abs(traj.total_return - baseline)
@@ -426,9 +455,7 @@ class BaseTrainer(ABC):
             ``AdaptiveKLController`` 实例或 ``None`` 以卸载。
         """
         self.kl_controller = kl_controller
-        logger.info(
-            f"KL controller {'attached' if kl_controller else 'detached'}"
-        )
+        logger.info(f"KL controller {'attached' if kl_controller else 'detached'}")
 
     def setup_per(
         self,
@@ -476,7 +503,6 @@ class BaseTrainer(ABC):
             采样得到的轨迹列表。
         """
         return self.sample_replay_trajectories(n)
-
 
     async def train(self, total_epochs: int, save_dir: str = "./checkpoints") -> None:
         os.makedirs(save_dir, exist_ok=True)

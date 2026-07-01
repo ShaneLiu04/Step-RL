@@ -46,7 +46,9 @@ class StepRLDemo:
             )
             if has_weights:
                 backend_cfg["model_name"] = policy_path
-                backend_cfg["tensor_parallel_size"] = model_cfg.get("tensor_parallel_size", 1)
+                backend_cfg["tensor_parallel_size"] = model_cfg.get(
+                    "tensor_parallel_size", 1
+                )
                 backend_cfg["dtype"] = model_cfg.get("dtype", "bfloat16")
 
         # 对于 GPT-4o 后端
@@ -177,10 +179,13 @@ class StepRLDemo:
                     pad_token_id=self.tokenizer.pad_token_id,
                 )
             response_ids = generated[0, inputs["input_ids"].shape[1] :]
-            response_text = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+            response_text = self.tokenizer.decode(
+                response_ids, skip_special_tokens=True
+            )
         else:
             # vLLM 或 GPT-4o 后端，generate 返回纯文本
             import inspect
+
             kwargs = {"temperature": 0.7, "top_p": 0.9}
             if isinstance(self.backend, VLLMBackend):
                 kwargs = {"temperature": 0.7, "top_p": 0.9}

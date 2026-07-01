@@ -1,4 +1,5 @@
 """Resource guard for timeout and memory protection."""
+
 import asyncio
 import signal
 from typing import Any, Callable
@@ -15,9 +16,7 @@ def timeout(seconds: int):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def async_wrapper(*args, **kwargs) -> Any:
-            return await asyncio.wait_for(
-                func(*args, **kwargs), timeout=seconds
-            )
+            return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
@@ -26,9 +25,7 @@ def timeout(seconds: int):
                 return func(*args, **kwargs)
 
             def handler(signum, frame):
-                raise TimeoutError(
-                    f"Function timed out after {seconds} seconds"
-                )
+                raise TimeoutError(f"Function timed out after {seconds} seconds")
 
             old_handler = signal.signal(signal.SIGALRM, handler)
             signal.alarm(seconds)
@@ -38,8 +35,6 @@ def timeout(seconds: int):
                 signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
 
-        return (
-            async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
-        )
+        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 
     return decorator

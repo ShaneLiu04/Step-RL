@@ -1,4 +1,5 @@
 """Element fingerprint database for robust selector learning."""
+
 import json
 import hashlib
 from pathlib import Path
@@ -17,6 +18,7 @@ class ElementFingerprintDB:
 
     def _extract_domain(self, url: str) -> str:
         from urllib.parse import urlparse
+
         parsed = urlparse(url)
         return parsed.netloc.lower()
 
@@ -37,7 +39,9 @@ class ElementFingerprintDB:
             pattern["value"] = action_params["css_selector"]
         return pattern
 
-    def record(self, url: str, action_params: Dict, success: bool, action_type: str = "click"):
+    def record(
+        self, url: str, action_params: Dict, success: bool, action_type: str = "click"
+    ):
         if not success:
             return
         domain = self._extract_domain(url)
@@ -46,7 +50,9 @@ class ElementFingerprintDB:
             self._fingerprints[domain][action_type].append(pattern)
         self._save()
 
-    def suggest(self, url: str, action_type: str, target_text: str = "") -> Optional[Dict]:
+    def suggest(
+        self, url: str, action_type: str, target_text: str = ""
+    ) -> Optional[Dict]:
         domain = self._extract_domain(url)
         patterns = self._fingerprints.get(domain, {}).get(action_type, [])
         if not patterns:
@@ -54,6 +60,7 @@ class ElementFingerprintDB:
 
         # Find most frequent pattern type
         from collections import Counter
+
         type_counts = Counter(p["type"] for p in patterns)
         best_type = type_counts.most_common(1)[0][0]
 
@@ -75,5 +82,7 @@ class ElementFingerprintDB:
         """Return statistics about the fingerprint database."""
         stats = {}
         for domain, actions in self._fingerprints.items():
-            stats[domain] = {action: len(patterns) for action, patterns in actions.items()}
+            stats[domain] = {
+                action: len(patterns) for action, patterns in actions.items()
+            }
         return stats

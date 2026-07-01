@@ -1,11 +1,14 @@
 """Smart wait with SPA render detection."""
+
 import time
 from typing import Dict, Tuple
 
 from playwright.async_api import Page
 
 
-async def smart_wait(page: Page, action_params: Dict, max_wait_ms: int = 5000) -> Tuple[bool, float]:
+async def smart_wait(
+    page: Page, action_params: Dict, max_wait_ms: int = 5000
+) -> Tuple[bool, float]:
     """Wait intelligently for SPA stability or target element visibility.
 
     Returns:
@@ -25,8 +28,7 @@ async def smart_wait(page: Page, action_params: Dict, max_wait_ms: int = 5000) -
             pass
 
     # 2. SPA render detection
-    spa_ready = await page.evaluate(
-        """() => {
+    spa_ready = await page.evaluate("""() => {
             if (window.__VUE__ || document.querySelector('[data-v-app]')) return 'vue';
             if (window.__REACT__ || document.querySelector('[data-reactroot]')) return 'react';
             return new Promise(resolve => {
@@ -40,8 +42,7 @@ async def smart_wait(page: Page, action_params: Dict, max_wait_ms: int = 5000) -
                 };
                 check();
             });
-        }"""
-    )
+        }""")
 
     elapsed = (time.time() - start) * 1000
     if spa_ready and elapsed < max_wait_ms:

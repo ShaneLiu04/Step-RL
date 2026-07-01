@@ -1,4 +1,5 @@
 """Automated ablation study runner."""
+
 import subprocess
 import json
 from pathlib import Path
@@ -9,7 +10,9 @@ import yaml
 class AblationRunner:
     """Run multiple ablation configurations and compare results."""
 
-    def __init__(self, base_config: str = "config.yaml", output_dir: str = "./outputs/ablation"):
+    def __init__(
+        self, base_config: str = "config.yaml", output_dir: str = "./outputs/ablation"
+    ):
         self.base_config = Path(base_config)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -28,8 +31,11 @@ class AblationRunner:
 
             # Build benchmark command
             cmd = [
-                "python", "-m", "step_rl.evaluation.benchmark",
-                "--config", str(temp_path),
+                "python",
+                "-m",
+                "step_rl.evaluation.benchmark",
+                "--config",
+                str(temp_path),
             ]
             if config.get("mock", False):
                 cmd.append("--mock")
@@ -63,7 +69,9 @@ class AblationRunner:
         metrics = {}
         for line in output.split("\n"):
             if "Success Rate" in line:
-                metrics["success_rate"] = float(line.split(":")[-1].strip().rstrip("%")) / 100
+                metrics["success_rate"] = (
+                    float(line.split(":")[-1].strip().rstrip("%")) / 100
+                )
             elif "Avg Steps" in line:
                 metrics["avg_steps"] = float(line.split(":")[-1].strip())
         return metrics
@@ -75,6 +83,8 @@ class AblationRunner:
             f.write("| Configuration | Success Rate | Avg Steps |\n")
             f.write("|---|---|---|\n")
             for name, metrics in results.items():
-                f.write(f"| {name} | {metrics.get('success_rate', 0):.2%} | {metrics.get('avg_steps', 0):.1f} |\n")
+                f.write(
+                    f"| {name} | {metrics.get('success_rate', 0):.2%} | {metrics.get('avg_steps', 0):.1f} |\n"
+                )
 
         print(f"Ablation report saved to {report_path}")

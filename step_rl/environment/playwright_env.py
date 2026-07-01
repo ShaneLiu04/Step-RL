@@ -135,6 +135,7 @@ class PlaywrightWebEnv:
         # Set process resource limits (Unix-only, gracefully skipped on Windows)
         try:
             from step_rl.utils.security_utils import set_resource_limits
+
             set_resource_limits()
         except Exception:
             pass

@@ -18,13 +18,19 @@ class TestSmartWait:
 
     @pytest.mark.asyncio
     async def test_element_already_visible(self, mock_page):
-        success, elapsed = await smart_wait(mock_page, {"element_id": "test"}, max_wait_ms=1000)
+        success, elapsed = await smart_wait(
+            mock_page, {"element_id": "test"}, max_wait_ms=1000
+        )
         assert success is True
 
     @pytest.mark.asyncio
     async def test_element_not_found(self, mock_page):
-        mock_page.locator.return_value.wait_for = AsyncMock(side_effect=Exception("Timeout"))
-        success, elapsed = await smart_wait(mock_page, {"element_id": "missing"}, max_wait_ms=100)
+        mock_page.locator.return_value.wait_for = AsyncMock(
+            side_effect=Exception("Timeout")
+        )
+        success, elapsed = await smart_wait(
+            mock_page, {"element_id": "missing"}, max_wait_ms=100
+        )
         assert success is True  # SPA detection fallback returns True
 
     @pytest.mark.asyncio

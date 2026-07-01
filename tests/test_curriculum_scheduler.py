@@ -5,7 +5,11 @@ Tests: task sampling, reward weight scheduling, promotion logic.
 
 import unittest
 
-from step_rl.training.curriculum_scheduler import BanditTaskSelector, CurriculumScheduler, Task
+from step_rl.training.curriculum_scheduler import (
+    BanditTaskSelector,
+    CurriculumScheduler,
+    Task,
+)
 
 
 class TestCurriculumScheduler(unittest.TestCase):

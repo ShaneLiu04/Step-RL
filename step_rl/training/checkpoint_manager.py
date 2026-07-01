@@ -1,4 +1,5 @@
 """Robust checkpoint management with atomic save and automatic recovery."""
+
 import os
 import json
 import tempfile
@@ -97,9 +98,7 @@ class CheckpointManager:
 
     def list_checkpoints(self) -> List[str]:
         """List all available checkpoints."""
-        return [
-            str(p.name) for p in sorted(self.save_dir.glob("checkpoint_*.pt"))
-        ]
+        return [str(p.name) for p in sorted(self.save_dir.glob("checkpoint_*.pt"))]
 
     def auto_resume(self, trainer) -> bool:
         """Attempt to auto-resume from latest checkpoint."""
@@ -109,27 +108,17 @@ class CheckpointManager:
 
         try:
             # Try both key names for compatibility with base_trainer.py
-            policy_state = state.get("policy_state") or state.get(
-                "policy_state_dict"
-            )
+            policy_state = state.get("policy_state") or state.get("policy_state_dict")
             if policy_state is not None:
                 trainer.policy.load_state_dict(policy_state)
-            if (
-                hasattr(trainer, "policy_optimizer")
-                and "optimizer_state" in state
-            ):
+            if hasattr(trainer, "policy_optimizer") and "optimizer_state" in state:
                 trainer.policy_optimizer.load_state_dict(state["optimizer_state"])
             trainer.global_step = state.get("global_step", 0)
             trainer.epoch = state.get("epoch", 0)
 
             # Restore KL controller if present
-            if (
-                hasattr(trainer, "kl_controller")
-                and "kl_controller_state" in state
-            ):
-                trainer.kl_controller.load_state_dict(
-                    state["kl_controller_state"]
-                )
+            if hasattr(trainer, "kl_controller") and "kl_controller_state" in state:
+                trainer.kl_controller.load_state_dict(state["kl_controller_state"])
 
             logger.info(
                 f"Auto-resumed from epoch {trainer.epoch}, "

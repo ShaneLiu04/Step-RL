@@ -1,4 +1,5 @@
 """Sub-goal completion reward for better credit assignment."""
+
 from typing import List, Dict, Any
 
 

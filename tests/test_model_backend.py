@@ -14,14 +14,24 @@ from step_rl.inference.model_backend import (
 
 class TestModelBackend:
     def test_create_backend_huggingface(self):
-        with patch("transformers.AutoModelForCausalLM.from_pretrained") as mock_model, \
-             patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer:
+        with patch(
+            "transformers.AutoModelForCausalLM.from_pretrained"
+        ) as mock_model, patch(
+            "transformers.AutoTokenizer.from_pretrained"
+        ) as mock_tokenizer:
             mock_model.return_value = MagicMock()
             tok = MagicMock()
             tok.pad_token = None
             tok.eos_token = "</s>"
             mock_tokenizer.return_value = tok
-            backend = create_backend({"backend": "huggingface", "model_name": "gpt2", "device": "cpu", "dtype": "fp32"})
+            backend = create_backend(
+                {
+                    "backend": "huggingface",
+                    "model_name": "gpt2",
+                    "device": "cpu",
+                    "dtype": "fp32",
+                }
+            )
             assert isinstance(backend, HuggingFaceBackend)
 
     def test_create_backend_unknown(self):

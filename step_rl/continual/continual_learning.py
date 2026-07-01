@@ -139,7 +139,9 @@ class ContinualLearner:
         }
 
     def process_episode_with_feedback(
-        self, trajectory: Dict[str, Any], human_feedback: Optional[Dict[str, Any]] = None
+        self,
+        trajectory: Dict[str, Any],
+        human_feedback: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Process episode with optional human feedback."""
         result = self.process_episode(trajectory)
@@ -162,7 +164,10 @@ class ContinualLearner:
         """Run incremental training when enough new samples are collected."""
         approved = self.store.list_by_status("approved")
         if len(approved) < min_samples:
-            return {"trained": False, "reason": f"Only {len(approved)} approved samples"}
+            return {
+                "trained": False,
+                "reason": f"Only {len(approved)} approved samples",
+            }
 
         # Load approved trajectories and fine-tune
         data = []
@@ -352,11 +357,7 @@ class FeedbackCollector:
         )
 
     def get_positive_examples(self, min_rating: float = 0.5) -> List[str]:
-        return [
-            f["traj_id"]
-            for f in self.feedback_log
-            if f["rating"] >= min_rating
-        ]
+        return [f["traj_id"] for f in self.feedback_log if f["rating"] >= min_rating]
 
 
 class LLMJudge:
