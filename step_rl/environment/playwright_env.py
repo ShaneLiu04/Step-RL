@@ -6,9 +6,9 @@ Playwright Web Environment for Step-RL v2.0
 - Security sandbox enforcement with proper domain validation
 """
 
+import asyncio
 import base64
 import json
-import asyncio
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -20,10 +20,10 @@ from step_rl.environment.smart_wait import smart_wait
 from step_rl.utils.logging_utils import get_logger
 from step_rl.utils.resource_guard import timeout
 from step_rl.utils.security_utils import (
-    validate_url,
-    validate_url_strict,
     validate_action_json,
     validate_selector,
+    validate_url,
+    validate_url_strict,
 )
 
 logger = get_logger(__name__)

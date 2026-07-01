@@ -2,7 +2,7 @@
 Supports: Qwen, Llama, Mistral, GPT-4o (API-based), vLLM."""
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -119,6 +119,7 @@ class GPT4OBackend(PolicyModelBackend):
 
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o"):
         import os
+
         from openai import AsyncOpenAI
 
         self.client = AsyncOpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))

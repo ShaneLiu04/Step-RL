@@ -2,6 +2,7 @@
 
 import hashlib
 from typing import Dict, List, Optional, Tuple
+
 from playwright.async_api import Page
 
 from step_rl.utils.logging_utils import get_logger

@@ -25,7 +25,7 @@ from step_rl.training.base_trainer import (
     logger,
 )
 from step_rl.training.kl_controller import AdaptiveKLController
-from step_rl.training.trl_adapters import is_trl_available, StepRLGRPOAdapter
+from step_rl.training.trl_adapters import StepRLGRPOAdapter, is_trl_available
 
 
 class GRPOTrainer(BaseTrainer):

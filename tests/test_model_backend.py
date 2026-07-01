@@ -1,13 +1,14 @@
 """Unit tests for model backend abstraction."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from step_rl.inference.model_backend import (
-    PolicyModelBackend,
-    HuggingFaceBackend,
-    VLLMBackend,
     GPT4OBackend,
+    HuggingFaceBackend,
+    PolicyModelBackend,
+    VLLMBackend,
     create_backend,
 )
 

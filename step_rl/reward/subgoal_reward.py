@@ -1,6 +1,6 @@
 """Sub-goal completion reward for better credit assignment."""
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 def compute_subgoal_reward(

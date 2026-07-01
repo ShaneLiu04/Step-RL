@@ -11,14 +11,14 @@ from typing import Any, Dict, List, Optional, Tuple
 from playwright.async_api import Locator, Page
 
 from step_rl.environment.element_fingerprint import ElementFingerprintDB
-from step_rl.environment.page_mutation import PageMutationDetector
-from step_rl.environment.locator import (
-    robust_locate,
-    remove_dynamic_suffix,
-    find_similar_by_structure,
-)
-from step_rl.utils.logging_utils import get_logger
 from step_rl.environment.grounding_cache import GroundingCache
+from step_rl.environment.locator import (
+    find_similar_by_structure,
+    remove_dynamic_suffix,
+    robust_locate,
+)
+from step_rl.environment.page_mutation import PageMutationDetector
+from step_rl.utils.logging_utils import get_logger
 from step_rl.utils.security_utils import escape_xpath_string
 
 logger = get_logger(__name__)

@@ -1,9 +1,10 @@
 """Multimodal observation encoder (text + vision fusion)."""
 
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import torch
 import torch.nn as nn
-from typing import Optional, Dict, Any
-from pathlib import Path
 
 
 class MultimodalObservationEncoder(nn.Module):
@@ -54,7 +55,7 @@ class CLIPVisionEncoder:
     ):
         self.device = device if torch.cuda.is_available() else "cpu"
         try:
-            from transformers import CLIPProcessor, CLIPModel
+            from transformers import CLIPModel, CLIPProcessor
 
             self.processor = CLIPProcessor.from_pretrained(model_name)
             self.model = CLIPModel.from_pretrained(model_name).to(self.device)
@@ -81,7 +82,7 @@ class Qwen2VLEncoder:
     ):
         self.device = device if torch.cuda.is_available() else "cpu"
         try:
-            from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+            from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
             self.processor = AutoProcessor.from_pretrained(model_name)
             self.model = Qwen2VLForConditionalGeneration.from_pretrained(
