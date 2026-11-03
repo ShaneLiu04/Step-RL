@@ -1,0 +1,12 @@
+# @package _global_
+# Sandbox environment with strict domain restrictions
+
+environment:
+  headless: true
+  sandbox_mode: true
+  allowed_domains: []
+  blocked_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "0.0.0.0"
+    - "file://"

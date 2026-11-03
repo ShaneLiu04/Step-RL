@@ -1,0 +1,13 @@
+# @package _global_
+# Social media / multi-tab experiment
+
+project:
+  name: "step-rl-social"
+
+environment:
+  allowed_domains: []
+  blocked_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "0.0.0.0"
+    - "file://"
