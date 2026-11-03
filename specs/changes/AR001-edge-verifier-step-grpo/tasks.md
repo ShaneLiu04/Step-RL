@@ -23,7 +23,7 @@
 | T010 | site/verifier/policy 单元测试 | T001,T002,T005 | passing | tests/test_edge_*.py |
 | T011 | 修复既有阻断：config 映射/finish/KL/任务注册 | - | passing | 最小改动 |
 | T012 | GPU 训练与四组对比实验，记录真实指标 | T009 | passing | outputs/ar001 + docs/results |
-| T013 | 回填 README/复现文档并同步 gitee | T012 | in_progress | 含 gitee 推送 |
+| T013 | 回填 README/复现文档并同步 gitee | T012 | passing | gitee main 已同步（8 批小包推送） |
 
 ## 状态说明
 
@@ -40,6 +40,7 @@
 - 2026-11-04：VGDP / Sparse 对照完成；L3 留出任务 VGDP 2/2，Sparse 0/2。
 - 2026-11-04：9 任务全量矩阵完成：SFT 44.4% / +repair 55.6% / sparse 55.6% / vgdp 66.7% / 路由组合 77.8%。
 - 负结果保留：L4 数量2+结算 0%，L5 多商品 0%。
+- 2026-11-04：Gitee 空仓库首次同步完成；因企业代理 >100KB POST 403，采用 8 批小包推送；clone 后 23 项真实测试通过。
 
 ## 阶段门控记录
 
