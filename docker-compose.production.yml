@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # Production Gradio Demo service
+  step-rl-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: step-rl:latest
+    container_name: step-rl-demo-prod
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+      - HF_HOME=/app/.cache/huggingface
+      - WANDB_PROJECT=step-rl
+    healthcheck:
+      test: ["CMD", "python", "-c", "import torch; print('ok')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Production training service
+  step-rl-train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: step-rl:latest
+    container_name: step-rl-train-prod
+    command: python -m step_rl.training.grpo_trainer --config config.yaml
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./checkpoints:/app/checkpoints
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - CUDA_VISIBLE_DEVICES=0,1,2,3
+      - PYTHONUNBUFFERED=1
+      - HF_HOME=/app/.cache/huggingface
+      - WANDB_PROJECT=step-rl
+      - NCCL_DEBUG=WARN
+    healthcheck:
+      test: ["CMD", "python", "-c", "import torch; print('ok')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Prometheus metrics scraping target
+  step-rl-metrics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: step-rl:latest
+    container_name: step-rl-metrics-prod
+    command: python -m step_rl.monitoring.metrics_server
+    ports:
+      - "9090:9090"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import prometheus_client; print('ok')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped
