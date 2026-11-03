@@ -1,0 +1,37 @@
+{
+  "reward_mode": "vgdp",
+  "model": "C:\\Users\\l30086046\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-0.6B-Base\\snapshots\\main",
+  "sft_adapter": "outputs/ar001/sft_adapter",
+  "group_size": 3,
+  "epochs": 2,
+  "total_seconds": 895.78,
+  "history": [
+    {
+      "epoch": 1,
+      "success_rate": 0.16666666666666666,
+      "mean_final_phi": 0.7222222222222222,
+      "mean_step_reward": 0.269047619047619,
+      "steps": 35,
+      "raw_invalid": 2,
+      "repaired": 0,
+      "seconds": 451.93,
+      "loss": -0.022166248824861314,
+      "policy": -0.03193697685168849,
+      "kl": 0.4885365085469352
+    },
+    {
+      "epoch": 2,
+      "success_rate": 0.6666666666666666,
+      "mean_final_phi": 0.8333333333333334,
+      "mean_step_reward": 0.32242424242424245,
+      "steps": 33,
+      "raw_invalid": 2,
+      "repaired": 1,
+      "seconds": 442.06,
+      "loss": 0.053208768367767334,
+      "policy": 0.04098158943302491,
+      "kl": 0.6113587276023977
+    }
+  ],
+  "output_dir": "outputs\\ar001\\grpo_vgdp"
+}
