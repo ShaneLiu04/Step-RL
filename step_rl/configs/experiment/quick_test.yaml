@@ -1,0 +1,19 @@
+# @package _global_
+# Quick test experiment (small model, fast iteration)
+
+project:
+  name: "step-rl-quick-test"
+
+model:
+  base_model: "Qwen/Qwen2.5-7B-Instruct"
+  dtype: "fp16"
+  use_4bit: true
+
+training:
+  max_steps_per_episode: 10
+  batch_size: 2
+  num_rollouts: 16
+
+environment:
+  headless: true
+  max_obs_tokens: 1024

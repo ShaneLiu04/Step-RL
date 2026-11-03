@@ -1,0 +1,239 @@
+# Step-RL v3.0 Configuration
+# Hydra-managed configuration — override via CLI: python app.py model=qwen3_8b training=grpo experiment=ecommerce
+# Docs: https://hydra.cc/
+
+project:
+  name: "step-rl"
+  seed: 42
+  output_dir: "./outputs"
+  log_dir: "./logs"
+
+model:
+  base_model: "Qwen/Qwen3-8B-Instruct"
+  fallback_models:
+    - "Qwen/Qwen2.5-7B-Instruct"
+    - "Qwen/Qwen2.5-14B-Instruct"
+  dtype: "bf16"
+  use_4bit: true
+
+lora:
+  r: 64
+  lora_alpha: 32
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  use_rslora: false
+
+environment:
+  browser: "chromium"
+  headless: true
+  viewport:
+    width: 1280
+    height: 720
+  timeout_ms: 30000
+  action_timeout_ms: 5000
+  max_obs_tokens: 2048
+  actions:
+    - "click"
+    - "type"
+    - "scroll"
+    - "goto"
+    - "wait"
+    - "finish"
+  allowed_domains: []
+  blocked_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "0.0.0.0"
+    - "file://"
+  sandbox_mode: true
+
+curriculum:
+  enabled: true
+  total_epochs: 100
+  use_bandit: false
+  epsilon: 0.1
+  levels:
+    1: { name: "single_page", min_steps: 2, max_steps: 3 }
+    2: { name: "cross_page", min_steps: 4, max_steps: 7 }
+    3: { name: "complex_form", min_steps: 8, max_steps: 15 }
+    4: { name: "multi_goal", min_steps: 15, max_steps: 30 }
+  promotion_threshold: 0.90
+  sampling:
+    early:
+      level1: 0.50
+      level2: 0.40
+      level3: 0.10
+      level4: 0.00
+    late:
+      level1: 0.10
+      level2: 0.10
+      level3: 0.40
+      level4: 0.40
+
+reward:
+  sparse:
+    success: 1.0
+    failure: -0.5
+    step_penalty: -0.02
+  progress_estimator:
+    enabled: true
+    hidden_dim: 512
+    num_layers: 3
+    dropout: 0.1
+    num_subgoals: 10
+    use_uncertainty: true
+    uncertainty_method: "evidential"
+    loss_weights:
+      mse: 1.0
+      rank: 0.5
+      mono: 0.3
+    uncertainty_penalty: true
+  grounding:
+    enabled: true
+    multi_attribute_match: true
+    similarity_threshold: 0.85
+    rewards:
+      valid: 0.1
+      corrected: -0.05
+      failed: -0.2
+  state_memory:
+    enabled: true
+    hash_method: "minhash"
+    max_states: 500
+    loop:
+      window: 3
+      penalty_base: -0.1
+    novelty:
+      bonus_base: 0.05
+  efficiency:
+    enabled: true
+    max_expected_steps: 30
+    bonus_per_saved_step: 0.01
+  dynamic_weights:
+    enabled: true
+    phases:
+      early:
+        alpha: 1.0
+        beta: 2.0
+        gamma: 1.0
+        epsilon: 0.3
+      mid:
+        alpha: 2.0
+        beta: 1.0
+        gamma: 1.0
+        epsilon: 0.8
+      late:
+        alpha: 2.5
+        beta: 0.8
+        gamma: 1.2
+        epsilon: 0.2
+
+training:
+  algorithm: "grpo"
+  max_steps_per_episode: 30
+  batch_size: 8
+  num_rollouts: 128
+  ppo:
+    clip_range: 0.2
+    kl_coef: 0.1
+    kl_target: 0.1
+    kl_adaptive: true
+    value_lr: 5e-6
+    policy_lr: 1e-5
+    gamma: 0.99
+    gae_lambda: 0.95
+    vf_coef: 0.5
+    entropy_coef: 0.01
+    max_grad_norm: 1.0
+    num_epochs_per_update: 4
+    mini_batch_size: 2
+  grpo:
+    group_size: 4
+    clip_range: 0.2
+    kl_coef: 0.1
+    policy_lr: 1e-5
+    gamma: 0.99
+    max_grad_norm: 1.0
+    num_epochs_per_update: 4
+    mini_batch_size: 2
+  replay_buffer:
+    enabled: true
+    capacity: 10000
+    alpha_prioritized: 0.6
+    beta_prioritized: 0.4
+    history_ratio: 0.25
+  sft:
+    data_path: "./data/sft"
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 4
+    num_train_epochs: 3
+    learning_rate: 2.0e-4
+    max_seq_length: 4096
+    warmup_ratio: 0.03
+    logging_steps: 10
+    save_steps: 500
+    gradient_checkpointing: true
+  gradient_checkpointing: true
+  mixed_precision: "bf16"
+  max_grad_norm: 1.0
+  warmup_ratio: 0.03
+  logging_steps: 10
+  save_steps: 500
+  eval_steps: 500
+
+evaluation:
+  num_episodes: 100
+  tasks_per_level: 25
+  metrics:
+    - "success_rate"
+    - "avg_steps"
+    - "avg_duration"
+    - "grounding_accuracy"
+    - "auto_correction_rate"
+    - "intervention_rate"
+    - "progress_mse"
+    - "rank_accuracy"
+    - "loop_rate"
+    - "sample_efficiency"
+  ablation_studies:
+    - "sft_baseline"
+    - "sparse_ppo"
+    - "progress_only"
+    - "grounding_only"
+    - "fixed_weight"
+    - "full_v2"
+    - "grpo"
+    - "no_bootstrap"
+    - "no_curriculum"
+
+checkpoint:
+  save_dir: "./checkpoints"
+  keep_last_n: 5
+  auto_resume: true
+  save_optimizer: true
+
+demo:
+  gradio_port: 7860
+  api_port: 8000
+  enable_human_feedback: true
+
+continual:
+  enabled: true
+  bootstrap_threshold: 0.95
+  human_review_queue: "./data/review_queue"
+  min_new_samples_for_retrain: 100
+  retrain_interval_episodes: 1000
+
+monitoring:
+  use_wandb: true
+  use_mlflow: false
+  prometheus_port: 9090
