@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Gradio 交互式 Demo
+  step-rl-demo:
+    build: .
+    image: step-rl:latest
+    container_name: step-rl-demo
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./outputs:/app/outputs
+      - ./models:/app/models
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      python -m step_rl.demo.demo
+      --config config.yaml
+      --policy /app/outputs/sft_ecommerce/sft_adapter
+    profiles:
+      - demo
+
+  # SFT 训练服务
+  step-rl-train:
+    build: .
+    image: step-rl:latest
+    container_name: step-rl-train
+    # Modern nvidia-docker syntax (recommended over 'runtime: nvidia')
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./checkpoints:/app/checkpoints
+      - ./models:/app/models
+      - ./config.yaml:/app/config.yaml
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HF_HOME=/app/.cache/huggingface
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    command: >
+      python -m step_rl.training.sft_warmup
+      --config config.yaml
+      --data_dir /app/data/sft
+      --output_dir /app/outputs/sft_ecommerce
+      --base_model Qwen/Qwen2.5-7B-Instruct
+      --num_epochs 3
+      --batch_size 1
+      --gradient_accumulation_steps 4
+      --max_seq_length 2048
+      --learning_rate 2e-4
+      --use_4bit
+    profiles:
+      - train
+
+  # 评测可视化
+  step-rl-benchmark:
+    build: .
+    image: step-rl:latest
+    container_name: step-rl-benchmark
+    volumes:
+      - ./outputs:/app/outputs
+      - ./config.yaml:/app/config.yaml
+    command: >
+      python -m step_rl.evaluation.benchmark
+      --config config.yaml
+      --mock
+    profiles:
+      - benchmark
+
+  # 全系统演示
+  step-rl-full-demo:
+    build: .
+    image: step-rl:latest
+    container_name: step-rl-full-demo
+    volumes:
+      - ./outputs:/app/outputs
+      - ./config.yaml:/app/config.yaml
+    command: >
+      python scripts/full_system_demo.py
+    profiles:
+      - full-demo
