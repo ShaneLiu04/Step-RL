@@ -7,7 +7,7 @@ skill, while the browser session persists so cart state is never reset.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from .browser import BrowserEnv
 from .rollout import Rollout, StepRecord, rollout_task
