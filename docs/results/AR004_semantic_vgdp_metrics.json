@@ -1,0 +1,37 @@
+{
+  "reward_mode": "vgdp",
+  "model": "C:\\Users\\l30086046\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-0.6B-Base\\snapshots\\main",
+  "sft_adapter": "outputs/ar004/sft_semantic",
+  "group_size": 3,
+  "epochs": 2,
+  "total_seconds": 804.97,
+  "history": [
+    {
+      "epoch": 1,
+      "success_rate": 0.5,
+      "mean_final_phi": 0.7222222222222222,
+      "mean_step_reward": 0.28050505050505053,
+      "steps": 33,
+      "raw_invalid": 0,
+      "repaired": 0,
+      "seconds": 411.23,
+      "loss": -0.010873771765652825,
+      "policy": -0.02129787907880895,
+      "kl": 0.5212054147439844
+    },
+    {
+      "epoch": 2,
+      "success_rate": 0.8333333333333334,
+      "mean_final_phi": 0.9444444444444445,
+      "mean_step_reward": 0.3955913978494624,
+      "steps": 31,
+      "raw_invalid": 0,
+      "repaired": 0,
+      "seconds": 392.25,
+      "loss": 0.08855772786773741,
+      "policy": 0.07824181113392115,
+      "kl": 0.5157957691699266
+    }
+  ],
+  "output_dir": "outputs\\ar004\\grpo_semantic_vgdp"
+}

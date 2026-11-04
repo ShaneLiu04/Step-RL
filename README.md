@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.2 — 验证器驱动的端侧 Web Agent 分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.3 — 验证器驱动 · 语义动作 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.2
+# Step-RL v3.3
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,19 +14,19 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-33%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-37%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让端侧模型**可训练**。  
-> 在 9 个真实留出任务上达到 **100%** 成功率；L4/L5 长链路任务从 **0% → 100%**。
+> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让动作**不惧 DOM 改版**。  
+> 在 9 个真实留出任务上达到 **100%**；在观测后随机化全部 DOM id 的压力条件下仍为 **100%**，非法动作 **0**。
 
 <p align="center">
+  <strong>语义 Set-of-Mark 动作</strong> ·
   <strong>可执行进度 Φ</strong> ·
   <strong>VGDP 稠密奖励</strong> ·
   <strong>Step-GRPO</strong> ·
-  <strong>验证器感知观测</strong> ·
   <strong>层级任务分解</strong> ·
-  <strong>DOM 接地修复</strong>
+  <strong>ID 扰动压力测试</strong>
 </p>
 
 </div>
@@ -163,10 +163,25 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - 控制器只执行真实 `goto` 导航；
 - 最终成功仍由**原任务验证器**判定。
 
-### 5. 验证器感知观测 + DOM 接地修复
+### 5. 语义 Set-of-Mark 动作（DOM 改版鲁棒）
+
+动作不再绑定 CSS id，而是引用当前观测中的元素编号：
+
+```json
+{"action": "click", "params": {"element": "e2"}}
+```
+
+- 观测为每个可交互元素分配 `e1/e2…`，并给出 `role + accessible_name`；
+- 执行器通过 `data-eid` 在真实 DOM 中定位；
+- 语义编号只在当前步有效，页面变化后重新生成；
+- 语义模式下关闭 selector 修复，非法动作显式失败，不做静默兜底。
+
+真实压力测试：观测后随机化全部 DOM id，selector 接口 L1–L2 成功率 0%，语义接口 100%。
+
+### 6. 验证器感知观测 + DOM 接地修复
 
 - Prompt 写入 `进度: 0.75 | 未完成: 填写收货人、提交订单`；
-- 选择器失效时，用真实 DOM 做唯一匹配修复；多候选一律放弃。
+- selector 模式下，选择器失效时用真实 DOM 做唯一匹配修复；多候选一律放弃。
 
 ---
 
@@ -181,23 +196,40 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | Sparse-GRPO + 修复 | 55.6% | 5.78 | 0.83 |
 | VGDP-GRPO + 修复 | 66.7% | 5.33 | 0.85 |
 | AR001 单策略路由 | 77.8% | 5.11 | 0.90 |
-| **AR003 层级分解（最终）** | **100%** | 5.89 | **1.00** |
+| AR003 层级分解（selector） | 100% | 5.89 | 1.00 |
+| **AR004 语义层级（最终）** | **100%** | 6.33 | **1.00** |
 
 逐任务：
 
-| 任务 | 等级 | AR001 路由 | **AR003** |
-|------|------|------------|-----------|
-| ev_search_p3 | L1 | ✓ | ✓ |
-| ev_search_p4 | L1 | ✓ | ✓ |
-| ev_add_p3 | L2 | ✓ | ✓ |
-| ev_add_p4 | L2 | ✓ | ✓ |
-| ev_qty_p3 | L3 | ✓ | ✓ |
-| ev_qty_p4 | L3 | ✓ | ✓ |
-| ev_checkout_p4 | L4 | ✓ | ✓ |
-| ev_checkout_p3（数量2+结算） | L4 | ✗ | **✓** |
-| ev_multi_p3p4（多商品） | L5 | ✗ | **✓** |
+| 任务 | 等级 | AR001 路由 | AR003 | **AR004** |
+|------|------|------------|-------|-----------|
+| ev_search_p3 | L1 | ✓ | ✓ | ✓ |
+| ev_search_p4 | L1 | ✓ | ✓ | ✓ |
+| ev_add_p3 | L2 | ✓ | ✓ | ✓ |
+| ev_add_p4 | L2 | ✓ | ✓ | ✓ |
+| ev_qty_p3 | L3 | ✓ | ✓ | ✓ |
+| ev_qty_p4 | L3 | ✓ | ✓ | ✓ |
+| ev_checkout_p4 | L4 | ✓ | ✓ | ✓ |
+| ev_checkout_p3（数量2+结算） | L4 | ✗ | ✓ | ✓ |
+| ev_multi_p3p4（多商品） | L5 | ✗ | ✓ | ✓ |
 
-### 5.2 数量控制消融（L3 留出）
+### 5.2 DOM 改版鲁棒性（真实压力测试）
+
+在观测快照之后随机化页面全部 DOM id，再执行动作：
+
+| 接口 | L1–L2 成功率 | 原始非法动作 | 修复依赖 |
+|------|--------------|--------------|----------|
+| selector + 修复 | **0%** | 100% | 100% |
+| **语义 Set-of-Mark** | **100%** | **0** | **0** |
+
+完整 9 任务：
+
+| 条件 | 成功率 | 平均步数 | 非法动作 | 修复 |
+|------|--------|----------|----------|------|
+| 语义层级（稳定 DOM） | 100% | 6.33 | 0 | 0 |
+| **语义层级（ID 扰动）** | **100%** | 6.33 | **0** | **0** |
+
+### 5.3 数量控制消融（L3 留出）
 
 | 组合 | 成功率 |
 |------|--------|
@@ -208,7 +240,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 训练日志：VGDP 第 2 轮训练成功率 66.7%，Sparse 33.3%；平均步奖励 +0.322 vs −0.020。
 
-### 5.3 组合回退记录
+### 5.4 组合回退记录
 
 | 尝试 | 成功率 | 决策 |
 |------|--------|------|
@@ -216,10 +248,12 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | + 技能记忆 prompt | 66.7% | 回退 |
 | + 验证器触发重规划 | 66.7% | 回退 |
 | LoRA 权重融合 | 0% | 回退 |
-| **AR003 层级分解** | **100%** | **最终保留** |
+| AR003 层级分解（selector） | 100% | 稳定 DOM 前最优 |
+| **AR004 语义层级** | **100%（含 ID 扰动）** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
-`docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`。
+`docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
+`docs/results/AR004_semantic_report.md`。
 
 ---
 
@@ -278,7 +312,8 @@ python scripts/edge_pipeline.py --stage sft --sft_epochs 1
 python scripts/edge_pipeline.py --stage rl --rl_epochs 2 --group_size 3 \
   --max_steps 6 --ppo_epochs 1
 python scripts/ar002_eval.py       # 记忆/重规划负结果复现
-python scripts/ar003_eval.py       # 最终层级分解评测
+python scripts/ar003_eval.py       # 层级分解（稳定 DOM）
+python scripts/ar004_train.py --stage all   # 语义数据/SFT/RL/稳定+扰动评测
 ```
 
 ### 测试
@@ -286,8 +321,9 @@ python scripts/ar003_eval.py       # 最终层级分解评测
 ```bash
 pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
-       tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py -v
-# 33 passed
+       tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
+       tests/test_edge_semantic.py -v
+# 37 passed
 ```
 
 ### 产物
@@ -296,7 +332,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
 outputs/
   ar001/   # SFT / VGDP / Sparse / 四组合矩阵
   ar002/   # 记忆与重规划负结果
-  ar003/   # 层级分解最终评测
+  ar003/   # 层级分解（稳定 DOM）
+  ar004/   # 语义 SFT / 语义 RL / 稳定+扰动评测
 ```
 
 ---
@@ -374,7 +411,7 @@ step-rl/
 │   │   ├── rollout.py            # 真实 rollout + 步奖励
 │   │   ├── step_grpo.py          # Step-GRPO
 │   │   ├── skill_memory.py       # 技能记忆（AR002 负结果）
-│   │   ├── hierarchical.py       # 层级分解（AR003，最终）
+│   │   ├── hierarchical.py       # 层级分解（AR003/AR004）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
 │   ├── environment/ training/ reward/ memory/ evaluation/  # 历史组件兼容
@@ -383,15 +420,16 @@ step-rl/
 │   ├── edge_pipeline.py
 │   ├── ar002_eval.py
 │   ├── ar003_eval.py
+│   ├── ar004_eval.py
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR003-hierarchical-decomposition/
-│   └── archive/AR001 / AR002
+│   ├── changes/AR004-semantic-som-robustness/
+│   └── archive/AR001 / AR002 / AR003
 │
-├── tests/                        # 33 项真实测试
+├── tests/                        # 37 项真实测试
 ├── docs/REPRODUCTION.md
 └── outputs/                      # 实验产物（不入库）
 ```
@@ -418,13 +456,15 @@ step-rl/
 |----|------|------|------|
 | AR001 | 真实环境 + VGDP + Step-GRPO | 77.8% | 中间最优 |
 | AR002 | 技能记忆 + 验证器触发重规划 | 66.7% | 回退，归档负结果 |
-| **AR003** | **验证器驱动层级任务分解** | **100%** | **最终方案** |
+| AR003 | 验证器驱动层级任务分解 | 100%（稳定 DOM） | 稳定 DOM 前最优 |
+| **AR004** | **语义 Set-of-Mark + ID 扰动鲁棒性** | **100%（稳定 + 扰动）** | **最终方案** |
 
 规格与完整实验记录：
 
 - `specs/archive/AR001-edge-verifier-step-grpo/`
 - `specs/archive/AR002-skill-memory-replanning/`
-- `specs/changes/AR003-hierarchical-decomposition/`
+- `specs/archive/AR003-hierarchical-decomposition/`
+- `specs/changes/AR004-semantic-som-robustness/`
 
 ---
 
@@ -439,7 +479,7 @@ step-rl/
 <details>
 <summary><b>Q2：专家前缀是否影响公平性？</b></summary>
 
-L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 VGDP 完全一致，差异只来自奖励。最终 AR003 评测**不使用前缀**。
+L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 VGDP 完全一致，差异只来自奖励。最终 AR004 评测**不使用前缀**。
 </details>
 
 <details>
@@ -455,9 +495,15 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 </details>
 
 <details>
-<summary><b>Q5：如何扩展到公网网站？</b></summary>
+<summary><b>Q5：语义动作如何保证不点错元素？</b></summary>
 
-替换 `BrowserEnv` 的服务端与 `TaskSpec`/验证器；注意 URL 白名单、登录态与安全沙箱。建议先在本地站点验证，再逐步放开域名。
+`eid` 只在当前观测快照内有效，执行器只接受本步生成的 `data-eid`；无效编号会显式失败，不做静默兜底。语义模式下关闭 selector 修复，避免掩盖错误。
+</details>
+
+<details>
+<summary><b>Q6：如何扩展到公网网站？</b></summary>
+
+替换 `BrowserEnv` 的服务端与 `TaskSpec`/验证器；语义接口可直接用于真实站点，但需注意 URL 白名单、登录态与安全沙箱。建议先在本地站点验证，再逐步放开域名。
 </details>
 
 ---
@@ -484,9 +530,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v32,
-  title = {Step-RL: Verifier-Grounded Hierarchical RL for Long-Horizon Web Agents},
-  version = {3.2},
+@software{step_rl_v33,
+  title = {Step-RL: Verifier-Grounded Hierarchical RL with Semantic Actions for Long-Horizon Web Agents},
+  version = {3.3},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -500,7 +546,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| v3.2 / AR003 | **推荐** | 层级分解，9/9 留出任务 |
+| **v3.3 / AR004** | **推荐** | 语义 Set-of-Mark，稳定 + ID 扰动 100% |
+| v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
 
