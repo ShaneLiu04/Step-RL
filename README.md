@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.3 — 验证器驱动 · 语义动作 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.4 — 跨布局语义迁移 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.3
+# Step-RL v3.4
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,19 +14,19 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-37%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-40%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让动作**不惧 DOM 改版**。  
-> 在 9 个真实留出任务上达到 **100%**；在观测后随机化全部 DOM id 的压力条件下仍为 **100%**，非法动作 **0**。
+> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让动作**跨布局迁移**。  
+> 在 9 个真实留出任务上达到 **100%**；在**未见过的第二套布局 + 观测后 DOM id 全随机化**条件下仍为 **100%**，非法动作 **0**。
 
 <p align="center">
+  <strong>跨布局语义迁移</strong> ·
   <strong>语义 Set-of-Mark 动作</strong> ·
   <strong>可执行进度 Φ</strong> ·
   <strong>VGDP 稠密奖励</strong> ·
-  <strong>Step-GRPO</strong> ·
   <strong>层级任务分解</strong> ·
-  <strong>ID 扰动压力测试</strong>
+  <strong>ID churn 压力测试</strong>
 </p>
 
 </div>
@@ -197,7 +197,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | VGDP-GRPO + 修复 | 66.7% | 5.33 | 0.85 |
 | AR001 单策略路由 | 77.8% | 5.11 | 0.90 |
 | AR003 层级分解（selector） | 100% | 5.89 | 1.00 |
-| **AR004 语义层级（最终）** | **100%** | 6.33 | **1.00** |
+| AR004 语义层级 | 100% | 6.33 | 1.00 |
+| **AR005 跨布局语义（最终）** | **100%（未见布局 + churn）** | 7.89 | **1.00** |
 
 逐任务：
 
@@ -229,7 +230,20 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | 语义层级（稳定 DOM） | 100% | 6.33 | 0 | 0 |
 | **语义层级（ID 扰动）** | **100%** | 6.33 | **0** | **0** |
 
-### 5.3 数量控制消融（L3 留出）
+### 5.3 跨布局零样本迁移（第二套真实商城）
+
+第二套布局 `ShopLite`：不同 id/标签层级/元素顺序，并加入排序、筛选、收藏、返回、继续购物等真实干扰按钮。
+
+| 条件 | 接口 | 成功率 | 平均步数 | 非法动作 |
+|------|------|--------|----------|----------|
+| 稳定 v2 | selector | 100% | 6.78 | 2 |
+| 稳定 v2 | 语义 | 100% | 7.33 | 0 |
+| **v2 + 观测后 id 全随机化** | selector | **0%** | 12.00 | 99 |
+| **v2 + 观测后 id 全随机化** | **语义** | **100%** | **7.89** | **0** |
+
+结论：仅换布局时 selector 仍可通过观测中的新 selector 工作；一旦真实页面在“决策→执行”之间重渲染，selector 立即失效，而语义元素编号仍可执行。
+
+### 5.4 数量控制消融（L3 留出）
 
 | 组合 | 成功率 |
 |------|--------|
@@ -240,7 +254,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 训练日志：VGDP 第 2 轮训练成功率 66.7%，Sparse 33.3%；平均步奖励 +0.322 vs −0.020。
 
-### 5.4 组合回退记录
+### 5.5 组合回退记录
 
 | 尝试 | 成功率 | 决策 |
 |------|--------|------|
@@ -249,7 +263,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | + 验证器触发重规划 | 66.7% | 回退 |
 | LoRA 权重融合 | 0% | 回退 |
 | AR003 层级分解（selector） | 100% | 稳定 DOM 前最优 |
-| **AR004 语义层级** | **100%（含 ID 扰动）** | **最终保留** |
+| AR004 语义层级 | 100%（同布局 ID 扰动） | 前最优 |
+| **AR005 跨布局语义迁移** | **100%（未见布局 + churn）** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -314,6 +329,7 @@ python scripts/edge_pipeline.py --stage rl --rl_epochs 2 --group_size 3 \
 python scripts/ar002_eval.py       # 记忆/重规划负结果复现
 python scripts/ar003_eval.py       # 层级分解（稳定 DOM）
 python scripts/ar004_train.py --stage all   # 语义数据/SFT/RL/稳定+扰动评测
+python scripts/ar005_eval.py       # 跨布局零样本 + 重渲染压力
 ```
 
 ### 测试
@@ -421,15 +437,16 @@ step-rl/
 │   ├── ar002_eval.py
 │   ├── ar003_eval.py
 │   ├── ar004_eval.py
+│   ├── ar005_eval.py
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR004-semantic-som-robustness/
-│   └── archive/AR001 / AR002 / AR003
+│   ├── changes/AR005-cross-layout-transfer/
+│   └── archive/AR001 / AR002 / AR003 / AR004
 │
-├── tests/                        # 37 项真实测试
+├── tests/                        # 40 项真实测试
 ├── docs/REPRODUCTION.md
 └── outputs/                      # 实验产物（不入库）
 ```
@@ -457,7 +474,8 @@ step-rl/
 | AR001 | 真实环境 + VGDP + Step-GRPO | 77.8% | 中间最优 |
 | AR002 | 技能记忆 + 验证器触发重规划 | 66.7% | 回退，归档负结果 |
 | AR003 | 验证器驱动层级任务分解 | 100%（稳定 DOM） | 稳定 DOM 前最优 |
-| **AR004** | **语义 Set-of-Mark + ID 扰动鲁棒性** | **100%（稳定 + 扰动）** | **最终方案** |
+| AR004 | 语义 Set-of-Mark + ID 扰动鲁棒性 | 100%（同布局） | 前最优 |
+| **AR005** | **跨布局零样本迁移 + 重渲染鲁棒** | **100%（未见布局 + churn）** | **最终方案** |
 
 规格与完整实验记录：
 
@@ -530,9 +548,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v33,
-  title = {Step-RL: Verifier-Grounded Hierarchical RL with Semantic Actions for Long-Horizon Web Agents},
-  version = {3.3},
+@software{step_rl_v34,
+  title = {Step-RL: Cross-Layout Verifier-Grounded Hierarchical RL with Semantic Actions},
+  version = {3.4},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -546,7 +564,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v3.3 / AR004** | **推荐** | 语义 Set-of-Mark，稳定 + ID 扰动 100% |
+| **v3.4 / AR005** | **推荐** | 跨布局零样本 + 重渲染，100% / 0 非法 |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |

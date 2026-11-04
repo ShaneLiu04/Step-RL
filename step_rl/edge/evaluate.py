@@ -33,6 +33,7 @@ async def evaluate_policy(
     replan: bool = False,
     perturb_ids: bool = False,
     semantic: bool = False,
+    layout: str = "v1",
 ) -> Dict[str, Any]:
     from .modeling import set_seed
 
@@ -41,7 +42,7 @@ async def evaluate_policy(
     model, tokenizer = load_policy(
         resolve_model_path(model_name), adapter_path, trainable=False
     )
-    server = LocalShopServer().start()
+    server = LocalShopServer(layout=layout).start()
     env = BrowserEnv(
         server,
         channel="msedge",

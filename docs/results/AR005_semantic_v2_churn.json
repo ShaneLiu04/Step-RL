@@ -1,0 +1,96 @@
+{
+  "label": "semantic_v2_churn",
+  "layout": "v2",
+  "semantic": true,
+  "perturb_ids": true,
+  "tasks": 9,
+  "success_rate": 1.0,
+  "avg_steps": 7.888888888888889,
+  "avg_progress": 1.0,
+  "raw_invalid": 0,
+  "repaired": 0,
+  "seconds": 527.47,
+  "results": [
+    {
+      "task_id": "ev_search_p3",
+      "level": 1,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 2,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_search_p4",
+      "level": 1,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 3,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_add_p4",
+      "level": 2,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 8,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_add_p3",
+      "level": 2,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 9,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_qty_p3",
+      "level": 3,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 6,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_qty_p4",
+      "level": 3,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 6,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_checkout_p4",
+      "level": 4,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 10,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_checkout_p3",
+      "level": 4,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 10,
+      "raw_invalid": 0,
+      "repaired": 0
+    },
+    {
+      "task_id": "ev_multi_p3p4",
+      "level": 5,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 17,
+      "raw_invalid": 0,
+      "repaired": 0
+    }
+  ]
+}
