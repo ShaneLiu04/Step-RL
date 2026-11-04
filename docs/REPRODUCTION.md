@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001–AR003：真实端侧 Verifier-Grounded Step-GRPO + 层级任务分解**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
+本手册对应 **AR001–AR004：真实端侧 Verifier-Grounded Step-GRPO + 层级任务分解 + 语义动作**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -42,8 +42,11 @@ python scripts/ar001_eval_router.py
 # 5) AR002 记忆/重规划对照（负结果，用于复现回退）
 python scripts/ar002_eval.py
 
-# 6) AR003 最终层级分解评测（100%）
+# 6) AR003 层级分解评测（稳定 DOM）
 python scripts/ar003_eval.py
+
+# 7) AR004 语义动作：数据 -> SFT -> 语义 RL -> 稳定/扰动评测
+python scripts/ar004_train.py --stage all
 ```
 
 产物：
@@ -57,7 +60,8 @@ outputs/ar001/
   eval/                     # 四组合与路由结果
 
 outputs/ar002/eval/         # 记忆/重规划对照（回退）
-outputs/ar003/eval/         # 层级分解最终结果
+outputs/ar003/eval/         # 层级分解（稳定 DOM）
+outputs/ar004/              # 语义 SFT/RL + 稳定/扰动评测
 ```
 
 ---
@@ -145,13 +149,15 @@ r_t = −0.02 + (1.0 if terminal and success else 0)
 | Sparse-GRPO + 修复 | 55.6% | 5.78 | 0.83 |
 | VGDP-GRPO + 修复（单模型） | 66.7% | 5.33 | 0.85 |
 | AR001 任务类型路由 | 77.8% | 5.11 | 0.90 |
-| **AR003 层级任务分解（最终）** | **100%** | 5.89 | **1.00** |
+| AR003 层级任务分解 | 100% | 5.89 | 1.00 |
+| **AR004 语义层级（最终）** | **100%** | 6.33 | **1.00** |
 
 逐任务报告：
 
 - `outputs/ar001/eval/eval_report.md`（四组合）
 - `outputs/ar001/eval/router.md`（AR001 路由）
-- `outputs/ar003/eval/hierarchical.json`（AR003 最终）
+- `outputs/ar003/eval/hierarchical.json`（AR003）
+- `outputs/ar004/eval/*.json`（AR004 稳定 + 扰动）
 
 AR001 路由规则（`step_rl/edge/router.py`）：
 
@@ -171,7 +177,18 @@ checkout    -> Sparse
 
 L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 
-### 3.2.1 组合回退记录（真实）
+### 3.2.1 DOM 改版鲁棒性（AR004）
+
+在观测快照之后随机化页面全部 DOM id：
+
+| 接口 | L1–L2 成功率 | 原始非法动作 | 修复依赖 |
+|------|--------------|--------------|----------|
+| selector + 修复 | 0% | 100% | 100% |
+| **语义 Set-of-Mark** | **100%** | **0** | **0** |
+
+完整 9 任务（语义层级）：稳定 DOM 100% / ID 扰动 100%，平均步数 6.33，非法动作 0。
+
+### 3.2.2 组合回退记录（真实）
 
 | 尝试 | 成功率 | 决策 |
 |------|--------|------|
@@ -179,7 +196,8 @@ L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 | 技能记忆 prompt | 66.7% | 回退 |
 | 验证器触发重规划 | 66.7% | 回退 |
 | LoRA 权重融合 | 0% | 回退 |
-| **AR003 层级分解** | **100%** | **最终保留** |
+| AR003 层级分解 | 100%（稳定 DOM） | 稳定 DOM 前最优 |
+| **AR004 语义层级** | **100%（稳定 + 扰动）** | **最终保留** |
 
 ### 3.3 本机算力说明
 
@@ -240,6 +258,9 @@ python scripts/edge_pipeline.py --stage sft --sft_epochs 3 --model "$STEP_RL_MOD
 python scripts/edge_pipeline.py --stage rl --rl_epochs 10 --group_size 8 \
   --max_steps 12 --ppo_epochs 2 --model "$STEP_RL_MODEL"
 python scripts/ar001_eval_full.py
+
+# 语义动作（最终方案）：数据 -> SFT -> 语义 RL -> 稳定/扰动评测
+python scripts/ar004_train.py --stage all --model "$STEP_RL_MODEL"
 ```
 
 > 当前 `run_sft` 的 `max_length` 默认 384（为端侧 16GB 调优）。7B 服务器建议在 Python 中直接调用：
