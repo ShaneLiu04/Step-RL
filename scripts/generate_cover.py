@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("VGDP", "verifier phi"), ("Step-GRPO", "token-level")]
+    badges = [("VGDP", "verifier phi"), ("HTD", "hierarchical")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   NO MOCK"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   REAL VERIFIER"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.1",
+        "v3.2",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "真实浏览器 · 可执行验证器 · 端侧步级强化学习",
+        "验证器驱动 · 端侧分层强化学习 · 长链路 Web Agent",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "拒绝 Mock：真实 HTTP 商城  ·  真实 Edge  ·  真实指标",
+        "目标：让成功可验证、奖励可归因、技能可组合",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,10 +412,10 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("真实商城环境", (34, 211, 238)),
-        ("可执行进度 Φ", (96, 165, 250)),
-        ("VGDP 步级奖励", (167, 139, 250)),
-        ("Step-GRPO", (244, 114, 182)),
+        ("可执行进度 Φ", (34, 211, 238)),
+        ("VGDP 稠密奖励", (96, 165, 250)),
+        ("Step-GRPO", (167, 139, 250)),
+        ("层级任务分解", (244, 114, 182)),
         ("DOM 接地修复", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("77.8%", "组合留出成功率", (125, 211, 252)),
-        ("+33.3pp", "相对 SFT 增益", (167, 139, 250)),
-        ("100%", "L3 数量任务", (244, 114, 182)),
-        ("23", "新增真实测试", (74, 222, 128)),
+        ("100%", "留出任务成功率", (125, 211, 252)),
+        ("+22.2pp", "相对 AR001 增益", (167, 139, 250)),
+        ("9/9", "L4/L5 长链路", (244, 114, 182)),
+        ("33", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556

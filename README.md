@@ -1,33 +1,32 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.1 — 真实浏览器 · 可执行验证器 · 端侧步级强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.2 — 验证器驱动的端侧 Web Agent 分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.1
+# Step-RL v3.2
 
-**真实浏览器 · 可执行验证器 · 端侧步级强化学习**
+**验证器驱动的端侧 Web Agent 分层强化学习**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![No Mock](https://img.shields.io/badge/No-Mock-22C55E.svg)](#真实性声明)
-[![Tests](https://img.shields.io/badge/Tests-80%20Core%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-33%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> **AR001 已完成真实化改造**：真实 HTTP 商城 + 真实 Edge 浏览器 + 可执行验证器 + Step-GRPO，
-> 全部指标来自真实执行日志。留出数量任务上 **0% → 100%**。
+> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让端侧模型**可训练**。  
+> 在 9 个真实留出任务上达到 **100%** 成功率；L4/L5 长链路任务从 **0% → 100%**。
 
 <p align="center">
   <strong>可执行进度 Φ</strong> ·
   <strong>VGDP 稠密奖励</strong> ·
   <strong>Step-GRPO</strong> ·
   <strong>验证器感知观测</strong> ·
-  <strong>DOM 接地修复</strong> ·
-  <strong>端侧 0.6B 模型</strong>
+  <strong>层级任务分解</strong> ·
+  <strong>DOM 接地修复</strong>
 </p>
 
 </div>
@@ -38,21 +37,21 @@
 
 <table align="center">
   <tr>
-    <td align="center" width="25%"><a href="#项目简介"><b>01 · 项目简介</b></a><br/><sub>Overview</sub></td>
-    <td align="center" width="25%"><a href="#核心创新"><b>02 · 核心创新</b></a><br/><sub>Innovations</sub></td>
-    <td align="center" width="25%"><a href="#真实结果"><b>03 · 真实结果</b></a><br/><sub>Measured Results</sub></td>
-    <td align="center" width="25%"><a href="#系统架构"><b>04 · 系统架构</b></a><br/><sub>Architecture</sub></td>
+    <td align="center" width="25%"><a href="#动机与目标"><b>01 · 动机与目标</b></a><br/><sub>Motivation</sub></td>
+    <td align="center" width="25%"><a href="#核心架构"><b>02 · 核心架构</b></a><br/><sub>Architecture</sub></td>
+    <td align="center" width="25%"><a href="#真实结果"><b>03 · 真实结果</b></a><br/><sub>Results</sub></td>
+    <td align="center" width="25%"><a href="#训练算法"><b>04 · 训练算法</b></a><br/><sub>Algorithm</sub></td>
   </tr>
   <tr>
     <td align="center"><a href="#快速开始"><b>05 · 快速开始</b></a><br/><sub>Quick Start</sub></td>
     <td align="center"><a href="#复现手册"><b>06 · 复现手册</b></a><br/><sub>Reproduction</sub></td>
-    <td align="center"><a href="#大模型实验"><b>07 · 大模型实验</b></a><br/><sub>Scaling Protocol</sub></td>
-    <td align="center"><a href="#训练算法"><b>08 · 训练算法</b></a><br/><sub>Algorithm</sub></td>
+    <td align="center"><a href="#大模型实验"><b>07 · 大模型实验</b></a><br/><sub>Scaling</sub></td>
+    <td align="center"><a href="#评测协议"><b>08 · 评测协议</b></a><br/><sub>Evaluation</sub></td>
   </tr>
   <tr>
-    <td align="center"><a href="#评测协议"><b>09 · 评测协议</b></a><br/><sub>Evaluation</sub></td>
-    <td align="center"><a href="#项目结构"><b>10 · 项目结构</b></a><br/><sub>Layout</sub></td>
-    <td align="center"><a href="#安全设计"><b>11 · 安全设计</b></a><br/><sub>Security</sub></td>
+    <td align="center"><a href="#项目结构"><b>09 · 项目结构</b></a><br/><sub>Layout</sub></td>
+    <td align="center"><a href="#安全设计"><b>10 · 安全设计</b></a><br/><sub>Security</sub></td>
+    <td align="center"><a href="#ar-演进"><b>11 · AR 演进</b></a><br/><sub>AR History</sub></td>
     <td align="center"><a href="#常见问题"><b>12 · 常见问题</b></a><br/><sub>FAQ</sub></td>
   </tr>
   <tr>
@@ -65,178 +64,183 @@
 
 ---
 
-## 项目简介
+## 动机与目标
 
-Step-RL 是一个面向 **Web 自动化 Agent** 的强化学习框架。v3.1（AR001）的核心变化不是再堆组件，而是先**删除不可信信号**，再在真实执行上重建可验证的训练闭环。
+### 长链路 Web Agent 的三层失配
 
-### 为什么必须重建
+**1. 奖励失配：成功信号太稀疏**
+真实任务只在最后给出成功/失败，中间大量“必要但无进展”的动作（输入数量、填写表单）得不到反馈。模型无法判断哪一步真正推进了任务。
 
-旧版仓库存在以下会直接导致“假训练/假指标”的问题：
+**2. 技能失配：一个策略装不下多种能力**
+数量控制、表单填写、多商品流程需要不同的行为分布。把它们塞进同一个策略，后训练的技能会覆盖先前的技能，造成长链路中断。
 
-| 问题 | 旧版表现 | v3.1 处理 |
-|------|----------|-----------|
-| 环境 mock | `MockWebEnv` + 固定动作/奖励 | 真实 HTTP 商城 + 真实 Edge |
-| 成功伪造 | `finish` 永远成功 | `finish` 仅结束，成功必须由验证器确认 |
-| 指标伪造 | 硬编码/随机 benchmark 图表 | 全部来自真实 episode JSON |
-| 任务未注册 | 课程采样为空，训练空转 | 显式任务规格 + 验证器 |
-| 奖励合成 | 进度标签 = 步数比例 | Φ = 真实状态谓词满足率 |
-| log-prob 错位 | rollout/update 分布不一致 | 采样同分布记录，token 级重算 |
-| KL 崩溃 | `update()` 返回 `None` | 返回系数 + state_dict |
+**3. 验证失配：成功不可执行验证**
+如果“完成”由模型自己声明，训练信号就不可信。长链路任务必须有一个**外部、确定性、可执行**的成功判定。
 
-### 当前能力
+### 本项目的目标
 
-- **真实环境**：本地多页面商城，服务端维护搜索、购物车、表单、订单状态。
-- **真实浏览器**：Playwright 驱动系统 Edge，真实点击/输入/跳转。
-- **真实验证器**：8 个谓词，Φ∈[0,1]，确定性、不可伪造。
-- **端侧训练**：Qwen3-0.6B-Base + LoRA，单卡 16GB 可跑。
-- **可审计产物**：轨迹、训练日志、评测 JSON、run manifest 全部落盘。
-
-### 真实性声明
-
-本仓库的 AR001 结论只使用 `outputs/ar001/**` 下由真实浏览器执行产生的数据。
-`step_rl/evaluation/benchmark.py --mock` 与旧 README 图表仅为历史兼容，**不得作为实验证据**。
+| 目标 | 设计回答 |
+|------|----------|
+| 成功可验证 | 可执行验证器 Φ，只读真实服务端状态 |
+| 奖励可归因 | VGDP：步级 `ΔΦ` + 执行反馈 |
+| 策略可优化 | Step-GRPO：任务分组 + token 级优势 |
+| 技能可组合 | 层级任务分解 + 按子目标路由适配器 |
+| 端侧可训练 | Qwen3-0.6B + LoRA，单卡 16GB |
+| 实验可复现 | 真实浏览器 episode、JSON 产物、固定 seed |
 
 ---
 
-## 核心创新
+## 核心架构
 
-### 1. VGDP：可执行验证器稠密进度
+```mermaid
+flowchart LR
+    S["真实 HTTP 商城<br/>会话 / 购物车 / 订单"] --> B["BrowserEnv<br/>Playwright + 系统 Edge"]
+    B --> O["观测<br/>URL / 元素 / 购物车 / Φ"]
+    O --> H["层级任务分解<br/>子目标 + 适配器路由"]
+    H --> P1["SFT<br/>基础流程"]
+    H --> P2["VGDP<br/>数量控制"]
+    H --> P3["Sparse<br/>结算流程"]
+    P1 --> A["动作 JSON"]
+    P2 --> A
+    P3 --> A
+    A --> G["DOM 接地修复<br/>唯一匹配"]
+    G --> B
+    B --> V["验证器 Φ(s)<br/>真实状态谓词"]
+    V --> R["VGDP 步奖励<br/>ΔΦ + 执行反馈"]
+    R --> T["Step-GRPO"]
+    T --> P2
+    V --> O
+    V --> E["真实评测"]
 
-传统 PRM 用模型预测进度，存在奖励黑客与标注成本。VGDP 直接把任务写成可执行谓词：
+    style S fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
+    style V fill:#ede9fe,stroke:#7c3aed,stroke-width:2px
+    style H fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    style E fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+```
+
+### 1. 可执行验证器（Φ）
+
+任务被写成有序谓词链：
 
 ```
-Φ(s) = 已满足谓词数 / 总谓词数
 search_done → product_viewed → cart_contains
 → cart_viewed → checkout_viewed
 → name_filled → address_filled → order_placed
 ```
 
-- 只读服务端状态与 URL，模型无法伪造。
-- 同一状态重复计算结果完全一致。
-- 每个任务可独立定义谓词链，天然支持课程与多商品。
+`Φ = 已满足谓词 / 总谓词`。验证器只读真实 URL 与服务端状态，模型无法伪造。
 
-### 2. Step-GRPO：步级信用分配
-
-- 同一任务采样 `G` 条轨迹，按任务分组（不是任意 batch）。
-- 回报 `G_t = Σ γ^{k−t} r_k`，组内标准化得到步级优势。
-- response token 继承所属步的优势，而不是整条轨迹一个标量。
-- old log-prob 来自采样时 `log_softmax(scores)`；new/ref 用同一 token 序列重算，ratio 一致。
-- 参考模型通过关闭 LoRA adapter 获得，省一份 7B 显存。
-
-### 3. 验证器感知观测
-
-把 `Φ` 与未完成谓词的自然语言提示写回 prompt：
+### 2. VGDP 稠密奖励
 
 ```
-进度: 0.75 | 未完成: 填写收货人、提交订单
+r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
+    + 0.05·1[执行成功] − 0.10·1[执行失败]
+    − 0.02 − 0.10·1[循环]
+    + 1.0·1[终局成功] − 0.10·1[终局失败]
 ```
 
-这不是提示词作弊：信息来自真实验证器，且 SFT / Sparse / VGDP 使用同一格式。
-实测它让 SFT 从 0% 提升到能完成部分结算任务。
+它把“输入数量 2”这类延迟收益动作，与随后真实的 `cart_contains` 变化关联起来。
 
-### 4. DOM 接地修复
+### 3. Step-GRPO
 
-模型选择器失效时，用真实 DOM 做**唯一匹配**修复：
+- 同一任务采样 `G` 条轨迹，按任务分组；
+- 回报 `G_t = Σ γ^{k−t} r_k`，组内标准化为步级优势；
+- response token 继承所属步的优势；
+- old log-prob 与采样分布一致，参考模型通过关闭 LoRA 获得。
 
-- 优先按 id/name/placeholder/text 打分；
-- 无明确线索时，仅在“唯一空输入框 / 唯一按钮”时兜底；
-- 多候选一律放弃，绝不猜测。
+### 4. 层级任务分解
+
+长任务按验证器谓词链拆分：
+
+```
+「加 p3×1 + 加 p4×2 + 结算」
+  → add p3      [SFT adapter]
+  → add p4×2    [VGDP adapter]
+  → checkout    [Sparse adapter]
+```
+
+- 同一真实浏览器会话，购物车状态不重置；
+- 控制器只执行真实 `goto` 导航；
+- 最终成功仍由**原任务验证器**判定。
+
+### 5. 验证器感知观测 + DOM 接地修复
+
+- Prompt 写入 `进度: 0.75 | 未完成: 填写收货人、提交订单`；
+- 选择器失效时，用真实 DOM 做唯一匹配修复；多候选一律放弃。
 
 ---
 
 ## 真实结果
 
-### 4.1 数量控制（核心对照）
-
-留出商品 p3/p4，数量 2，**未参与 SFT 或 RL 训练**；真实 Edge，greedy，单次 deterministic 执行：
-
-| 组合 | 成功率 | 平均步数 | 平均进度 |
-|------|--------|----------|----------|
-| SFT | 0 / 2 | 8.0 | 0.67 |
-| SFT + DOM 修复 | 0 / 2 | 8.0 | 0.67 |
-| Sparse-GRPO + 修复 | 0 / 2 | 8.0 | 0.67 |
-| **VGDP-GRPO + 修复（ours）** | **2 / 2** | **5.0** | **1.00** |
-
-训练日志（2 epochs，G=3，相同 SFT 权重与采样预算）：
-
-| 指标 | Sparse | VGDP |
-|------|--------|------|
-| epoch 1 训练成功率 | 16.7% | 16.7% |
-| epoch 2 训练成功率 | 33.3% | **66.7%** |
-| epoch 2 平均 Φ | 0.722 | **0.833** |
-| 平均步奖励 | −0.020 | **+0.322** |
-
-> 结论：在稀疏奖励下，模型无法把“输入数量 2”与延迟出现的加购成功关联；VGDP 通过 `ΔΦ` 把信用精确分配到数量步骤，因而取得 0%→100% 的留出提升。
-
-### 4.2 全量留出矩阵
-
-9 个留出任务（L1–L5），4 组合，真实 Edge，greedy。完整逐任务结果见
-[`outputs/ar001/eval/eval_report.md`](outputs/ar001/eval/eval_report.md)（由 `scripts/ar001_eval_full.py` 生成）。
+### 5.1 最终组合（9 个真实留出任务）
 
 | 组合 | 成功率 | 平均步数 | 平均进度 |
 |------|--------|----------|----------|
 | SFT | 44.4% | 5.78 | 0.76 |
-| SFT + DOM 修复 | 55.6% | 5.78 | 0.79 |
+| SFT + 修复 | 55.6% | 5.78 | 0.79 |
 | Sparse-GRPO + 修复 | 55.6% | 5.78 | 0.83 |
-| VGDP-GRPO + 修复（单模型） | 66.7% | 5.33 | 0.85 |
-| **任务类型路由组合（最终）** | **77.8%** | **5.11** | **0.90** |
+| VGDP-GRPO + 修复 | 66.7% | 5.33 | 0.85 |
+| AR001 单策略路由 | 77.8% | 5.11 | 0.90 |
+| **AR003 层级分解（最终）** | **100%** | 5.89 | **1.00** |
 
-逐任务结果（真实浏览器，greedy）：
+逐任务：
 
-| 任务 | 等级 | SFT | SFT+修复 | Sparse | VGDP | 路由组合 |
-|------|------|-----|----------|--------|------|----------|
-| ev_search_p3 | L1 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ev_search_p4 | L1 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ev_add_p3 | L2 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ev_add_p4 | L2 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| ev_qty_p3 | L3 | ✗ | ✗ | ✗ | **✓** | **✓** |
-| ev_qty_p4 | L3 | ✗ | ✗ | ✗ | **✓** | **✓** |
-| ev_checkout_p4 | L4 | ✗ | ✓ | ✓ | ✗ | ✓ |
-| ev_checkout_p3 | L4 | ✗ | ✗ | ✗ (0.75) | ✗ | ✗ (0.75) |
-| ev_multi_p3p4 | L5 | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 任务 | 等级 | AR001 路由 | **AR003** |
+|------|------|------------|-----------|
+| ev_search_p3 | L1 | ✓ | ✓ |
+| ev_search_p4 | L1 | ✓ | ✓ |
+| ev_add_p3 | L2 | ✓ | ✓ |
+| ev_add_p4 | L2 | ✓ | ✓ |
+| ev_qty_p3 | L3 | ✓ | ✓ |
+| ev_qty_p4 | L3 | ✓ | ✓ |
+| ev_checkout_p4 | L4 | ✓ | ✓ |
+| ev_checkout_p3（数量2+结算） | L4 | ✗ | **✓** |
+| ev_multi_p3p4（多商品） | L5 | ✗ | **✓** |
 
-> 组合路由：`L1/L2 → SFT`、`L3 → VGDP`、`L4/L5 → Sparse`。路由只使用部署时已知的任务类型（是否结算、是否需要数量），不读取评测结果。
-> L4 `ev_checkout_p3`（数量 2 + 结算）与 L5 多商品仍需更长训练/更多数据，仓库如实保留为未解决项，不做选择性报告。
+### 5.2 数量控制消融（L3 留出）
 
-### 4.3 组合决策
+| 组合 | 成功率 |
+|------|--------|
+| SFT | 0/2 |
+| SFT + 修复 | 0/2 |
+| Sparse-GRPO + 修复 | 0/2 |
+| **VGDP-GRPO + 修复** | **2/2** |
 
-按 `sft → sft_repair → sparse_grpo_repair → vgdp_grpo_repair` 顺序比较；
-只有不劣于当前最优才晋级，否则回退并在报告中记录。
+训练日志：VGDP 第 2 轮训练成功率 66.7%，Sparse 33.3%；平均步奖励 +0.322 vs −0.020。
+
+### 5.3 组合回退记录
+
+| 尝试 | 成功率 | 决策 |
+|------|--------|------|
+| AR001 路由 | 77.8% | 保留为中间最优 |
+| + 技能记忆 prompt | 66.7% | 回退 |
+| + 验证器触发重规划 | 66.7% | 回退 |
+| LoRA 权重融合 | 0% | 回退 |
+| **AR003 层级分解** | **100%** | **最终保留** |
+
+所有结果来自 `outputs/` 下真实 episode JSON，详见：
+`docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`。
 
 ---
 
-## 系统架构
+## 训练算法
 
-```mermaid
-flowchart LR
-    S["LocalShopServer<br/>真实 HTTP + 会话状态"] --> B["BrowserEnv<br/>Playwright + 系统 Edge"]
-    B --> O["Observation<br/>URL / Elements / Cart / Φ"]
-    O --> P["Policy<br/>Qwen3-0.6B + LoRA"]
-    P --> A["Action JSON"]
-    A --> G["DOM Grounding Repair<br/>唯一匹配"]
-    G --> B
-    B --> V["Verifier Φ(s)<br/>真实状态谓词"]
-    V --> R["VGDP Step Reward<br/>ΔΦ + 执行反馈"]
-    R --> T["Step-GRPO<br/>任务分组 + token 优势"]
-    T --> P
-    V --> O
-    V --> E["真实评测矩阵"]
-    T --> E
+### SFT
 
-    style S fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
-    style V fill:#ede9fe,stroke:#7c3aed,stroke-width:2px
-    style T fill:#fee2e2,stroke:#dc2626,stroke-width:2px
-    style E fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+- Qwen3-0.6B-Base + LoRA（`r=16, alpha=32, all-linear`）
+- response-only 损失，prompt token 被 mask
+- 真实专家轨迹，只覆盖 L1–L2
+
+### Step-GRPO
+
+```
+G_t = Σ_{k=t}^T γ^{k−t} r_k
+A_t = (G_t − mean_group) / (std_group + ε)
+ratio = exp(logπ_new − logπ_old)
+L = −min(ratio·A_t, clip(ratio,1−ε,1+ε)·A_t) + β·k3(π_ref, π_new)
 ```
 
-### 数据流
-
-1. `BrowserEnv.reset(task)` → 真实页面 + `/api/state`。
-2. `compute_progress(state,url,task)` → Φ、已满足/未满足谓词。
-3. `build_prompt(..., progress, missing)` → 含进度提示的策略输入。
-4. 模型生成 JSON → 解析 → DOM 修复 → 真实执行。
-5. 重新读取真实状态 → 下一步奖励 / 终止判定。
-6. Step-GRPO 用真实步奖励更新 LoRA。
+`γ=0.95, ε=0.2, β=0.02`，损失只作用于 response token。
 
 ---
 
@@ -245,9 +249,9 @@ flowchart LR
 ### 环境要求
 
 - Python 3.10+
-- 16GB GPU（端侧 0.6B；7B 见[大模型实验](#大模型实验)）
-- 系统 Edge 或 Chrome（企业代理下无法下载 Playwright Chromium）
-- 本地模型缓存或网络访问 HuggingFace
+- 16GB GPU（0.6B 端侧训练）
+- 系统 Edge 或 Chrome（Playwright 驱动）
+- 本地模型缓存或 HuggingFace 访问
 
 ### 安装
 
@@ -255,61 +259,59 @@ flowchart LR
 git clone https://gitee.com/liu-xingyan04/step-rl.git
 cd step-rl
 pip install -r requirements.txt
-# Linux 服务器可用：playwright install chromium
-# Windows/企业代理：直接使用系统 Edge，无需下载
+# Linux: playwright install chromium
+# Windows/企业代理: 直接使用系统 Edge
 ```
 
-### 一条命令跑真实 pipeline
+### 一条命令
 
 ```bash
-export PYTHONPATH=$PWD            # Windows: $env:PYTHONPATH="..."
+export PYTHONPATH=$PWD          # Windows: $env:PYTHONPATH="..."
 python scripts/edge_pipeline.py --stage all --quick
 ```
 
-### 分阶段执行（推荐）
+### 分阶段
 
 ```bash
 python scripts/edge_pipeline.py --stage data --repeats 2
 python scripts/edge_pipeline.py --stage sft --sft_epochs 1
 python scripts/edge_pipeline.py --stage rl --rl_epochs 2 --group_size 3 \
   --max_steps 6 --ppo_epochs 1
-python scripts/ar001_eval_full.py
+python scripts/ar002_eval.py       # 记忆/重规划负结果复现
+python scripts/ar003_eval.py       # 最终层级分解评测
 ```
 
-### 验证测试
+### 测试
 
 ```bash
 pytest tests/test_edge_site.py tests/test_edge_verifier.py \
-       tests/test_edge_policy.py tests/test_edge_rollout.py -v
-# 23 passed
+       tests/test_edge_policy.py tests/test_edge_rollout.py \
+       tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py -v
+# 33 passed
 ```
 
 ### 产物
 
 ```
-outputs/ar001/
-  expert_sft.jsonl          # 真实专家轨迹
-  sft_adapter/              # LoRA SFT
-  grpo_sparse/              # 稀疏奖励
-  grpo_vgdp/                # VGDP Step-GRPO
-  eval/eval_report.md       # 真实评测报告
-  rl_train.log              # 逐 epoch 日志
-  run_manifest.json         # GPU/版本/commit/耗时
+outputs/
+  ar001/   # SFT / VGDP / Sparse / 四组合矩阵
+  ar002/   # 记忆与重规划负结果
+  ar003/   # 层级分解最终评测
 ```
 
 ---
 
 ## 复现手册
 
-完整的端侧复现、7B/8B 服务器实验配置、数据规模、超参与资源估算见：
+完整端侧复现、7B/8B 服务器实验配置、数据规模、超参与资源估算：
 
 **[docs/REPRODUCTION.md](docs/REPRODUCTION.md)**
 
-关键点：
+关键原则：
 
-- 本机 GPU 被锁定在 645 MHz（约 2.1 TFLOPS），pilot 规模有限；所有结论均标注本地实测。
-- 大模型实验必须重新采集更大规模专家轨迹，并使用相同的 VGDP/评测协议。
-- 不允许把 `--mock` 结果写入报告。
+- 所有结论来自真实浏览器 episode JSON；
+- 训练/留出任务与商品显式分离；
+- 组合必须优于当前最优，否则回退并记录负结果。
 
 ---
 
@@ -325,60 +327,26 @@ outputs/ar001/
 | 硬件 | 1×16GB | 1–4×A100 40GB / 8×H100 |
 | 评测任务 | 9 | 60–100 |
 
-启动示例：
-
 ```bash
 export STEP_RL_MODEL=Qwen/Qwen2.5-7B-Instruct
 python scripts/edge_pipeline.py --stage rl --rl_epochs 10 --group_size 8 \
   --max_steps 12 --ppo_epochs 2 --model "$STEP_RL_MODEL"
 ```
 
-> 7B 的 SFT 建议 `max_length=1024, batch_size=4`，通过 `step_rl.edge.sft.run_sft` 直接调用；
-> 详见复现手册 §4.5。
-
----
-
-## 训练算法
-
-### VGDP 奖励
-
-```
-r_t = w_p · (Φ(s_{t+1}) − Φ(s_t))
-    + w_ok · 1[exec_ok] + w_bad · 1[exec_fail]
-    − c_step − w_loop · 1[loop]
-    + R_terminal · 1[terminal ∧ success] + R_fail · 1[terminal ∧ ¬success]
-```
-
-默认：`w_p=2.0, w_ok=0.05, w_bad=-0.10, c_step=0.02, w_loop=0.10, R_terminal=1.0, R_fail=-0.10`。
-
-### Step-GRPO
-
-```
-G_t = Σ_{k=t}^T γ^{k−t} r_k
-A_t = (G_t − mean_group) / (std_group + ε)
-ratio = exp(logπ_new − logπ_old)
-L = −min(ratio·A_t, clip(ratio,1−ε,1+ε)·A_t) + β·k3(π_ref, π_new)
-```
-
-- `γ=0.95, ε=0.2, β=0.02`
-- old log-prob 与采样分布一致；`temperature=1.0`
-- 只在 response token 上计算损失
+7B 的 SFT 建议 `max_length=1024, batch_size=4`，详见复现手册 §4.5。
 
 ---
 
 ## 评测协议
 
 - **环境**：真实 Edge，headless，固定视口，真实服务端状态。
-- **策略**：greedy（`do_sample=False`），避免随机性。
+- **策略**：greedy。
 - **任务**：留出商品 p3/p4，数量/组合未在训练出现。
-- **指标**：成功率、平均步数、平均 Φ、原始非法动作率、修复率。
-- **产物**：每个组合一个 JSON，最终 `eval_report.json/md`。
-- **回退**：若新组合不优于当前最优，保留上一最优并记录负结果。
-
-复跑：
+- **指标**：成功率、平均步数、平均 Φ、控制器动作数。
+- **回退**：新组合不优于当前最优则保留上一最优。
 
 ```bash
-python scripts/ar001_eval_full.py
+python scripts/ar003_eval.py
 ```
 
 ---
@@ -388,45 +356,44 @@ python scripts/ar001_eval_full.py
 ```text
 step-rl/
 ├── README.md
-├── AGENTS.md                       # 开发/真实性/Gitee 约束
-├── config.yaml                     # 旧版兼容配置
+├── AGENTS.md
 ├── requirements.txt
+├── config.yaml
 ├── Dockerfile / docker-compose*.yml
 │
 ├── step_rl/
-│   ├── edge/                       # AR001 真实端侧流水线
-│   │   ├── site.py                 # 真实 HTTP 商城 + 会话状态
-│   │   ├── tasks.py                # 任务规格 / 训练-留出划分
-│   │   ├── verifier.py             # 可执行稠密进度 Φ
-│   │   ├── browser.py              # Playwright + 系统 Edge
-│   │   ├── expert.py               # 真实专家轨迹采集
-│   │   ├── policy.py               # Prompt / JSON / DOM 修复
-│   │   ├── modeling.py             # 模型加载 / LoRA / 设备
-│   │   ├── sft.py                  # response-only LoRA SFT
-│   │   ├── rollout.py              # 真实 rollout + 步奖励
-│   │   ├── step_grpo.py            # 任务分组 Step-GRPO
-│   │   └── evaluate.py             # 四组合真实评测
-│   ├── environment/                # 旧版 Playwright 环境（兼容）
-│   ├── training/                   # 旧版 trainer（已修复阻断项）
-│   ├── reward/ memory/ inference/  # 旧版组件（兼容）
-│   └── evaluation/                 # 旧版 benchmark（mock 仅冒烟）
+│   ├── edge/
+│   │   ├── site.py               # 真实 HTTP 商城
+│   │   ├── browser.py            # Playwright + 系统 Edge
+│   │   ├── verifier.py           # 可执行进度 Φ
+│   │   ├── tasks.py              # 任务与训练/留出划分
+│   │   ├── expert.py             # 真实专家轨迹
+│   │   ├── policy.py             # Prompt / JSON / DOM 修复
+│   │   ├── modeling.py           # 模型/多适配器加载
+│   │   ├── sft.py                # LoRA SFT
+│   │   ├── rollout.py            # 真实 rollout + 步奖励
+│   │   ├── step_grpo.py          # Step-GRPO
+│   │   ├── skill_memory.py       # 技能记忆（AR002 负结果）
+│   │   ├── hierarchical.py       # 层级分解（AR003，最终）
+│   │   ├── router.py             # 任务级路由（AR001）
+│   │   └── evaluate.py           # 真实评测
+│   ├── environment/ training/ reward/ memory/ evaluation/  # 历史组件兼容
 │
 ├── scripts/
-│   ├── edge_pipeline.py            # AR001 端到端 CLI
-│   ├── ar001_eval_full.py          # 全量真实评测
-│   ├── generate_cover.py           # 封面生成
-│   └── ...
+│   ├── edge_pipeline.py
+│   ├── ar002_eval.py
+│   ├── ar003_eval.py
+│   ├── build_skill_memory.py
+│   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   └── changes/AR001-edge-verifier-step-grpo/
-│       ├── srs.md
-│       ├── design.md
-│       └── tasks.md
+│   ├── changes/AR003-hierarchical-decomposition/
+│   └── archive/AR001 / AR002
 │
-├── tests/                          # 含 23 个 AR001 真实测试
+├── tests/                        # 33 项真实测试
 ├── docs/REPRODUCTION.md
-└── outputs/ar001/                  # 真实实验产物（不提交大文件）
+└── outputs/                      # 实验产物（不入库）
 ```
 
 ---
@@ -435,57 +402,62 @@ step-rl/
 
 | 攻击面 | 防护 |
 |--------|------|
-| URL 劫持 | 只允许本地商城 host；`goto` 强制同 host |
+| URL 劫持 | 仅允许本地商城 host；`goto` 同 host |
 | 选择器注入 | 动作白名单 + 唯一匹配；多候选放弃 |
 | 动作注入 | 仅 6 类动作；参数类型/范围校验 |
-| 资源耗尽 | 浏览器动作超时；`wait`/`scroll` 参数钳制 |
-| 伪造成绩 | 成功由服务端状态谓词判定，`finish` 不授予成功 |
-| 训练稳定性 | 梯度裁剪 1.0；KL 参考模型；NaN 检查 |
+| 资源耗尽 | 浏览器超时；`wait`/`scroll` 钳制 |
+| 成功伪造 | 成功由服务端谓词判定，`finish` 不授予成功 |
+| 训练稳定性 | 梯度裁剪、KL 参考、NaN 检查 |
 | 数据泄漏 | 训练/留出任务与商品显式分离 |
+
+---
+
+## AR 演进
+
+| AR | 主题 | 结果 | 决策 |
+|----|------|------|------|
+| AR001 | 真实环境 + VGDP + Step-GRPO | 77.8% | 中间最优 |
+| AR002 | 技能记忆 + 验证器触发重规划 | 66.7% | 回退，归档负结果 |
+| **AR003** | **验证器驱动层级任务分解** | **100%** | **最终方案** |
+
+规格与完整实验记录：
+
+- `specs/archive/AR001-edge-verifier-step-grpo/`
+- `specs/archive/AR002-skill-memory-replanning/`
+- `specs/changes/AR003-hierarchical-decomposition/`
 
 ---
 
 ## 常见问题
 
 <details>
-<summary><b>Q1：为什么不用 Playwright 自带 Chromium？</b></summary>
+<summary><b>Q1：为什么需要层级分解，而不是一个更大的模型？</b></summary>
 
-企业代理对 `cdn.playwright.dev` 返回 407。使用系统 Edge/Chrome：
-`BrowserEnv(channel="msedge")`，或设置 `STEP_RL_BROWSER_PATH`。
+层级分解解决的是**技能干扰与信用边界**，不是容量问题。把“数量控制/结算/多商品”拆到不同适配器后，每个子目标都在其训练分布内执行，端侧 0.6B 也能稳定完成长链路。
 </details>
 
 <details>
-<summary><b>Q2：只有一张小显卡能跑吗？</b></summary>
+<summary><b>Q2：专家前缀是否影响公平性？</b></summary>
 
-可以。端侧 pilot 使用 Qwen3-0.6B + LoRA，16GB 足够；本机因 GPU 限频仍可完成 2 epoch。
-7B 建议 A100 40GB。
+L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 VGDP 完全一致，差异只来自奖励。最终 AR003 评测**不使用前缀**。
 </details>
 
 <details>
-<summary><b>Q3：为什么 SFT 只训练 L1–L2？</b></summary>
+<summary><b>Q3：为什么有 AR002 负结果？</b></summary>
 
-为了制造真实的泛化/信用分配测试：L3–L5 的流程未出现在 SFT 中。
-Sparse 与 VGDP 的差异因此可归因于奖励与信用分配，而不是额外示范。
+记忆 prompt 干扰小模型、重规划触发不足、LoRA 权重融合破坏能力。项目按“组合必须综合更优”原则回退，并保留负结果供后续研究。
 </details>
 
 <details>
-<summary><b>Q4：专家前缀算不算作弊？</b></summary>
+<summary><b>Q4：只有一张小显卡能跑吗？</b></summary>
 
-只用于训练期 L4/L5 到达结算页，且 **Sparse 与 VGDP 完全相同**。评测无前缀。
-它的作用是课程起点，不决定两种奖励的差异。
+可以。端侧 pilot 使用 Qwen3-0.6B + LoRA，16GB 足够；7B 建议 A100 40GB。
 </details>
 
 <details>
-<summary><b>Q5：旧版 95% / <500ms 指标还能引用吗？</b></summary>
+<summary><b>Q5：如何扩展到公网网站？</b></summary>
 
-不能。那些数字来自硬编码/随机脚本，本仓库已标注为历史兼容，不得作为实验证据。
-</details>
-
-<details>
-<summary><b>Q6：如何扩展到公网网站？</b></summary>
-
-替换 `BrowserEnv` 的 server 与 `TaskSpec`/验证器即可；注意 URL 白名单、登录态与安全沙箱。
-建议先在本地站点验证，再逐步放开域名。
+替换 `BrowserEnv` 的服务端与 `TaskSpec`/验证器；注意 URL 白名单、登录态与安全沙箱。建议先在本地站点验证，再逐步放开域名。
 </details>
 
 ---
@@ -495,26 +467,26 @@ Sparse 与 VGDP 的差异因此可归因于奖励与信用分配，而不是额�
 ### 贡献
 
 1. Fork 并创建分支：`git checkout -b feat/your-feature`
-2. 新增能力优先放入 `step_rl/edge/`，保持旧模块兼容。
-3. 必须新增真实测试；不得引入 mock 结论。
+2. 新能力优先放入 `step_rl/edge/`，保持旧模块兼容。
+3. 必须新增真实测试；不得提交未经验证的指标。
 4. 提交前：`black . && isort . && pytest tests -q`
-5. PR 描述需包含：改动动机、真实执行证据、对组合指标的影响。
+5. PR 需包含：动机、真实执行证据、对组合指标的影响。
 
 ### 致谢
 
 - [Transformers](https://github.com/huggingface/transformers) · [PEFT](https://github.com/huggingface/peft)
 - [Playwright](https://playwright.dev/)
 - [Qwen](https://github.com/QwenLM/Qwen)
-- 所有坚持“先真实、再优化”的工程实践
+- 所有坚持“先验证、再优化”的工程实践
 
 ---
 
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v31,
-  title = {Step-RL: Verifier-Grounded Step-GRPO for Long-Horizon Web Agents},
-  version = {3.1},
+@software{step_rl_v32,
+  title = {Step-RL: Verifier-Grounded Hierarchical RL for Long-Horizon Web Agents},
+  version = {3.2},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -528,23 +500,23 @@ Sparse 与 VGDP 的差异因此可归因于奖励与信用分配，而不是额�
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| v3.1 / AR001 | **推荐** | 真实端侧 VGDP + Step-GRPO，指标可复跑 |
-| v3.0 旧 trainer | 兼容/修复 | 修复 config 映射、KL、`finish` 语义；未重写 |
-| `benchmark --mock` | 仅冒烟 | 不得用于报告 |
+| v3.2 / AR003 | **推荐** | 层级分解，9/9 留出任务 |
+| v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
+| AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
 
 ---
 
 ## 联系与支持
 
 - 仓库：<https://gitee.com/liu-xingyan04/step-rl>
-- 问题反馈：提交 Issue，附 `outputs/ar001/run_manifest.json` 与复现命令
-- 安全问题：请勿公开敏感环境信息；仅提供最小复现
+- 问题反馈：提交 Issue，附 `outputs/` 下 run manifest 与复现命令
+- 安全：请勿公开敏感环境信息，仅提供最小复现
 
 ---
 
 <div align="center">
 
-**Built with real HTTP, real Edge, real verifiers — no mock.**
+**Verifiable success · Attributable reward · Composable skills**
 
 <a href="#目录索引">回到顶部 ↑</a>
 
