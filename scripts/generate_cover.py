@@ -1,11 +1,12 @@
-"""Generate the Step-RL v3.0 README cover banner.
+"""Generate the Step-RL v3.3 README cover banner.
 
-Outputs a 1600x720 PNG (rendered at 2x and downsampled) to
-``docs/images/cover.png``. Pure Pillow + NumPy, no external assets.
+The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
+Pillow + NumPy composition: no external assets, only system fonts.
 """
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 
 import numpy as np
@@ -15,67 +16,62 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 # Canvas / scale
 # ---------------------------------------------------------------------------
 S = 2
-W, H = 1600, 720
+W, H = 1920, 960
 CW, CH = W * S, H * S
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "images" / "cover.jpg"
-OUT.parent.mkdir(parents=True, exist_ok=True)
 
 FONT_DIR = Path("C:/Windows/Fonts")
-F_EN = FONT_DIR / "segoeuib.ttf"
-F_EN_SEMI = FONT_DIR / "seguisb.ttf"
-F_EN_LIGHT = FONT_DIR / "segoeuil.ttf"
-F_CN = FONT_DIR / "msyhbd.ttc"
-F_CN_REG = FONT_DIR / "msyh.ttc"
 
 
-def font(path: Path, size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(str(path), size * S)
+def first_font(*names: str) -> str:
+    for name in names:
+        p = FONT_DIR / name
+        if p.exists():
+            return str(p)
+    return "arial.ttf"
+
+
+F_BOLD = first_font("segoeuib.ttf", "arialbd.ttf")
+F_SEMI = first_font("seguisb.ttf", "arialbd.ttf")
+F_LIGHT = first_font("segoeuil.ttf", "arial.ttf")
+F_CN_BOLD = first_font("msyhbd.ttc", "simhei.ttf")
+F_CN = first_font("msyh.ttc", "simhei.ttf")
+F_MONO = first_font("consola.ttf", "CascadiaMono.ttf", "arial.ttf")
+F_MONO_BOLD = first_font("consolab.ttf", "CascadiaMono.ttf", "arialbd.ttf")
+
+_font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
+
+
+def font(path: str, size: int) -> ImageFont.FreeTypeFont:
+    key = (path, size)
+    if key not in _font_cache:
+        _font_cache[key] = ImageFont.truetype(path, size * S)
+    return _font_cache[key]
+
+
+def measure(fnt: ImageFont.FreeTypeFont, s: str) -> tuple[float, float]:
+    b = fnt.getbbox(s)
+    return (b[2] - b[0]) / S, (b[3] - b[1]) / S
 
 
 # ---------------------------------------------------------------------------
-# Background
+# Colour / gradient helpers
 # ---------------------------------------------------------------------------
-def build_background() -> Image.Image:
-    y, x = np.mgrid[0:CH, 0:CW].astype(np.float32)
+def h_gradient(size: tuple[int, int], colors: list[tuple[int, int, int]]) -> Image.Image:
+    w, h = size
+    xs = np.linspace(0.0, 1.0, w, dtype=np.float32)
+    stops = np.linspace(0.0, 1.0, len(colors), dtype=np.float32)
+    arr = np.zeros((h, w, 3), dtype=np.uint8)
+    for c in range(3):
+        vals = np.interp(xs, stops, [col[c] for col in colors]).astype(np.uint8)
+        arr[:, :, c] = vals[None, :]
+    return Image.fromarray(arr, "RGB")
 
-    # Base vertical gradient (top -> bottom)
-    t = (y / CH)[..., None]
-    top = np.array([7, 11, 30], dtype=np.float32)
-    mid = np.array([15, 24, 56], dtype=np.float32)
-    bot = np.array([8, 13, 34], dtype=np.float32)
-    upper = top + (mid - top) * np.clip(t * 2, 0, 1)
-    lower = mid + (bot - mid) * np.clip((t - 0.5) * 2, 0, 1)
-    base = np.where(t < 0.5, upper, lower)
 
-    img = np.repeat(base, 1, axis=0)
-
-    # Radial glows: (cx, cy, radius, rgb, strength)
-    glows = [
-        (1180 * S, 230 * S, 560 * S, (37, 99, 235), 0.62),
-        (1420 * S, 600 * S, 470 * S, (124, 58, 237), 0.50),
-        (300 * S, 110 * S, 430 * S, (6, 182, 212), 0.20),
-        (760 * S, 760 * S, 520 * S, (236, 72, 153), 0.10),
-    ]
-    for cx, cy, r, rgb, strength in glows:
-        d = np.sqrt((x - cx) ** 2 + (y - cy) ** 2) / r
-        falloff = np.clip(1 - d, 0, 1) ** 2.4
-        img += falloff[..., None] * np.array(rgb, dtype=np.float32) * strength
-
-    # Faint grid
-    cell = 40 * S
-    grid = ((x % cell < 1.5) | (y % cell < 1.5)).astype(np.float32)
-    img += grid[..., None] * np.array([120, 150, 220], dtype=np.float32) * 0.055
-
-    # Vignette
-    nx = (x - CW / 2) / (CW / 2)
-    ny = (y - CH / 2) / (CH / 2)
-    vig = np.clip(1 - 0.45 * (nx**2 + ny**2), 0, 1)
-    img *= vig[..., None]
-
-    img = np.clip(img, 0, 255).astype(np.uint8)
-    return Image.fromarray(img, "RGB").convert("RGBA")
+def rgba(color: tuple[int, int, int], alpha: int) -> tuple[int, int, int, int]:
+    return tuple(color) + (alpha,)
 
 
 def rounded_rect(draw, box, radius, fill=None, outline=None, width=1):
@@ -85,11 +81,72 @@ def rounded_rect(draw, box, radius, fill=None, outline=None, width=1):
         radius=radius * S,
         fill=fill,
         outline=outline,
-        width=int(width * S),
+        width=max(1, int(width * S)),
     )
 
 
-def text(draw, xy, s, fnt, fill, anchor="la", shadow=None, shadow_off=(0, 4)):
+def panel(
+    canvas: Image.Image,
+    box: tuple[float, float, float, float],
+    radius: float,
+    fill: tuple[int, int, int, int],
+    border_colors: list[tuple[int, int, int]],
+    border_alpha: int = 90,
+    border_w: float = 1.2,
+    highlight: bool = True,
+):
+    x0, y0, x1, y1 = [int(v * S) for v in box]
+    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+    grad = h_gradient((w, h), border_colors).convert("RGBA")
+    grad.putalpha(border_alpha)
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, w - 1, h - 1), radius=radius * S, fill=255
+    )
+    border = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    border.paste(grad, (0, 0), mask)
+
+    bw = max(1, int(border_w * S))
+    inner = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(inner).rounded_rectangle(
+        (bw, bw, w - bw, h - bw), radius=max(1, radius * S - bw), fill=255
+    )
+    alpha = border.getchannel("A")
+    alpha = Image.composite(Image.new("L", (w, h), 0), alpha, inner)
+    border.putalpha(alpha)
+
+    body = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(body)
+    bd.rounded_rectangle(
+        (bw, bw, w - bw, h - bw),
+        radius=max(1, radius * S - bw),
+        fill=fill,
+    )
+    if highlight:
+        gloss = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        gd = ImageDraw.Draw(gloss)
+        gd.rounded_rectangle(
+            (bw, bw, w - bw, int(h * 0.42)),
+            radius=max(1, radius * S - bw),
+            fill=(255, 255, 255, 7),
+        )
+        body.alpha_composite(gloss)
+    border.alpha_composite(body)
+    canvas.alpha_composite(border, (x0, y0))
+
+
+def text(
+    draw,
+    xy,
+    s,
+    fnt,
+    fill,
+    anchor="la",
+    shadow=None,
+    shadow_off=(0, 3),
+):
     if shadow:
         sx, sy = shadow_off
         draw.text(
@@ -102,229 +159,208 @@ def text(draw, xy, s, fnt, fill, anchor="la", shadow=None, shadow_off=(0, 4)):
     draw.text((xy[0] * S, xy[1] * S), s, font=fnt, fill=fill, anchor=anchor)
 
 
-def measure(fnt, s) -> tuple[int, int]:
-    b = fnt.getbbox(s)
-    return (b[2] - b[0]) / S, (b[3] - b[1]) / S
-
-
-def gradient_text(canvas, xy, s, fnt, colors, anchor="la"):
-    """Draw text filled with a horizontal gradient, with soft shadow."""
+def gradient_text(
+    canvas,
+    xy,
+    s,
+    fnt,
+    colors,
+    anchor="la",
+    glow=None,
+    glow_alpha=90,
+    glow_blur=16,
+):
     b = fnt.getbbox(s)
     tw, th = b[2] - b[0], b[3] - b[1]
-    pad = 8 * S
+    pad = int(70 * S)
     mask = Image.new("L", (tw + pad * 2, th + pad * 2), 0)
     ImageDraw.Draw(mask).text((pad - b[0], pad - b[1]), s, font=fnt, fill=255)
 
-    grad = Image.new("RGB", mask.size, colors[0])
-    gd = ImageDraw.Draw(grad)
-    seg = mask.size[0] / (len(colors) - 1)
-    for i in range(mask.size[0]):
-        pos = i / seg
-        i0 = min(int(pos), len(colors) - 2)
-        f = pos - i0
-        c0 = np.array(colors[i0], dtype=np.float32)
-        c1 = np.array(colors[i0 + 1], dtype=np.float32)
-        c = (c0 + (c1 - c0) * f).astype(int)
-        gd.line([(i, 0), (i, mask.size[1])], fill=tuple(c))
-
-    # Shadow layer
-    shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    smask = Image.new("L", canvas.size, 0)
-    # approximate anchor placement
-    ax = xy[0] * S
-    ay = xy[1] * S
+    ax, ay = xy[0] * S, xy[1] * S
     if anchor == "la":
         ox, oy = ax - pad, ay - pad
     elif anchor == "ma":
-        ox, oy = ax - (tw + pad * 2) / 2, ay - pad
+        ox, oy = ax - tw / 2 - pad, ay - pad
+    elif anchor == "mm":
+        ox, oy = ax - tw / 2 - pad, ay - th / 2 - pad
     else:
         ox, oy = ax - pad, ay - pad
-    smask.paste(mask, (int(ox), int(oy) + 5 * S))
-    smask = smask.filter(ImageFilter.GaussianBlur(7 * S))
-    shadow.putalpha(smask.point(lambda v: int(v * 0.55)))
 
+    if glow:
+        gm = mask.filter(ImageFilter.GaussianBlur(glow_blur * S))
+        glow_img = Image.new("RGBA", gm.size, rgba(glow, 0))
+        glow_img.putalpha(gm.point(lambda v: int(v * glow_alpha / 255)))
+        layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        layer.alpha_composite(glow_img, (int(ox), int(oy)))
+        canvas.alpha_composite(layer)
+
+    grad = h_gradient(mask.size, colors).convert("RGBA")
+    grad.putalpha(mask)
     layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    layer.paste(grad, (int(ox), int(oy)), mask)
-    canvas.alpha_composite(shadow)
+    layer.alpha_composite(grad, (int(ox), int(oy)))
     canvas.alpha_composite(layer)
 
 
 # ---------------------------------------------------------------------------
-# Right-hand agent loop card
+# Background
 # ---------------------------------------------------------------------------
-def draw_agent_loop(canvas: Image.Image):
-    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer, "RGBA")
+def build_background() -> Image.Image:
+    y, x = np.mgrid[0:H, 0:W].astype(np.float32)
 
-    card = (944, 92, 1524, 656)
-    rounded_rect(
-        d, card, 34, fill=(255, 255, 255, 12), outline=(255, 255, 255, 42), width=1.4
+    t = (y / H)[..., None]
+    top = np.array([4, 9, 23], dtype=np.float32)
+    mid = np.array([9, 19, 45], dtype=np.float32)
+    bot = np.array([5, 9, 24], dtype=np.float32)
+    upper = top + (mid - top) * np.clip(t * 2, 0, 1)
+    lower = mid + (bot - mid) * np.clip((t - 0.5) * 2, 0, 1)
+    base = np.where(t < 0.5, upper, lower)
+
+    img = np.repeat(base, 1, axis=0)
+
+    glows = [
+        (240, 40, 620, (34, 211, 238), 0.16),
+        (1450, 80, 720, (37, 99, 235), 0.38),
+        (1840, 820, 640, (124, 58, 237), 0.28),
+        (780, 980, 700, (236, 72, 153), 0.08),
+        (360, 900, 520, (6, 182, 212), 0.08),
+    ]
+    for cx, cy, r, rgb, strength in glows:
+        d = np.sqrt((x - cx) ** 2 + (y - cy) ** 2) / r
+        falloff = np.clip(1 - d, 0, 1) ** 2.2
+        img += falloff[..., None] * np.array(rgb, dtype=np.float32) * strength
+
+    nx = (x - W / 2) / (W / 2)
+    ny = (y - H / 2) / (H / 2)
+    vig = np.clip(1 - 0.42 * (nx**2 + ny**2), 0, 1)
+    img *= vig[..., None]
+
+    img = np.clip(img, 0, 255).astype(np.uint8)
+    canvas = Image.fromarray(img, "RGB").resize((CW, CH), Image.LANCZOS)
+    canvas = canvas.convert("RGBA")
+
+    d = ImageDraw.Draw(canvas, "RGBA")
+
+    # Dot grid
+    step = 38 * S
+    for gy in range(step, CH, step):
+        for gx in range(step, CW, step):
+            a = 4 + (3 if (gx // step + gy // step) % 5 == 0 else 0)
+            d.ellipse(
+                (gx - 0.6 * S, gy - 0.6 * S, gx + 0.6 * S, gy + 0.6 * S),
+                fill=(118, 150, 220, a),
+            )
+
+    # Sparse stars
+    rng = random.Random(31)
+    for _ in range(130):
+        sx = rng.uniform(0, W) * S
+        sy = rng.uniform(0, H) * S
+        sr = rng.uniform(0.4, 1.2) * S
+        a = rng.randint(10, 44)
+        col = rng.choice([(180, 220, 255), (140, 180, 255), (220, 200, 255)])
+        d.ellipse((sx - sr, sy - sr, sx + sr, sy + sr), fill=rgba(col, a))
+
+    # Top accent line
+    bar = h_gradient(
+        (CW, 4 * S), [(34, 211, 238), (96, 165, 250), (129, 140, 248), (192, 132, 252)]
     )
-    # inner subtle top highlight
-    rounded_rect(
-        d,
-        (card[0] + 1, card[1] + 1, card[2] - 1, card[1] + 90),
-        33,
-        fill=(255, 255, 255, 8),
+    canvas.alpha_composite(bar.convert("RGBA"), (0, 0))
+    glow = Image.new("RGBA", (CW, 12 * S), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    gd.rectangle((0, 0, CW, 3 * S), fill=(96, 165, 250, 26))
+    glow = glow.filter(ImageFilter.GaussianBlur(5 * S))
+    canvas.alpha_composite(glow, (0, 0))
+
+    return canvas
+
+
+# ---------------------------------------------------------------------------
+# Small drawing primitives
+# ---------------------------------------------------------------------------
+def pill(draw, box, radius, fill, outline, width=1):
+    rounded_rect(draw, box, radius, fill=fill, outline=outline, width=width)
+
+
+def check_badge(draw, cx, cy, r, color=(52, 211, 153)):
+    draw.ellipse(
+        ((cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S),
+        fill=rgba(color, 34),
+        outline=rgba(color, 160),
+        width=max(1, int(0.8 * S)),
+    )
+    draw.line(
+        [((cx - r * 0.42) * S, cy * S), ((cx - r * 0.08) * S, (cy + r * 0.34) * S)],
+        fill=rgba(color, 255),
+        width=max(1, int(1.3 * S)),
+    )
+    draw.line(
+        [((cx - r * 0.08) * S, (cy + r * 0.34) * S), ((cx + r * 0.5) * S, (cy - r * 0.38) * S)],
+        fill=rgba(color, 255),
+        width=max(1, int(1.3 * S)),
     )
 
-    text(
-        d,
-        (984, 138),
-        "A G E N T   L O O P",
-        font(F_EN_SEMI, 17),
-        (128, 152, 196, 235),
-        anchor="lm",
+
+def check_mark(draw, x, y, size, color=(52, 211, 153), width=1.4):
+    draw.line(
+        [((x - size * 0.45) * S, y * S), ((x - size * 0.05) * S, (y + size * 0.38) * S)],
+        fill=rgba(color, 255),
+        width=max(1, int(width * S)),
     )
+    draw.line(
+        [((x - size * 0.05) * S, (y + size * 0.38) * S), ((x + size * 0.55) * S, (y - size * 0.42) * S)],
+        fill=rgba(color, 255),
+        width=max(1, int(width * S)),
+    )
+
+
+def som_badge(draw, x, y, label, color, size=20):
     rounded_rect(
-        d,
-        (1372, 124, 1484, 152),
-        14,
-        fill=(34, 197, 94, 28),
-        outline=(74, 222, 128, 110),
+        draw,
+        (x, y, x + size, y + size),
+        6,
+        fill=(4, 10, 24, 235),
+        outline=rgba(color, 220),
         width=1,
     )
     text(
-        d, (1428, 137), "ONLINE", font(F_EN_SEMI, 13), (134, 239, 172, 255), anchor="mm"
+        draw,
+        (x + size / 2, y + size / 2 + 0.5),
+        label,
+        font(F_MONO_BOLD, 9),
+        rgba(color, 255),
+        anchor="mm",
     )
 
-    cx, cy, radius = 1234, 376, 146
-    node_positions = {
-        "Observe": (cx, cy - radius),
-        "Act": (cx + radius, cy),
-        "Verify": (cx, cy + radius),
-        "Reward": (cx - radius, cy),
-    }
-    node_style = {
-        "Observe": ((34, 211, 238), (8, 145, 178)),
-        "Act": ((96, 165, 250), (37, 99, 235)),
-        "Verify": ((192, 132, 252), (124, 58, 237)),
-        "Reward": ((244, 114, 182), (219, 39, 119)),
-    }
 
-    # Dashed ring
-    import math
-
-    segments = 72
-    for i in range(segments):
-        if i % 3 == 2:
-            continue
-        a0 = 2 * math.pi * i / segments
-        a1 = 2 * math.pi * (i + 0.55) / segments
-        x0 = (cx + radius * math.cos(a0)) * S
-        y0 = (cy + radius * math.sin(a0)) * S
-        x1 = (cx + radius * math.cos(a1)) * S
-        y1 = (cy + radius * math.sin(a1)) * S
-        d.line([(x0, y0), (x1, y1)], fill=(255, 255, 255, 55), width=int(1.4 * S))
-
-    # Directional chevrons along the ring (clockwise)
-    for ang in (315, 45, 135, 225):
-        a = math.radians(ang)
-        px, py = cx + radius * math.cos(a), cy + radius * math.sin(a)
-        tx, ty = -math.sin(a), math.cos(a)
-        nx, ny = -ty, tx
-        tip = (px + tx * 11, py + ty * 11)
-        b1 = (px - tx * 5 + nx * 7, py - ty * 5 + ny * 7)
-        b2 = (px - tx * 5 - nx * 7, py - ty * 5 - ny * 7)
-        d.polygon(
-            [(tip[0] * S, tip[1] * S), (b1[0] * S, b1[1] * S), (b2[0] * S, b2[1] * S)],
-            fill=(170, 195, 255, 170),
-        )
-
-    # Center core
+def draw_product_icon(draw, x, y, kind, color):
     rounded_rect(
-        d,
-        (cx - 118, cy - 52, cx + 118, cy + 52),
-        22,
-        fill=(255, 255, 255, 18),
-        outline=(255, 255, 255, 65),
-        width=1.3,
+        draw,
+        (x, y, x + 36, y + 36),
+        9,
+        fill=rgba(color, 26),
+        outline=rgba(color, 90),
+        width=1,
     )
-    text(
-        d,
-        (cx, cy - 12),
-        "Policy Core",
-        font(F_EN_SEMI, 20),
-        (236, 242, 255, 255),
-        anchor="mm",
-    )
-    text(
-        d,
-        (cx, cy + 18),
-        "Qwen + LoRA",
-        font(F_EN_LIGHT, 14),
-        (158, 176, 212, 255),
-        anchor="mm",
-    )
-
-    # Nodes
-    for name, (nx, ny) in node_positions.items():
-        c_hi, c_lo = node_style[name]
-        for r, alpha in ((44, 26), (36, 60), (30, 255)):
-            col = tuple(int(v * 1.0) for v in c_lo) + (alpha,)
-            d.ellipse(
-                [(nx - r) * S, (ny - r) * S, (nx + r) * S, (ny + r) * S],
-                fill=col if alpha < 255 else tuple(c_lo) + (255,),
-            )
-        d.ellipse(
-            [(nx - 16) * S, (ny - 16) * S, (nx + 16) * S, (ny + 16) * S],
-            fill=tuple(c_hi) + (255,),
-        )
-
-    label_pos = {
-        "Observe": (cx, cy - radius - 64, "mb"),
-        "Act": (cx + radius + 58, cy, "lm"),
-        "Verify": (cx, cy + radius + 40, "mt"),
-        "Reward": (cx - radius - 58, cy, "rm"),
-    }
-    for name, (lx, ly, anchor) in label_pos.items():
-        text(
-            d, (lx, ly), name, font(F_EN_SEMI, 19), (222, 232, 252, 255), anchor=anchor
-        )
-
-    # Bottom badges
-    badges = [("SoM-SAI", "semantic"), ("HTD", "hierarchical")]
-    bx = 984
-    for label, value in badges:
-        w = 128
+    if kind == "keyboard":
+        for row in range(2):
+            for col in range(3):
+                kx = x + 8 + col * 8
+                ky = y + 11 + row * 9
+                rounded_rect(draw, (kx, ky, kx + 5.5, ky + 6), 1.5, fill=rgba(color, 160))
+    else:
         rounded_rect(
-            d,
-            (bx, 588, bx + w, 636),
-            16,
-            fill=(255, 255, 255, 14),
-            outline=(255, 255, 255, 48),
+            draw,
+            (x + 11, y + 8, x + 25, y + 28),
+            7,
+            fill=rgba(color, 130),
+            outline=rgba(color, 210),
             width=1,
         )
-        text(
-            d,
-            (bx + w / 2, 604),
-            label,
-            font(F_EN_SEMI, 15),
-            (226, 236, 255, 255),
-            anchor="mm",
+        draw.line(
+            [((x + 18) * S, (y + 11) * S), ((x + 18) * S, (y + 16) * S)],
+            fill=rgba((6, 12, 28), 255),
+            width=max(1, int(1 * S)),
         )
-        text(
-            d,
-            (bx + w / 2, 624),
-            value,
-            font(F_EN_LIGHT, 12),
-            (150, 170, 208, 255),
-            anchor="mm",
-        )
-        bx += w + 18
-
-    # Floating accents
-    for fx, fy, fr, col in [
-        (1000, 470, 3, (34, 211, 238)),
-        (1470, 300, 2.5, (192, 132, 252)),
-        (1450, 468, 2, (244, 114, 182)),
-    ]:
-        d.ellipse(
-            [(fx - fr) * S, (fy - fr) * S, (fx + fr) * S, (fy + fr) * S],
-            fill=tuple(col) + (160,),
-        )
-
-    canvas.alpha_composite(layer)
 
 
 # ---------------------------------------------------------------------------
@@ -336,187 +372,429 @@ def draw_left(canvas: Image.Image):
 
     # Top pill
     pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SEMANTIC ACTIONS"
-    f_pill = font(F_EN_SEMI, 15)
+    f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
-    rounded_rect(
-        d,
-        (88, 66, 88 + pw + 52, 106),
-        20,
-        fill=(255, 255, 255, 16),
-        outline=(120, 160, 235, 80),
-        width=1,
-    )
-    d.ellipse([107 * S, 83 * S, 115 * S, 91 * S], fill=(74, 222, 128, 255))
-    text(d, (126, 86), pill_txt, f_pill, (176, 194, 228, 255), anchor="lm")
+    pill(d, (96, 88, 96 + pw + 44, 126), 19, (255, 255, 255, 14), (120, 160, 235, 78), 1)
+    d.ellipse((112 * S, 101 * S, 120 * S, 109 * S), fill=(74, 222, 128, 255))
+    text(d, (129, 107), pill_txt, f_pill, (184, 202, 236, 255), anchor="lm")
+
+    # Vertical accent rail
+    accent = h_gradient(
+        (188 * S, 3 * S),
+        [(34, 211, 238), (129, 140, 248), (192, 132, 252)],
+    ).rotate(90, expand=True).convert("RGBA")
+    accent.putalpha(215)
+    accent_glow = accent.filter(ImageFilter.GaussianBlur(4 * S))
+    layer.alpha_composite(accent_glow, (70 * S, 150 * S))
+    layer.alpha_composite(accent, (72 * S, 150 * S))
 
     # Title
-    f_title = font(F_EN, 148)
+    f_title = font(F_BOLD, 190)
     gradient_text(
         canvas,
-        (86, 136),
+        (92, 150),
         "Step-RL",
         f_title,
-        [(125, 211, 252), (129, 140, 248), (232, 121, 249)],
+        [(245, 250, 255), (125, 211, 252), (129, 140, 248), (232, 121, 249)],
+        glow=(96, 165, 250),
+        glow_alpha=90,
+        glow_blur=18,
     )
 
-    # v3.0 badge
+    # Version badge
     title_w = measure(f_title, "Step-RL")[0]
-    bx = 86 + title_w + 28
-    by = 196
-    rounded_rect(
-        d,
-        (bx, by, bx + 122, by + 54),
-        18,
-        fill=(79, 70, 229, 60),
-        outline=(165, 180, 252, 150),
-        width=1.4,
-    )
+    bx = 92 + title_w + 24
+    by = 238
+    pill(d, (bx, by, bx + 132, by + 56), 17, (79, 70, 229, 58), (165, 180, 252, 150), 1.2)
+    text(d, (bx + 66, by + 28), "v3.3", font(F_BOLD, 26), (232, 238, 255, 255), anchor="mm")
+
+    # English subtitle
     text(
         d,
-        (bx + 61, by + 28),
-        "v3.3",
-        font(F_EN_SEMI, 26),
-        (224, 231, 255, 255),
-        anchor="mm",
+        (96, 386),
+        "Verifier-Grounded Hierarchical RL",
+        font(F_SEMI, 39),
+        (232, 240, 255, 255),
+        shadow=(0, 0, 0, 130),
+        shadow_off=(0, 2),
     )
 
-    # Subtitle
+    # Chinese tagline
     text(
         d,
-        (88, 316),
-        "验证器驱动 · 语义动作 · 端侧分层强化学习",
-        font(F_CN, 35),
-        (226, 234, 252, 255),
-        anchor="la",
-        shadow=(0, 0, 0, 120),
-        shadow_off=(0, 3),
+        (96, 438),
+        "让成功可验证 · 让奖励可归因 · 让技能可组合 · 让动作不惧 DOM 改版",
+        font(F_CN, 26),
+        (170, 190, 224, 255),
     )
 
     # Divider
     line = Image.new("RGBA", (CW, 2 * S), (0, 0, 0, 0))
     ld = ImageDraw.Draw(line)
-    for i in range(900 * S):
-        alpha = int(150 * (1 - i / (900 * S)))
-        ld.line([(i, 0), (i, 2 * S)], fill=(120, 150, 210, alpha))
-    canvas.alpha_composite(line, (88 * S, 384 * S))
-
-    # Problem statement
-    text(
-        d,
-        (88, 410),
-        "目标：DOM 改版可执行、成功可验证、技能可组合",
-        font(F_CN_REG, 21),
-        (148, 168, 204, 255),
-        anchor="la",
-    )
+    for i in range(880 * S):
+        a = int(150 * (1 - i / (880 * S)))
+        ld.line([(i, 0), (i, 2 * S)], fill=(120, 150, 210, a))
+    canvas.alpha_composite(line, (96 * S, 492 * S))
 
     # Feature chips
     chips = [
-        ("语义元素 e1/e2", (34, 211, 238)),
-        ("可执行进度 Φ", (96, 165, 250)),
-        ("VGDP 稠密奖励", (167, 139, 250)),
-        ("层级任务分解", (244, 114, 182)),
-        ("ID 扰动压力测试", (74, 222, 128)),
+        ("Qwen3-0.6B", (34, 211, 238)),
+        ("LoRA", (96, 165, 250)),
+        ("Playwright", (129, 140, 248)),
+        ("Step-GRPO", (192, 132, 252)),
+        ("16GB 单卡", (244, 114, 182)),
     ]
-    f_chip = font(F_CN_REG, 17)
-    cxp = 88
+    f_chip = font(F_CN, 17)
+    cx = 96
     for label, col in chips:
         tw, _ = measure(f_chip, label)
-        w = tw + 38
-        rounded_rect(
-            d,
-            (cxp, 458, cxp + w, 500),
-            21,
-            fill=tuple(col) + (24,),
-            outline=tuple(col) + (110,),
-            width=1,
-        )
-        d.ellipse(
-            [(cxp + 16) * S, 476 * S, (cxp + 22) * S, 482 * S], fill=tuple(col) + (255,)
-        )
-        text(d, (cxp + 29, 470), label, f_chip, (214, 226, 246, 255), anchor="la")
-        cxp += w + 12
+        w = tw + 34
+        pill(d, (cx, 516, cx + w, 558), 21, rgba(col, 22), rgba(col, 110), 1)
+        d.ellipse(((cx + 14) * S, 534 * S, (cx + 20) * S, 540 * S), fill=rgba(col, 255))
+        text(d, (cx + 27, 537), label, f_chip, (222, 233, 250, 255), anchor="lm")
+        cx += w + 11
+
+    # Result bars
+    bars = [
+        ("语义 SoM 动作", "DOM id 全扰动后仍 100% 可执行", (34, 211, 238)),
+        ("可执行验证器 Φ", "只读真实服务端状态，finish 不授予成功", (167, 139, 250)),
+        ("层级任务分解", "SFT / VGDP / Sparse 适配器，9/9 留出任务通过", (74, 222, 128)),
+    ]
+    f_bar_title = font(F_CN_BOLD, 19)
+    f_bar_body = font(F_CN, 17)
+    by = 586
+    for title, body, col in bars:
+        pill(d, (96, by, 980, by + 56), 14, rgba(col, 20), rgba(col, 100), 1)
+        d.rectangle((98 * S, (by + 5) * S, 101 * S, (by + 51) * S), fill=rgba(col, 230))
+        d.ellipse(((116) * S, (by + 22) * S, (124) * S, (by + 30) * S), fill=rgba(col, 255))
+        text(d, (134, by + 28), title, f_bar_title, (232, 240, 255, 255), anchor="lm")
+        tw, _ = measure(f_bar_title, title)
+        text(d, (134 + tw + 18, by + 28), body, f_bar_body, (166, 185, 220, 255), anchor="lm")
+        by += 64
 
     # Metrics
     metrics = [
         ("100%", "稳定/扰动成功率", (125, 211, 252)),
         ("0", "非法动作", (167, 139, 250)),
-        ("9/9", "L4/L5 长链路", (244, 114, 182)),
+        ("9/9", "留出任务", (244, 114, 182)),
         ("37", "真实测试", (74, 222, 128)),
     ]
-    mx = 88
-    my = 556
-    col_w = 198
+    f_val = font(F_SEMI, 38)
+    f_lab = font(F_CN, 16)
+    mx = 96
+    my = 790
+    col_w = 224
     for i, (value, label, col) in enumerate(metrics):
         if i > 0:
             d.line(
-                [(mx - 18) * S, my * S, (mx - 18) * S, (my + 82) * S],
-                fill=(255, 255, 255, 34),
-                width=int(1 * S),
+                [(mx - 18) * S, my * S, (mx - 18) * S, (my + 68) * S],
+                fill=(255, 255, 255, 32),
+                width=max(1, int(1 * S)),
             )
-        text(
-            d,
-            (mx, my + 4),
-            value,
-            font(F_EN_SEMI, 42),
-            tuple(col) + (255,),
-            anchor="la",
-        )
-        text(
-            d,
-            (mx + 1, my + 64),
-            label,
-            font(F_CN_REG, 18),
-            (134, 154, 192, 255),
-            anchor="la",
-        )
+        text(d, (mx, my), value, f_val, rgba(col, 255), anchor="la")
+        text(d, (mx + 1, my + 47), label, f_lab, (150, 170, 206, 255), anchor="la")
         mx += col_w
 
     # Footer
     text(
         d,
-        (88, 672),
-        "github.com/ShaneLiu04/Step-RL",
-        font(F_EN_LIGHT, 19),
-        (118, 136, 176, 255),
+        (96, 910),
+        "ShaneLiu04  ·  github.com/ShaneLiu04/Step-RL  ·  gitee.com/liu-xingyan04/step-rl",
+        font(F_LIGHT, 16),
+        (128, 146, 186, 255),
         anchor="lm",
     )
     text(
         d,
-        (760, 672),
-        "Step-RL  ·  Long-Horizon Agent RL",
-        font(F_EN_LIGHT, 17),
-        (96, 112, 150, 255),
+        (1824, 910),
+        "REAL EPISODES · FIXED SEED",
+        font(F_MONO, 10),
+        (104, 122, 162, 255),
+        anchor="rm",
+    )
+
+    canvas.alpha_composite(layer)
+
+
+# ---------------------------------------------------------------------------
+# Right panel: browser + verifier + hierarchy
+# ---------------------------------------------------------------------------
+def draw_browser_card(canvas: Image.Image):
+    BX0, BY0, BX1, BY1 = 1072, 146, 1800, 430
+    panel(
+        canvas,
+        (BX0, BY0, BX1, BY1),
+        18,
+        (8, 16, 34, 222),
+        [(34, 211, 238), (96, 165, 250), (129, 140, 248)],
+        border_alpha=95,
+        border_w=1.2,
+    )
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer, "RGBA")
+
+    # Browser chrome
+    for i, col in enumerate([(248, 113, 113), (251, 191, 36), (52, 211, 153)]):
+        cx = 1092 + i * 14
+        d.ellipse(((cx - 3.6) * S, 163.4 * S, (cx + 3.6) * S, 170.6 * S), fill=rgba(col, 235))
+    pill(d, (1138, 155, 1462, 179), 12, (255, 255, 255, 12), (255, 255, 255, 30), 1)
+    d.ellipse((1148 * S, 163 * S, 1154 * S, 169 * S), fill=(52, 211, 153, 235))
+    text(d, (1161, 167), "shop.local/cart", font(F_MONO, 10), (186, 204, 234, 255), anchor="lm")
+    pill(d, (1680, 155, 1782, 179), 12, (34, 197, 94, 30), (74, 222, 128, 115), 1)
+    text(d, (1731, 167), "SoM ON", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="mm")
+
+    # Page header
+    text(d, (1094, 198), "StepShop", font(F_SEMI, 18), (240, 245, 255, 255), anchor="la")
+    text(d, (1094, 218), "真实 HTTP 商城", font(F_CN, 9), (162, 182, 218, 255), anchor="la")
+    text(d, (1780, 206), "商品    购物车", font(F_CN, 9), (162, 182, 218, 255), anchor="rm")
+    d.line([(1094 * S, 232 * S), (1780 * S, 232 * S)], fill=(255, 255, 255, 20), width=max(1, int(1 * S)))
+
+    # Product cards
+    products = [
+        (1094, "e1", "机械键盘 P3", "¥299", (34, 211, 238), "keyboard"),
+        (1318, "e2", "无线鼠标 P4", "¥159", (96, 165, 250), "mouse"),
+    ]
+    for px, eid, name, price, col, kind in products:
+        pill(d, (px, 244, px + 212, 382), 12, (255, 255, 255, 10), (255, 255, 255, 28), 1)
+        draw_product_icon(d, px + 12, 256, kind, col)
+        text(d, (px + 58, 258), name, font(F_CN_BOLD, 13), (236, 243, 255, 255), anchor="la")
+        text(d, (px + 58, 281), price, font(F_MONO_BOLD, 12), rgba(col, 255), anchor="la")
+        text(d, (px + 58, 302), "真实商品 · 库存", font(F_CN, 8.5), (160, 180, 216, 255), anchor="la")
+        bx0, by0, bx1, by1 = px + 12, 334, px + 200, 364
+        pill(d, (bx0, by0, bx1, by1), 9, rgba(col, 30), rgba(col, 120), 1)
+        text(
+            d,
+            ((bx0 + bx1) / 2 - 8, (by0 + by1) / 2),
+            "加入购物车",
+            font(F_CN, 11.5),
+            (232, 241, 255, 255),
+            anchor="mm",
+        )
+        som_badge(d, bx1 - 24, by0 + 4, eid, col, 20)
+
+    # Cart panel
+    pill(d, (1544, 244, 1780, 382), 12, (255, 255, 255, 10), (255, 255, 255, 28), 1)
+    text(d, (1560, 258), "购物车", font(F_CN_BOLD, 12), (236, 243, 255, 255), anchor="la")
+    text(d, (1764, 258), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
+    d.line([(1560 * S, 276 * S), (1764 * S, 276 * S)], fill=(255, 255, 255, 22), width=max(1, int(1 * S)))
+    text(d, (1560, 288), "P4 × 2", font(F_MONO, 10), (214, 226, 246, 255), anchor="la")
+    text(d, (1764, 288), "¥318", font(F_MONO, 10), (214, 226, 246, 255), anchor="ra")
+    text(d, (1560, 306), "无线鼠标", font(F_CN, 8.5), (160, 180, 216, 255), anchor="la")
+    d.line([(1560 * S, 326 * S), (1764 * S, 326 * S)], fill=(255, 255, 255, 22), width=max(1, int(1 * S)))
+    text(d, (1560, 336), "合计", font(F_CN, 9), (156, 176, 210, 255), anchor="la")
+    text(d, (1764, 336), "¥318", font(F_MONO_BOLD, 12), (134, 239, 172, 255), anchor="ra")
+    pill(d, (1556, 352, 1768, 378), 9, (34, 197, 94, 30), (74, 222, 128, 125), 1)
+    text(d, (1648, 365), "结算", font(F_CN_BOLD, 11.5), (224, 252, 234, 255), anchor="mm")
+    som_badge(d, 1740, 356, "e3", (74, 222, 128), 20)
+
+    # Click ripple on e2
+    cx, cy = 1318 + 200 - 24 + 10, 334 + 4 + 10
+    for r, a in ((28, 28), (20, 48), (13, 85)):
+        d.ellipse(
+            ((cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S),
+            outline=(34, 211, 238, a),
+            width=max(1, int(1 * S)),
+        )
+    d.polygon(
+        [
+            ((cx + 12) * S, (cy - 22) * S),
+            ((cx + 12) * S, (cy - 4) * S),
+            ((cx + 16) * S, (cy - 8) * S),
+            ((cx + 20) * S, (cy - 1) * S),
+            ((cx + 23) * S, (cy - 3) * S),
+            ((cx + 19) * S, (cy - 10) * S),
+            ((cx + 25) * S, (cy - 10) * S),
+        ],
+        fill=(244, 249, 255, 240),
+    )
+
+    # Action JSON chip
+    pill(d, (1094, 392, 1442, 418), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
+    text(
+        d,
+        (1108, 405),
+        '{"action":"click","element":"e2"}',
+        font(F_MONO, 10.5),
+        (185, 247, 255, 255),
+        anchor="lm",
+    )
+    check_badge(d, 1424, 405, 7, (52, 211, 153))
+    d.ellipse((1456 * S, 401 * S, 1464 * S, 409 * S), fill=(74, 222, 128, 230))
+    text(
+        d,
+        (1470, 405),
+        "DOM id 扰动后仍可执行",
+        font(F_CN, 9),
+        (150, 230, 190, 255),
         anchor="lm",
     )
 
     canvas.alpha_composite(layer)
 
 
+def draw_verifier_card(canvas: Image.Image):
+    VX0, VY0, VX1, VY1 = 1072, 446, 1422, 812
+    panel(
+        canvas,
+        (VX0, VY0, VX1, VY1),
+        18,
+        (8, 16, 34, 222),
+        [(167, 139, 250), (129, 140, 248)],
+        border_alpha=92,
+        border_w=1.2,
+    )
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer, "RGBA")
+
+    text(d, (1094, 468), "Verifier Φ(s)", font(F_SEMI, 20), (240, 245, 255, 255), anchor="la")
+    text(d, (1094, 494), "server-side predicates", font(F_MONO, 9.5), (162, 182, 218, 255), anchor="la")
+
+    text(d, (1094, 522), "Φ", font(F_SEMI, 30), (180, 156, 255, 255), anchor="la")
+    text(d, (1128, 510), "1.00", font(F_BOLD, 54), (52, 211, 153, 255), anchor="la")
+    text(d, (1096, 578), "7 / 7 predicates satisfied", font(F_MONO, 9.5), (134, 239, 172, 255), anchor="la")
+
+    gx, gy, gr = 1370, 548, 26
+    d.arc(
+        ((gx - gr) * S, (gy - gr) * S, (gx + gr) * S, (gy + gr) * S),
+        -90,
+        270,
+        fill=(52, 211, 153, 255),
+        width=max(1, int(2.5 * S)),
+    )
+    check_badge(d, gx, gy, 9, (52, 211, 153))
+
+    predicates = [
+        "search_done",
+        "product_viewed",
+        "cart_contains",
+        "checkout_viewed",
+        "order_placed",
+    ]
+    py = 612
+    d.line(
+        [(1102 * S, py * S), (1102 * S, (py + 4 * 31) * S)],
+        fill=(52, 211, 153, 55),
+        width=max(1, int(1 * S)),
+    )
+    for name in predicates:
+        check_badge(d, 1102, py + 8, 6, (52, 211, 153))
+        text(d, (1118, py + 8), name, font(F_MONO, 12), (210, 222, 246, 255), anchor="lm")
+        check_mark(d, 1388, py + 8, 9, (52, 211, 153), 1.4)
+        py += 31
+
+    pill(d, (1094, 772, 1400, 780), 4, (255, 255, 255, 20), None, 0)
+    bar = h_gradient((306 * S, 8 * S), [(52, 211, 153), (34, 211, 238)]).convert("RGBA")
+    bar.putalpha(225)
+    canvas.alpha_composite(bar, (1094 * S, 772 * S))
+    text(d, (1094, 792), "finish does not grant success", font(F_MONO, 8.5), (150, 170, 206, 255), anchor="la")
+
+    canvas.alpha_composite(layer)
+
+
+def draw_hierarchy_card(canvas: Image.Image):
+    HX0, HY0, HX1, HY1 = 1438, 446, 1800, 812
+    panel(
+        canvas,
+        (HX0, HY0, HX1, HY1),
+        18,
+        (8, 16, 34, 222),
+        [(244, 114, 182), (129, 140, 248)],
+        border_alpha=92,
+        border_w=1.2,
+    )
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer, "RGBA")
+
+    text(d, (1460, 468), "Hierarchical Agent", font(F_SEMI, 20), (240, 245, 255, 255), anchor="la")
+    text(d, (1460, 494), "subgoal routing · shared session", font(F_MONO, 8.5), (162, 182, 218, 255), anchor="la")
+
+    rows = [
+        ("SFT", "L1–L2 基础流程", (34, 211, 238)),
+        ("VGDP", "L3 数量控制", (167, 139, 250)),
+        ("Sparse", "L4–L5 结算流程", (74, 222, 128)),
+    ]
+    ry = 518
+    for name, role, col in rows:
+        pill(d, (1460, ry, 1778, ry + 60), 12, rgba(col, 18), rgba(col, 90), 1)
+        d.rectangle((1462 * S, (ry + 7) * S, 1465 * S, (ry + 53) * S), fill=rgba(col, 230))
+        text(d, (1478, ry + 16), name, font(F_SEMI, 16), (236, 243, 255, 255), anchor="la")
+        text(d, (1478, ry + 40), role, font(F_CN, 10), (178, 196, 228, 255), anchor="la")
+        check_badge(d, 1758, ry + 30, 8, col)
+        ry += 70
+
+    pill(d, (1460, 744, 1778, 778), 12, (34, 197, 94, 28), (74, 222, 128, 105), 1)
+    text(
+        d,
+        (1468, 761),
+        "9/9 tasks · 100% stable + perturbed",
+        font(F_MONO, 9.5),
+        (134, 239, 172, 255),
+        anchor="lm",
+    )
+    text(
+        d,
+        (1460, 790),
+        "ID randomization → 0 illegal actions",
+        font(F_MONO, 8.5),
+        (150, 170, 206, 255),
+        anchor="la",
+    )
+
+    canvas.alpha_composite(layer)
+
+
+def draw_right(canvas: Image.Image):
+    RX0, RY0, RX1, RY1 = 1040, 86, 1832, 870
+    panel(
+        canvas,
+        (RX0, RY0, RX1, RY1),
+        30,
+        (255, 255, 255, 12),
+        [(34, 211, 238), (129, 140, 248), (192, 132, 252)],
+        border_alpha=80,
+        border_w=1.4,
+    )
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer, "RGBA")
+    text(
+        d,
+        (1072, 120),
+        "SEMANTIC BROWSER   ·   VERIFIER Φ   ·   HIERARCHICAL ADAPTERS",
+        font(F_MONO_BOLD, 10),
+        (160, 182, 222, 245),
+        anchor="lm",
+    )
+    d.ellipse((1698 * S, 115 * S, 1706 * S, 123 * S), fill=(74, 222, 128, 220))
+    text(d, (1714, 120), "AR004 · REAL EPISODE", font(F_MONO_BOLD, 9), (134, 239, 172, 235), anchor="lm")
+    text(
+        d,
+        (1072, 836),
+        "真实 HTTP 商城 · 真实 Edge · 真实 episode JSON · 固定 seed",
+        font(F_CN, 9.5),
+        (148, 168, 204, 255),
+        anchor="la",
+    )
+    canvas.alpha_composite(layer)
+
+
 def main():
     canvas = build_background()
 
-    # Soft top-left shine (under the content layers)
-    shine = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shine)
-    sd.ellipse(
-        [-300 * S, -420 * S, 1100 * S, 160 * S],
-        fill=(120, 170, 255, 26),
-    )
-    shine = shine.filter(ImageFilter.GaussianBlur(90 * S))
-    canvas.alpha_composite(shine)
-
-    draw_agent_loop(canvas)
+    draw_right(canvas)
+    draw_browser_card(canvas)
+    draw_verifier_card(canvas)
+    draw_hierarchy_card(canvas)
     draw_left(canvas)
 
-    full = canvas.convert("RGB").resize((W, H), Image.LANCZOS)
+    full = canvas.convert("RGB")
     full_dir = ROOT / "outputs" / "ar001"
     full_dir.mkdir(parents=True, exist_ok=True)
-    full.save(full_dir / "cover_full.png", "PNG", optimize=True)
-    # Repository asset: keep the push under the corporate proxy limit (~100KB).
-    out = full.resize((1100, 495), Image.LANCZOS)
+    full.resize((W, H), Image.LANCZOS).save(full_dir / "cover_full.png", "PNG", optimize=True)
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    out = full.resize((1600, 800), Image.LANCZOS)
     out.save(OUT, "JPEG", quality=84, optimize=True, subsampling=0)
-    print(f"[OK] {OUT}  ({out.size[0]}x{out.size[1]})")
+    print(f"[OK] {OUT}  ({out.size[0]}x{out.size[1]}, {OUT.stat().st_size / 1024:.1f} KB)")
 
 
 if __name__ == "__main__":

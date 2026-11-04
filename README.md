@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://gitee.com/liu-xingyan04/step-rl">
+<a href="https://github.com/ShaneLiu04/Step-RL">
   <img src="docs/images/cover.jpg" alt="Step-RL v3.3 — 验证器驱动 · 语义动作 · 端侧分层强化学习" width="100%">
 </a>
 
@@ -290,7 +290,7 @@ L = −min(ratio·A_t, clip(ratio,1−ε,1+ε)·A_t) + β·k3(π_ref, π_new)
 ### 安装
 
 ```bash
-git clone https://gitee.com/liu-xingyan04/step-rl.git
+git clone https://github.com/ShaneLiu04/Step-RL.git
 cd step-rl
 pip install -r requirements.txt
 # Linux: playwright install chromium
@@ -393,7 +393,6 @@ python scripts/ar003_eval.py
 ```text
 step-rl/
 ├── README.md
-├── AGENTS.md
 ├── requirements.txt
 ├── config.yaml
 ├── Dockerfile / docker-compose*.yml
@@ -534,7 +533,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
   title = {Step-RL: Verifier-Grounded Hierarchical RL with Semantic Actions for Long-Horizon Web Agents},
   version = {3.3},
   year = {2026},
-  url = {https://gitee.com/liu-xingyan04/step-rl}
+  url = {https://github.com/ShaneLiu04/Step-RL}
 }
 ```
 
@@ -555,7 +554,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 ## 联系与支持
 
-- 仓库：<https://gitee.com/liu-xingyan04/step-rl>
+- 仓库：<https://github.com/ShaneLiu04/Step-RL>（镜像：<https://gitee.com/liu-xingyan04/step-rl>）
 - 问题反馈：提交 Issue，附 `outputs/` 下 run manifest 与复现命令
 - 安全：请勿公开敏感环境信息，仅提供最小复现
 
