@@ -52,6 +52,7 @@ def build_prompt(
     max_elements: int = 10,
     progress: Optional[float] = None,
     missing: Optional[List[str]] = None,
+    reference_action: Optional[Dict[str, Any]] = None,
 ) -> str:
     elements = observation.get("elements", [])[:max_elements]
     state = observation.get("state", {})
@@ -62,11 +63,15 @@ def build_prompt(
         hints = [PREDICATE_HINTS.get(m, m) for m in (missing or [])]
         missing_text = "、".join(hints) if hints else "无"
         progress_line = f"进度: {progress:.2f} | 未完成: {missing_text}\n"
+    reference_line = ""
+    if reference_action:
+        reference_line = f"参考动作: {render_action(reference_action)}\n"
     return (
         f"{SYSTEM}\n\n"
         f"任务: {task_goal}\n"
         f"页面: {observation.get('url', '/')} | {observation.get('title', '')}\n"
         + progress_line
+        + reference_line
         + "可交互元素:\n"
         + "\n".join(_fmt_element(e) for e in elements)
         + f"\n购物车: {_fmt_cart(state)}\n"

@@ -9,7 +9,8 @@ import torch
 
 from .browser import BrowserEnv
 from .expert import expert_action
-from .policy import build_prompt, parse_action, repair_action
+from .policy import build_prompt, parse_action, render_action, repair_action
+from .skill_memory import SkillMemory
 from .tasks import TaskSpec
 from .verifier import compute_progress
 
@@ -30,6 +31,7 @@ class StepRecord:
     advantage: float = 0.0
     raw_invalid: bool = False
     repaired: bool = False
+    source: str = "policy"
 
 
 @dataclass
@@ -136,8 +138,12 @@ async def rollout_task(
     max_new_tokens: int = 96,
     reward_mode: str = "vgdp",
     prime_steps: int = 0,
+    memory: Optional[SkillMemory] = None,
+    memory_prompt: bool = False,
+    replan: bool = False,
+    initial_obs: Optional[Dict[str, Any]] = None,
 ) -> Rollout:
-    obs = await env.reset(task)
+    obs = initial_obs if initial_obs is not None else await env.reset(task)
     progress = compute_progress(obs["state"], obs["url"], task)
     phi = progress.progress
     missing = list(progress.missing)
@@ -147,6 +153,8 @@ async def rollout_task(
     repaired_count = 0
     success = False
     recent_actions: List[str] = []
+    stagnation = 0
+    replan_budget = 3
 
     # Curriculum priming with the real expert, executed in the real browser.
     # This is used identically for sparse and dense RL so the only difference
@@ -172,7 +180,68 @@ async def rollout_task(
             )
 
     for _ in range(max_steps):
-        prompt = build_prompt(task.goal, obs, history, progress=phi, missing=missing)
+        suggestion = None
+        reference = None
+        if memory is not None and task.require_checkout:
+            suggestion = memory.retrieve(task, obs["url"], missing, obs["state"])
+            if suggestion is not None:
+                reference = memory.resolve(suggestion, task, obs["state"])
+
+        # Verifier-triggered replanning: when progress has been stagnant for
+        # two consecutive model steps, execute one memory action for real.
+        if replan and stagnation >= 2 and replan_budget > 0 and reference is not None:
+            replan_budget -= 1
+            exec_result = await env.execute(reference)
+            obs_after = await env.observe()
+            progress_after = compute_progress(
+                obs_after["state"], obs_after["url"], task
+            )
+            phi_after = progress_after.progress
+            reward = step_reward(
+                phi,
+                phi_after,
+                bool(exec_result["ok"]),
+                bool(exec_result.get("terminal")),
+                phi_after >= 1.0,
+                mode=reward_mode,
+            )
+            steps.append(
+                StepRecord(
+                    prompt="memory_replan",
+                    prompt_ids=[],
+                    response_ids=[],
+                    old_logprobs=[],
+                    response_text=render_action(reference),
+                    action=reference,
+                    exec_ok=bool(exec_result["ok"]),
+                    error=str(exec_result.get("error", "")),
+                    phi_before=phi,
+                    phi_after=phi_after,
+                    reward=reward,
+                    source="memory_replan",
+                )
+            )
+            history.append(
+                f"replan:{reference.get('action')} -> "
+                f"{'ok' if exec_result['ok'] else 'fail'} phi={phi_after:.2f}"
+            )
+            phi = phi_after
+            missing = list(progress_after.missing)
+            success = phi >= 1.0
+            stagnation = 0
+            if exec_result.get("terminal") or success:
+                break
+            obs = obs_after
+            continue
+
+        prompt = build_prompt(
+            task.goal,
+            obs,
+            history,
+            progress=phi,
+            missing=missing,
+            reference_action=reference if memory_prompt else None,
+        )
         gen = generate_action(
             model, tokenizer, prompt, sample=sample, max_new_tokens=max_new_tokens
         )
@@ -214,6 +283,7 @@ async def rollout_task(
                 reward=reward,
                 raw_invalid=bool(repaired_info["raw_invalid"]),
                 repaired=bool(repaired_info["repaired"]),
+                source="policy",
             )
         )
         history.append(
@@ -223,6 +293,10 @@ async def rollout_task(
         phi = phi_after
         missing = list(progress_after.missing)
         success = phi >= 1.0
+        if phi_after <= steps[-1].phi_before or not exec_result["ok"]:
+            stagnation += 1
+        else:
+            stagnation = 0
         if exec_result.get("terminal") or success:
             break
         obs = obs_after
@@ -294,6 +368,7 @@ def rollout_to_dict(rollout: Rollout) -> Dict[str, Any]:
                 "advantage": s.advantage,
                 "raw_invalid": s.raw_invalid,
                 "repaired": s.repaired,
+                "source": s.source,
             }
             for s in rollout.steps
         ],

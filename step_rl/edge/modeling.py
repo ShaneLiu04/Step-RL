@@ -6,7 +6,7 @@ import os
 import random
 from glob import glob
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import torch
@@ -97,3 +97,26 @@ def lora_config(r: int = 16, alpha: int = 32, dropout: float = 0.05):
         bias="none",
         task_type="CAUSAL_LM",
     )
+
+
+def load_multi_adapter(
+    model_path: str,
+    adapters: Dict[str, str],
+    dtype: Optional[torch.dtype] = None,
+) -> Tuple[torch.nn.Module, object]:
+    """Load one base model with multiple named LoRA adapters.
+
+    ``adapters`` must map logical names (``base``, ``quantity``, ``checkout``)
+    to adapter directories.  The caller switches with ``model.set_adapter``.
+    """
+
+    from peft import PeftModel
+
+    tokenizer = load_tokenizer(model_path)
+    base = load_base_model(model_path, dtype=dtype)
+    names = list(adapters)
+    model = PeftModel.from_pretrained(base, adapters[names[0]], adapter_name=names[0])
+    for name in names[1:]:
+        model.load_adapter(adapters[name], adapter_name=name)
+    model.eval()
+    return model, tokenizer

@@ -28,6 +28,9 @@ async def evaluate_policy(
     tasks: Optional[List[TaskSpec]] = None,
     max_steps: int = 12,
     seed: int = 42,
+    memory=None,
+    memory_prompt: bool = False,
+    replan: bool = False,
 ) -> Dict[str, Any]:
     from .modeling import set_seed
 
@@ -52,6 +55,9 @@ async def evaluate_policy(
                 sample=False,
                 max_steps=max_steps,
                 reward_mode="vgdp",
+                memory=memory,
+                memory_prompt=memory_prompt,
+                replan=replan,
             )
             results.append(
                 {
@@ -62,7 +68,11 @@ async def evaluate_policy(
                     "steps": rollout.total_steps,
                     "raw_invalid": rollout.raw_invalid,
                     "repaired": rollout.repaired,
+                    "memory_replans": sum(
+                        1 for step in rollout.steps if step.source == "memory_replan"
+                    ),
                     "actions": [s.action for s in rollout.steps],
+                    "sources": [s.source for s in rollout.steps],
                 }
             )
     finally:

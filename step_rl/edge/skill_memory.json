@@ -1,0 +1,427 @@
+[
+  {
+    "level": 1,
+    "require_checkout": false,
+    "page_type": "search",
+    "missing": [
+      "search_done"
+    ],
+    "action": {
+      "thought": "输入搜索词",
+      "action": "type",
+      "params": {
+        "selector": "#q",
+        "text": "@QUERY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 1,
+    "require_checkout": false,
+    "page_type": "search",
+    "missing": [
+      "search_done"
+    ],
+    "action": {
+      "thought": "执行搜索",
+      "action": "click",
+      "params": {
+        "selector": "#search-btn"
+      }
+    },
+    "delta_phi": 1.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 2,
+    "require_checkout": false,
+    "page_type": "product",
+    "missing": [
+      "cart_contains"
+    ],
+    "action": {
+      "thought": "加入购物车",
+      "action": "click",
+      "params": {
+        "selector": "#add-to-cart"
+      }
+    },
+    "delta_phi": 0.33333333333333337,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 2,
+    "require_checkout": false,
+    "page_type": "product",
+    "missing": [
+      "cart_contains"
+    ],
+    "action": {
+      "thought": "设置数量 2",
+      "action": "type",
+      "params": {
+        "selector": "#qty",
+        "text": "@QTY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 2,
+    "require_checkout": false,
+    "page_type": "search",
+    "missing": [
+      "search_done",
+      "product_viewed",
+      "cart_contains"
+    ],
+    "action": {
+      "thought": "输入搜索词",
+      "action": "type",
+      "params": {
+        "selector": "#q",
+        "text": "@QUERY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 2,
+    "require_checkout": false,
+    "page_type": "search",
+    "missing": [
+      "search_done",
+      "product_viewed",
+      "cart_contains"
+    ],
+    "action": {
+      "thought": "执行搜索",
+      "action": "click",
+      "params": {
+        "selector": "#search-btn"
+      }
+    },
+    "delta_phi": 0.3333333333333333,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 2,
+    "require_checkout": false,
+    "page_type": "search",
+    "missing": [
+      "product_viewed",
+      "cart_contains"
+    ],
+    "action": {
+      "thought": "打开商品详情",
+      "action": "click",
+      "params": {
+        "selector": "#product-@PID@"
+      }
+    },
+    "delta_phi": 0.3333333333333333,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "cart",
+    "missing": [
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "进入结算",
+      "action": "click",
+      "params": {
+        "selector": "#checkout-btn"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "checkout",
+    "missing": [
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "填写收货人",
+      "action": "type",
+      "params": {
+        "selector": "#name",
+        "text": "@NAME@"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "checkout",
+    "missing": [
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "填写地址",
+      "action": "type",
+      "params": {
+        "selector": "#address",
+        "text": "@ADDRESS@"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "checkout",
+    "missing": [
+      "order_placed"
+    ],
+    "action": {
+      "thought": "提交订单",
+      "action": "click",
+      "params": {
+        "selector": "#place-order"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "product",
+    "missing": [
+      "cart_contains",
+      "cart_viewed",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "加入购物车",
+      "action": "click",
+      "params": {
+        "selector": "#add-to-cart"
+      }
+    },
+    "delta_phi": 0.25,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "product",
+    "missing": [
+      "cart_contains",
+      "cart_viewed",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "设置数量 2",
+      "action": "type",
+      "params": {
+        "selector": "#qty",
+        "text": "@QTY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "search",
+    "missing": [
+      "search_done",
+      "product_viewed",
+      "cart_contains",
+      "cart_viewed",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "输入搜索词",
+      "action": "type",
+      "params": {
+        "selector": "#q",
+        "text": "@QUERY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "search",
+    "missing": [
+      "search_done",
+      "product_viewed",
+      "cart_contains",
+      "cart_viewed",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "执行搜索",
+      "action": "click",
+      "params": {
+        "selector": "#search-btn"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 4,
+    "require_checkout": true,
+    "page_type": "search",
+    "missing": [
+      "product_viewed",
+      "cart_contains",
+      "cart_viewed",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "打开商品详情",
+      "action": "click",
+      "params": {
+        "selector": "#product-@PID@"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 5,
+    "require_checkout": true,
+    "page_type": "cart",
+    "missing": [
+      "cart_contains",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "打开搜索结果",
+      "action": "goto",
+      "params": {
+        "url": "/search?q=@QUERY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 5,
+    "require_checkout": true,
+    "page_type": "product",
+    "missing": [
+      "cart_contains",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "设置数量 2",
+      "action": "type",
+      "params": {
+        "selector": "#qty",
+        "text": "@QTY@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 5,
+    "require_checkout": true,
+    "page_type": "product",
+    "missing": [
+      "cart_contains",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "加入购物车",
+      "action": "click",
+      "params": {
+        "selector": "#add-to-cart"
+      }
+    },
+    "delta_phi": 0.125,
+    "target_pid": null,
+    "hits": 1
+  },
+  {
+    "level": 5,
+    "require_checkout": true,
+    "page_type": "search",
+    "missing": [
+      "cart_contains",
+      "checkout_viewed",
+      "name_filled",
+      "address_filled",
+      "order_placed"
+    ],
+    "action": {
+      "thought": "打开商品详情",
+      "action": "click",
+      "params": {
+        "selector": "#product-@PID@"
+      }
+    },
+    "delta_phi": 0.0,
+    "target_pid": null,
+    "hits": 1
+  }
+]

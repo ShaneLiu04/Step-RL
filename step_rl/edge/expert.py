@@ -158,12 +158,14 @@ async def collect_expert_trajectories(
                 prev_phi = progress.progress
                 success = False
                 for _ in range(max_steps):
+                    missing_before = list(progress.missing)
+                    page_before = obs["url"]
                     prompt = build_prompt(
                         task.goal,
                         obs,
                         history,
                         progress=prev_phi,
-                        missing=list(progress.missing),
+                        missing=missing_before,
                     )
                     action = expert_action(task, obs)
                     response = render_action(action)
@@ -181,6 +183,8 @@ async def collect_expert_trajectories(
                             "phi_before": prev_phi,
                             "phi_after": phi,
                             "success": phi >= 1.0,
+                            "page": page_before,
+                            "missing": missing_before,
                         }
                     )
                     history.append(
