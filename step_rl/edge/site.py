@@ -121,15 +121,25 @@ font-size:13px}nav{margin-left:auto}
 """
 
 
-def _page(title: str, body: str) -> bytes:
+def _page(title: str, body: str, layout: str = "v1") -> bytes:
+    if layout == "v2":
+        header = (
+            "<header><strong>ShopLite</strong>"
+            "<a id='home-link-2' href='/'>主页</a>"
+            "<a id='cart-link-2' href='/cart'>购物袋</a>"
+            "<nav><a href='/api/state'>状态</a></nav></header>"
+        )
+    else:
+        header = (
+            "<header><strong>StepShop</strong>"
+            "<a id='nav-home' href='/'>首页</a>"
+            "<a id='nav-cart' href='/cart'>购物车</a>"
+            "<nav><a href='/api/state'>状态</a></nav></header>"
+        )
     return (
         "<!doctype html><html lang='zh'><head><meta charset='utf-8'>"
         f"<title>{title}</title><style>{STYLE}</style></head><body>"
-        "<header><strong>StepShop</strong>"
-        "<a id='nav-home' href='/'>首页</a>"
-        "<a id='nav-cart' href='/cart'>购物车</a>"
-        "<nav><a href='/api/state'>状态</a></nav></header>"
-        f"<main>{body}</main></body></html>"
+        f"{header}<main>{body}</main></body></html>"
     ).encode("utf-8")
 
 
@@ -142,7 +152,9 @@ def _product_card(p: Product) -> str:
     )
 
 
-def render_home() -> bytes:
+def render_home(layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_home()
     cards = "".join(_product_card(p) for p in PRODUCTS.values())
     body = (
         "<div class='card'><h2>搜索商品</h2>"
@@ -155,7 +167,9 @@ def render_home() -> bytes:
     return _page("StepShop 首页", body)
 
 
-def render_search(query: str) -> bytes:
+def render_search(query: str, layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_search(query)
     results = [p for p in PRODUCTS.values() if p.matches(query)]
     cards = "".join(_product_card(p) for p in results) or "<p>没有找到商品</p>"
     body = (
@@ -168,7 +182,9 @@ def render_search(query: str) -> bytes:
     return _page("搜索结果", body)
 
 
-def render_product(p: Product) -> bytes:
+def render_product(p: Product, layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_product(p)
     body = (
         f"<div class='card'><h2 id='product-name'>{p.name}</h2>"
         f"<p class='price'>¥{p.price}</p>"
@@ -180,7 +196,9 @@ def render_product(p: Product) -> bytes:
     return _page(p.name, body)
 
 
-def render_cart(state: SessionState) -> bytes:
+def render_cart(state: SessionState, layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_cart(state)
     rows = []
     total = 0
     for pid, qty in state.cart.items():
@@ -203,7 +221,9 @@ def render_cart(state: SessionState) -> bytes:
     return _page("购物车", body)
 
 
-def render_checkout(state: SessionState) -> bytes:
+def render_checkout(state: SessionState, layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_checkout(state)
     if not state.cart:
         body = "<div class='card'><h2>购物车为空</h2><p>请先添加商品。</p></div>"
         return _page("结算", body)
@@ -225,7 +245,9 @@ def render_checkout(state: SessionState) -> bytes:
     return _page("结算", body)
 
 
-def render_order(order: Dict[str, object]) -> bytes:
+def render_order(order: Dict[str, object], layout: str = "v1") -> bytes:
+    if layout == "v2":
+        return _render_v2_order(order)
     items = order.get("items", {})
     names = ", ".join(
         f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
@@ -236,6 +258,114 @@ def render_order(order: Dict[str, object]) -> bytes:
         f"<p id='order-items'>{names}</p></div>"
     )
     return _page("订单成功", body)
+
+
+def _v2_card(p: Product) -> str:
+    return (
+        f"<div class='card'><div class='row'><div>"
+        f"<a id='card-{p.pid}' href='/product/{p.pid}' aria-label='{p.name}'>"
+        f"{p.name}</a><div class='muted'>{', '.join(p.keywords)}</div></div>"
+        f"<div class='price'>¥{p.price}</div></div></div>"
+    )
+
+
+def _v2_search_form(query: str = "") -> str:
+    return (
+        "<div class='card'><form action='/search' method='get'>"
+        f"<input id='kw-field' name='q' value='{query}' aria-label='搜索商品' placeholder='输入商品'>"
+        "<button id='find-btn' type='submit' aria-label='搜索'>查一查</button>"
+        "<button id='sort-btn' type='button' aria-label='排序'>排序</button>"
+        "<button id='filter-btn' type='button' aria-label='筛选'>筛选</button>"
+        "</form></div>"
+    )
+
+
+def _render_v2_home() -> bytes:
+    cards = "".join(_v2_card(p) for p in reversed(list(PRODUCTS.values())))
+    body = _v2_search_form() + f"<h3>推荐商品</h3>{cards}"
+    return _page("ShopLite 主页", body, layout="v2")
+
+
+def _render_v2_search(query: str) -> bytes:
+    results = [p for p in PRODUCTS.values() if p.matches(query)]
+    cards = "".join(_v2_card(p) for p in reversed(results)) or "<p>没有找到商品</p>"
+    body = _v2_search_form(query) + f"<p>结果 {len(results)} 个</p>{cards}"
+    return _page("搜索结果", body, layout="v2")
+
+
+def _render_v2_product(p: Product) -> bytes:
+    body = (
+        f"<div class='card'><h2 aria-label='{p.name}'>{p.name}</h2>"
+        f"<p class='price'>¥{p.price}</p>"
+        f"<form action='/add/{p.pid}' method='get'>"
+        "<input id='count-field' name='qty' type='number' value='1' min='1' max='9' aria-label='数量'>"
+        "<button id='buy-btn' type='submit' aria-label='加入购物车'>加入购物车</button>"
+        "<button id='fav-btn' type='button' aria-label='收藏'>收藏</button>"
+        "</form></div>"
+    )
+    return _page(p.name, body, layout="v2")
+
+
+def _render_v2_cart(state: SessionState) -> bytes:
+    rows = []
+    total = 0
+    for pid, qty in state.cart.items():
+        p = PRODUCTS.get(pid)
+        if not p:
+            continue
+        total += p.price * qty
+        rows.append(
+            f"<div class='card row'><span>{p.name} × {qty}</span>"
+            f"<span class='price'>¥{p.price * qty}</span></div>"
+        )
+    if not rows:
+        rows.append("<p class='muted'>购物袋是空的</p>")
+    body = (
+        "<h2>购物袋</h2>"
+        + "".join(rows)
+        + f"<p>合计：<strong class='price'>¥{total}</strong></p>"
+        + "<a id='checkout-link-2' class='btn' href='/checkout' aria-label='去结算'>去结算</a>"
+        + "<button id='continue-btn' type='button' aria-label='继续购物'>继续购物</button>"
+    )
+    return _page("购物袋", body, layout="v2")
+
+
+def _render_v2_checkout(state: SessionState) -> bytes:
+    if not state.cart:
+        return _page(
+            "结算",
+            "<div class='card'><h2>购物袋为空</h2><p>请先添加商品。</p></div>",
+            layout="v2",
+        )
+    body = (
+        "<h2>结算</h2><div class='card'>"
+        "<form action='/place-order' method='post'>"
+        "<p><input id='buyer-field' name='name' aria-label='收货人' placeholder='收货人'></p>"
+        "<p><input id='addr-field' name='address' aria-label='地址' placeholder='地址'></p>"
+        "<button id='submit-btn' type='submit' aria-label='提交订单'>提交订单</button>"
+        "<button id='back-btn' type='button' aria-label='返回'>返回</button>"
+        "</form></div>"
+        "<script>"
+        "const sync=()=>fetch('/api/form?name='+encodeURIComponent("
+        "document.getElementById('buyer-field').value)+'&address='+"
+        "encodeURIComponent(document.getElementById('addr-field').value));"
+        "document.getElementById('buyer-field').addEventListener('input',sync);"
+        "document.getElementById('addr-field').addEventListener('input',sync);"
+        "</script>"
+    )
+    return _page("结算", body, layout="v2")
+
+
+def _render_v2_order(order: Dict[str, object]) -> bytes:
+    items = order.get("items", {})
+    names = ", ".join(
+        f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
+    )
+    body = (
+        "<div class='card'><h2 id='done-title'>订单完成</h2>"
+        f"<p>单号：{order.get('id')}</p><p>{names}</p></div>"
+    )
+    return _page("订单完成", body, layout="v2")
 
 
 def render_error(message: str) -> bytes:
@@ -340,15 +470,16 @@ class _Handler(BaseHTTPRequestHandler):
 
         self._record(state, self.path)
 
+        layout = self.server.layout  # type: ignore[attr-defined]
         if path == "/":
-            body = render_home()
+            body = render_home(layout)
         elif path == "/search":
             state.query = qs.get("q", [""])[0]
-            body = render_search(state.query)
+            body = render_search(state.query, layout)
         elif path.startswith("/product/"):
             pid = path.split("/", 2)[2]
             body = (
-                render_product(PRODUCTS[pid])
+                render_product(PRODUCTS[pid], layout)
                 if pid in PRODUCTS
                 else render_error("商品不存在")
             )
@@ -366,12 +497,12 @@ class _Handler(BaseHTTPRequestHandler):
             self._redirect("/cart", sid)
             return
         elif path == "/cart":
-            body = render_cart(state)
+            body = render_cart(state, layout)
         elif path == "/checkout":
-            body = render_checkout(state)
+            body = render_checkout(state, layout)
         elif path.startswith("/order/"):
             if state.order and state.order.get("id") == path.split("/", 2)[2]:
-                body = render_order(state.order)
+                body = render_order(state.order, layout)
             else:
                 body = render_error("订单不存在")
         else:
@@ -418,9 +549,13 @@ class _Handler(BaseHTTPRequestHandler):
 class LocalShopServer:
     """Background HTTP server with isolated sessions."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 0) -> None:
+    def __init__(
+        self, host: str = "127.0.0.1", port: int = 0, layout: str = "v1"
+    ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
+        self._httpd.layout = layout  # type: ignore[attr-defined]
+        self.layout = layout
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self.host = host
         self.port = self._httpd.server_address[1]
