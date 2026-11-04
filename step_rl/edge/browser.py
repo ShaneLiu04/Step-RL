@@ -204,13 +204,11 @@ class BrowserEnv:
         return observation
 
     async def _randomize_ids(self) -> None:
-        await self._page.evaluate(
-            """() => {
+        await self._page.evaluate("""() => {
                 for (const el of document.querySelectorAll('[id]')) {
                     el.id = 'x' + Math.random().toString(36).slice(2, 10);
                 }
-            }"""
-        )
+            }""")
 
     @property
     def page_url_path(self) -> str:

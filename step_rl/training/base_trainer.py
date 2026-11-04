@@ -712,10 +712,10 @@ def _load_config_and_components(args: argparse.Namespace, algorithm: str):
         **_filter_kwargs(GroundingValidator, parts["grounding"])
     )
     state_memory = StateMemory(**_filter_kwargs(StateMemory, parts["state_memory"]))
-    scheduler_cls = BanditCurriculumScheduler if parts["use_bandit"] else CurriculumScheduler
-    curriculum = scheduler_cls(
-        **_filter_kwargs(scheduler_cls, parts["curriculum"])
+    scheduler_cls = (
+        BanditCurriculumScheduler if parts["use_bandit"] else CurriculumScheduler
     )
+    curriculum = scheduler_cls(**_filter_kwargs(scheduler_cls, parts["curriculum"]))
 
     # Optional public task list: without registered tasks the scheduler
     # silently samples nothing and training becomes a no-op.
