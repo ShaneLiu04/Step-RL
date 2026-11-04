@@ -142,6 +142,7 @@ async def rollout_task(
     memory_prompt: bool = False,
     replan: bool = False,
     initial_obs: Optional[Dict[str, Any]] = None,
+    semantic: bool = False,
 ) -> Rollout:
     obs = initial_obs if initial_obs is not None else await env.reset(task)
     progress = compute_progress(obs["state"], obs["url"], task)
@@ -241,13 +242,14 @@ async def rollout_task(
             progress=phi,
             missing=missing,
             reference_action=reference if memory_prompt else None,
+            semantic=semantic,
         )
         gen = generate_action(
             model, tokenizer, prompt, sample=sample, max_new_tokens=max_new_tokens
         )
         action = parse_action(gen["text"])
         repaired_info = {"raw_invalid": False, "repaired": False, "reason": ""}
-        if repair:
+        if repair and not (action.get("params") or {}).get("element"):
             action, repaired_info = repair_action(action, obs.get("elements", []))
         raw_invalid += int(repaired_info["raw_invalid"])
         repaired_count += int(repaired_info["repaired"])

@@ -143,6 +143,7 @@ async def _collect(
     max_steps: int,
     repair: bool,
     prime: bool = True,
+    semantic: bool = False,
 ) -> List[Rollout]:
     rollouts: List[Rollout] = []
     # L3 must be learned from the normal entry state so the policy actually
@@ -162,6 +163,7 @@ async def _collect(
                     max_steps=max_steps,
                     reward_mode=reward_mode,
                     prime_steps=prime_map.get(task.level, 0) if prime else 0,
+                    semantic=semantic,
                 )
             )
     return rollouts
@@ -180,6 +182,7 @@ async def _train_step_grpo_async(
     seed: int = 42,
     tasks: Optional[List[TaskSpec]] = None,
     max_optimizer_steps: Optional[int] = None,
+    semantic: bool = False,
 ) -> Dict[str, Any]:
     from peft import PeftModel
 
@@ -195,7 +198,7 @@ async def _train_step_grpo_async(
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
 
     server = LocalShopServer().start()
-    env = BrowserEnv(server, channel="msedge", headless=True)
+    env = BrowserEnv(server, channel="msedge", headless=True, semantic=semantic)
     history: List[Dict[str, Any]] = []
     started = time.time()
     optimizer_steps = 0
@@ -213,6 +216,7 @@ async def _train_step_grpo_async(
                 max_steps_per_episode,
                 repair=True,
                 prime=True,
+                semantic=semantic,
             )
             assign_group_advantages(rollouts)
             steps = [step for rollout in rollouts for step in rollout.steps]
@@ -282,6 +286,7 @@ def train_step_grpo(
     seed: int = 42,
     tasks: Optional[List[TaskSpec]] = None,
     max_optimizer_steps: Optional[int] = None,
+    semantic: bool = False,
 ) -> Dict[str, Any]:
     """Synchronous entry point used by the pipeline."""
 
@@ -299,5 +304,6 @@ def train_step_grpo(
             seed=seed,
             tasks=tasks,
             max_optimizer_steps=max_optimizer_steps,
+            semantic=semantic,
         )
     )

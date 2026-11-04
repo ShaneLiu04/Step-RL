@@ -31,6 +31,8 @@ async def evaluate_policy(
     memory=None,
     memory_prompt: bool = False,
     replan: bool = False,
+    perturb_ids: bool = False,
+    semantic: bool = False,
 ) -> Dict[str, Any]:
     from .modeling import set_seed
 
@@ -40,7 +42,13 @@ async def evaluate_policy(
         resolve_model_path(model_name), adapter_path, trainable=False
     )
     server = LocalShopServer().start()
-    env = BrowserEnv(server, channel="msedge", headless=True)
+    env = BrowserEnv(
+        server,
+        channel="msedge",
+        headless=True,
+        perturb_ids=perturb_ids,
+        semantic=semantic,
+    )
     started = time.time()
     results = []
     try:
@@ -58,6 +66,7 @@ async def evaluate_policy(
                 memory=memory,
                 memory_prompt=memory_prompt,
                 replan=replan,
+                semantic=semantic,
             )
             results.append(
                 {

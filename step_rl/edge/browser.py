@@ -49,13 +49,41 @@ _OBSERVE_JS = r"""
     }
     return parts.join(" > ");
   };
+  const roleOf = (el) => {
+    const explicit = (el.getAttribute("role") || "").toLowerCase();
+    if (explicit) return explicit;
+    const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute("type") || "").toLowerCase();
+    if (tag === "a") return "link";
+    if (tag === "button") return "button";
+    if (tag === "select") return "combobox";
+    if (tag === "textarea") return "textbox";
+    if (tag === "input") {
+      if (type === "number") return "spinbutton";
+      if (type === "submit" || type === "button") return "button";
+      return "textbox";
+    }
+    return tag;
+  };
+  let counter = 0;
   for (const el of nodes) {
     const style = window.getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden") continue;
     const selector = cssPath(el);
     if (!selector || seen.has(selector)) continue;
     seen.add(selector);
+    counter += 1;
+    const eid = "e" + counter;
+    el.setAttribute("data-eid", eid);
+    const accessible = (
+      el.getAttribute("aria-label") ||
+      el.getAttribute("placeholder") ||
+      (el.innerText || el.textContent || "").trim() ||
+      el.getAttribute("name") ||
+      (el.getAttribute("value") || "")
+    ).trim().slice(0, 80);
     out.push({
+      eid,
       selector,
       tag: el.tagName.toLowerCase(),
       type: (el.getAttribute("type") || "").toLowerCase(),
@@ -63,7 +91,8 @@ _OBSERVE_JS = r"""
       placeholder: el.getAttribute("placeholder") || "",
       name: el.getAttribute("name") || "",
       value: "value" in el ? String(el.value || "").slice(0, 80) : "",
-      role: el.getAttribute("role") || "",
+      role: roleOf(el),
+      accessible_name: accessible,
     });
   }
   return out;
@@ -80,6 +109,8 @@ class BrowserEnv:
         viewport: Optional[Dict[str, int]] = None,
         action_timeout_ms: int = 5000,
         max_elements: int = 24,
+        perturb_ids: bool = False,
+        semantic: bool = False,
     ) -> None:
         self.server = server
         self.channel = channel
@@ -87,6 +118,8 @@ class BrowserEnv:
         self.viewport = viewport or {"width": 1100, "height": 800}
         self.action_timeout_ms = action_timeout_ms
         self.max_elements = max_elements
+        self.perturb_ids = perturb_ids
+        self.semantic = semantic
         self._pw = None
         self._browser = None
         self._context = None
@@ -157,13 +190,27 @@ class BrowserEnv:
         except Exception:
             pass
         state = await self.get_state()
-        return {
+        observation = {
             "url": self.page_url_path,
             "title": await self._page.title(),
             "elements": elements,
             "text": body_text,
             "state": state,
         }
+        # Stress test: mutate ids *after* the observation snapshot.  Legacy
+        # selector actions become stale; semantic data-eid handles remain.
+        if self.perturb_ids:
+            await self._randomize_ids()
+        return observation
+
+    async def _randomize_ids(self) -> None:
+        await self._page.evaluate(
+            """() => {
+                for (const el of document.querySelectorAll('[id]')) {
+                    el.id = 'x' + Math.random().toString(36).slice(2, 10);
+                }
+            }"""
+        )
 
     @property
     def page_url_path(self) -> str:
@@ -208,7 +255,11 @@ class BrowserEnv:
                 await self._settle()
                 result["ok"] = True
             elif name in ("click", "type"):
-                selector = str(params.get("selector", ""))
+                element = params.get("element")
+                if element:
+                    selector = f'[data-eid="{element}"]'
+                else:
+                    selector = str(params.get("selector", ""))
                 locator = self._page.locator(selector)
                 count = await locator.count()
                 if count != 1:
