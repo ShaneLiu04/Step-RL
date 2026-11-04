@@ -59,7 +59,9 @@ def measure(fnt: ImageFont.FreeTypeFont, s: str) -> tuple[float, float]:
 # ---------------------------------------------------------------------------
 # Colour / gradient helpers
 # ---------------------------------------------------------------------------
-def h_gradient(size: tuple[int, int], colors: list[tuple[int, int, int]]) -> Image.Image:
+def h_gradient(
+    size: tuple[int, int], colors: list[tuple[int, int, int]]
+) -> Image.Image:
     w, h = size
     xs = np.linspace(0.0, 1.0, w, dtype=np.float32)
     stops = np.linspace(0.0, 1.0, len(colors), dtype=np.float32)
@@ -97,7 +99,6 @@ def panel(
 ):
     x0, y0, x1, y1 = [int(v * S) for v in box]
     w, h = x1 - x0, y1 - y0
-    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
     grad = h_gradient((w, h), border_colors).convert("RGBA")
     grad.putalpha(border_alpha)
@@ -294,7 +295,10 @@ def check_badge(draw, cx, cy, r, color=(52, 211, 153)):
         width=max(1, int(1.3 * S)),
     )
     draw.line(
-        [((cx - r * 0.08) * S, (cy + r * 0.34) * S), ((cx + r * 0.5) * S, (cy - r * 0.38) * S)],
+        [
+            ((cx - r * 0.08) * S, (cy + r * 0.34) * S),
+            ((cx + r * 0.5) * S, (cy - r * 0.38) * S),
+        ],
         fill=rgba(color, 255),
         width=max(1, int(1.3 * S)),
     )
@@ -302,12 +306,18 @@ def check_badge(draw, cx, cy, r, color=(52, 211, 153)):
 
 def check_mark(draw, x, y, size, color=(52, 211, 153), width=1.4):
     draw.line(
-        [((x - size * 0.45) * S, y * S), ((x - size * 0.05) * S, (y + size * 0.38) * S)],
+        [
+            ((x - size * 0.45) * S, y * S),
+            ((x - size * 0.05) * S, (y + size * 0.38) * S),
+        ],
         fill=rgba(color, 255),
         width=max(1, int(width * S)),
     )
     draw.line(
-        [((x - size * 0.05) * S, (y + size * 0.38) * S), ((x + size * 0.55) * S, (y - size * 0.42) * S)],
+        [
+            ((x - size * 0.05) * S, (y + size * 0.38) * S),
+            ((x + size * 0.55) * S, (y - size * 0.42) * S),
+        ],
         fill=rgba(color, 255),
         width=max(1, int(width * S)),
     )
@@ -346,7 +356,9 @@ def draw_product_icon(draw, x, y, kind, color):
             for col in range(3):
                 kx = x + 8 + col * 8
                 ky = y + 11 + row * 9
-                rounded_rect(draw, (kx, ky, kx + 5.5, ky + 6), 1.5, fill=rgba(color, 160))
+                rounded_rect(
+                    draw, (kx, ky, kx + 5.5, ky + 6), 1.5, fill=rgba(color, 160)
+                )
     else:
         rounded_rect(
             draw,
@@ -374,15 +386,21 @@ def draw_left(canvas: Image.Image):
     pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SEMANTIC ACTIONS"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
-    pill(d, (96, 88, 96 + pw + 44, 126), 19, (255, 255, 255, 14), (120, 160, 235, 78), 1)
+    pill(
+        d, (96, 88, 96 + pw + 44, 126), 19, (255, 255, 255, 14), (120, 160, 235, 78), 1
+    )
     d.ellipse((112 * S, 101 * S, 120 * S, 109 * S), fill=(74, 222, 128, 255))
     text(d, (129, 107), pill_txt, f_pill, (184, 202, 236, 255), anchor="lm")
 
     # Vertical accent rail
-    accent = h_gradient(
-        (188 * S, 3 * S),
-        [(34, 211, 238), (129, 140, 248), (192, 132, 252)],
-    ).rotate(90, expand=True).convert("RGBA")
+    accent = (
+        h_gradient(
+            (188 * S, 3 * S),
+            [(34, 211, 238), (129, 140, 248), (192, 132, 252)],
+        )
+        .rotate(90, expand=True)
+        .convert("RGBA")
+    )
     accent.putalpha(215)
     accent_glow = accent.filter(ImageFilter.GaussianBlur(4 * S))
     layer.alpha_composite(accent_glow, (70 * S, 150 * S))
@@ -405,8 +423,17 @@ def draw_left(canvas: Image.Image):
     title_w = measure(f_title, "Step-RL")[0]
     bx = 92 + title_w + 24
     by = 238
-    pill(d, (bx, by, bx + 132, by + 56), 17, (79, 70, 229, 58), (165, 180, 252, 150), 1.2)
-    text(d, (bx + 66, by + 28), "v3.3", font(F_BOLD, 26), (232, 238, 255, 255), anchor="mm")
+    pill(
+        d, (bx, by, bx + 132, by + 56), 17, (79, 70, 229, 58), (165, 180, 252, 150), 1.2
+    )
+    text(
+        d,
+        (bx + 66, by + 28),
+        "v3.3",
+        font(F_BOLD, 26),
+        (232, 238, 255, 255),
+        anchor="mm",
+    )
 
     # English subtitle
     text(
@@ -458,7 +485,11 @@ def draw_left(canvas: Image.Image):
     bars = [
         ("语义 SoM 动作", "DOM id 全扰动后仍 100% 可执行", (34, 211, 238)),
         ("可执行验证器 Φ", "只读真实服务端状态，finish 不授予成功", (167, 139, 250)),
-        ("层级任务分解", "SFT / VGDP / Sparse 适配器，9/9 留出任务通过", (74, 222, 128)),
+        (
+            "层级任务分解",
+            "SFT / VGDP / Sparse 适配器，9/9 留出任务通过",
+            (74, 222, 128),
+        ),
     ]
     f_bar_title = font(F_CN_BOLD, 19)
     f_bar_body = font(F_CN, 17)
@@ -466,10 +497,19 @@ def draw_left(canvas: Image.Image):
     for title, body, col in bars:
         pill(d, (96, by, 980, by + 56), 14, rgba(col, 20), rgba(col, 100), 1)
         d.rectangle((98 * S, (by + 5) * S, 101 * S, (by + 51) * S), fill=rgba(col, 230))
-        d.ellipse(((116) * S, (by + 22) * S, (124) * S, (by + 30) * S), fill=rgba(col, 255))
+        d.ellipse(
+            ((116) * S, (by + 22) * S, (124) * S, (by + 30) * S), fill=rgba(col, 255)
+        )
         text(d, (134, by + 28), title, f_bar_title, (232, 240, 255, 255), anchor="lm")
         tw, _ = measure(f_bar_title, title)
-        text(d, (134 + tw + 18, by + 28), body, f_bar_body, (166, 185, 220, 255), anchor="lm")
+        text(
+            d,
+            (134 + tw + 18, by + 28),
+            body,
+            f_bar_body,
+            (166, 185, 220, 255),
+            anchor="lm",
+        )
         by += 64
 
     # Metrics
@@ -536,18 +576,54 @@ def draw_browser_card(canvas: Image.Image):
     # Browser chrome
     for i, col in enumerate([(248, 113, 113), (251, 191, 36), (52, 211, 153)]):
         cx = 1092 + i * 14
-        d.ellipse(((cx - 3.6) * S, 163.4 * S, (cx + 3.6) * S, 170.6 * S), fill=rgba(col, 235))
+        d.ellipse(
+            ((cx - 3.6) * S, 163.4 * S, (cx + 3.6) * S, 170.6 * S), fill=rgba(col, 235)
+        )
     pill(d, (1138, 155, 1462, 179), 12, (255, 255, 255, 12), (255, 255, 255, 30), 1)
     d.ellipse((1148 * S, 163 * S, 1154 * S, 169 * S), fill=(52, 211, 153, 235))
-    text(d, (1161, 167), "shop.local/cart", font(F_MONO, 10), (186, 204, 234, 255), anchor="lm")
+    text(
+        d,
+        (1161, 167),
+        "shop.local/cart",
+        font(F_MONO, 10),
+        (186, 204, 234, 255),
+        anchor="lm",
+    )
     pill(d, (1680, 155, 1782, 179), 12, (34, 197, 94, 30), (74, 222, 128, 115), 1)
-    text(d, (1731, 167), "SoM ON", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="mm")
+    text(
+        d,
+        (1731, 167),
+        "SoM ON",
+        font(F_MONO_BOLD, 9),
+        (134, 239, 172, 255),
+        anchor="mm",
+    )
 
     # Page header
-    text(d, (1094, 198), "StepShop", font(F_SEMI, 18), (240, 245, 255, 255), anchor="la")
-    text(d, (1094, 218), "真实 HTTP 商城", font(F_CN, 9), (162, 182, 218, 255), anchor="la")
-    text(d, (1780, 206), "商品    购物车", font(F_CN, 9), (162, 182, 218, 255), anchor="rm")
-    d.line([(1094 * S, 232 * S), (1780 * S, 232 * S)], fill=(255, 255, 255, 20), width=max(1, int(1 * S)))
+    text(
+        d, (1094, 198), "StepShop", font(F_SEMI, 18), (240, 245, 255, 255), anchor="la"
+    )
+    text(
+        d,
+        (1094, 218),
+        "真实 HTTP 商城",
+        font(F_CN, 9),
+        (162, 182, 218, 255),
+        anchor="la",
+    )
+    text(
+        d,
+        (1780, 206),
+        "商品    购物车",
+        font(F_CN, 9),
+        (162, 182, 218, 255),
+        anchor="rm",
+    )
+    d.line(
+        [(1094 * S, 232 * S), (1780 * S, 232 * S)],
+        fill=(255, 255, 255, 20),
+        width=max(1, int(1 * S)),
+    )
 
     # Product cards
     products = [
@@ -555,11 +631,29 @@ def draw_browser_card(canvas: Image.Image):
         (1318, "e2", "无线鼠标 P4", "¥159", (96, 165, 250), "mouse"),
     ]
     for px, eid, name, price, col, kind in products:
-        pill(d, (px, 244, px + 212, 382), 12, (255, 255, 255, 10), (255, 255, 255, 28), 1)
+        pill(
+            d, (px, 244, px + 212, 382), 12, (255, 255, 255, 10), (255, 255, 255, 28), 1
+        )
         draw_product_icon(d, px + 12, 256, kind, col)
-        text(d, (px + 58, 258), name, font(F_CN_BOLD, 13), (236, 243, 255, 255), anchor="la")
-        text(d, (px + 58, 281), price, font(F_MONO_BOLD, 12), rgba(col, 255), anchor="la")
-        text(d, (px + 58, 302), "真实商品 · 库存", font(F_CN, 8.5), (160, 180, 216, 255), anchor="la")
+        text(
+            d,
+            (px + 58, 258),
+            name,
+            font(F_CN_BOLD, 13),
+            (236, 243, 255, 255),
+            anchor="la",
+        )
+        text(
+            d, (px + 58, 281), price, font(F_MONO_BOLD, 12), rgba(col, 255), anchor="la"
+        )
+        text(
+            d,
+            (px + 58, 302),
+            "真实商品 · 库存",
+            font(F_CN, 8.5),
+            (160, 180, 216, 255),
+            anchor="la",
+        )
         bx0, by0, bx1, by1 = px + 12, 334, px + 200, 364
         pill(d, (bx0, by0, bx1, by1), 9, rgba(col, 30), rgba(col, 120), 1)
         text(
@@ -574,17 +668,31 @@ def draw_browser_card(canvas: Image.Image):
 
     # Cart panel
     pill(d, (1544, 244, 1780, 382), 12, (255, 255, 255, 10), (255, 255, 255, 28), 1)
-    text(d, (1560, 258), "购物车", font(F_CN_BOLD, 12), (236, 243, 255, 255), anchor="la")
+    text(
+        d, (1560, 258), "购物车", font(F_CN_BOLD, 12), (236, 243, 255, 255), anchor="la"
+    )
     text(d, (1764, 258), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
-    d.line([(1560 * S, 276 * S), (1764 * S, 276 * S)], fill=(255, 255, 255, 22), width=max(1, int(1 * S)))
+    d.line(
+        [(1560 * S, 276 * S), (1764 * S, 276 * S)],
+        fill=(255, 255, 255, 22),
+        width=max(1, int(1 * S)),
+    )
     text(d, (1560, 288), "P4 × 2", font(F_MONO, 10), (214, 226, 246, 255), anchor="la")
     text(d, (1764, 288), "¥318", font(F_MONO, 10), (214, 226, 246, 255), anchor="ra")
     text(d, (1560, 306), "无线鼠标", font(F_CN, 8.5), (160, 180, 216, 255), anchor="la")
-    d.line([(1560 * S, 326 * S), (1764 * S, 326 * S)], fill=(255, 255, 255, 22), width=max(1, int(1 * S)))
+    d.line(
+        [(1560 * S, 326 * S), (1764 * S, 326 * S)],
+        fill=(255, 255, 255, 22),
+        width=max(1, int(1 * S)),
+    )
     text(d, (1560, 336), "合计", font(F_CN, 9), (156, 176, 210, 255), anchor="la")
-    text(d, (1764, 336), "¥318", font(F_MONO_BOLD, 12), (134, 239, 172, 255), anchor="ra")
+    text(
+        d, (1764, 336), "¥318", font(F_MONO_BOLD, 12), (134, 239, 172, 255), anchor="ra"
+    )
     pill(d, (1556, 352, 1768, 378), 9, (34, 197, 94, 30), (74, 222, 128, 125), 1)
-    text(d, (1648, 365), "结算", font(F_CN_BOLD, 11.5), (224, 252, 234, 255), anchor="mm")
+    text(
+        d, (1648, 365), "结算", font(F_CN_BOLD, 11.5), (224, 252, 234, 255), anchor="mm"
+    )
     som_badge(d, 1740, 356, "e3", (74, 222, 128), 20)
 
     # Click ripple on e2
@@ -646,12 +754,33 @@ def draw_verifier_card(canvas: Image.Image):
     layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer, "RGBA")
 
-    text(d, (1094, 468), "Verifier Φ(s)", font(F_SEMI, 20), (240, 245, 255, 255), anchor="la")
-    text(d, (1094, 494), "server-side predicates", font(F_MONO, 9.5), (162, 182, 218, 255), anchor="la")
+    text(
+        d,
+        (1094, 468),
+        "Verifier Φ(s)",
+        font(F_SEMI, 20),
+        (240, 245, 255, 255),
+        anchor="la",
+    )
+    text(
+        d,
+        (1094, 494),
+        "server-side predicates",
+        font(F_MONO, 9.5),
+        (162, 182, 218, 255),
+        anchor="la",
+    )
 
     text(d, (1094, 522), "Φ", font(F_SEMI, 30), (180, 156, 255, 255), anchor="la")
     text(d, (1128, 510), "1.00", font(F_BOLD, 54), (52, 211, 153, 255), anchor="la")
-    text(d, (1096, 578), "7 / 7 predicates satisfied", font(F_MONO, 9.5), (134, 239, 172, 255), anchor="la")
+    text(
+        d,
+        (1096, 578),
+        "7 / 7 predicates satisfied",
+        font(F_MONO, 9.5),
+        (134, 239, 172, 255),
+        anchor="la",
+    )
 
     gx, gy, gr = 1370, 548, 26
     d.arc(
@@ -678,7 +807,9 @@ def draw_verifier_card(canvas: Image.Image):
     )
     for name in predicates:
         check_badge(d, 1102, py + 8, 6, (52, 211, 153))
-        text(d, (1118, py + 8), name, font(F_MONO, 12), (210, 222, 246, 255), anchor="lm")
+        text(
+            d, (1118, py + 8), name, font(F_MONO, 12), (210, 222, 246, 255), anchor="lm"
+        )
         check_mark(d, 1388, py + 8, 9, (52, 211, 153), 1.4)
         py += 31
 
@@ -686,7 +817,14 @@ def draw_verifier_card(canvas: Image.Image):
     bar = h_gradient((306 * S, 8 * S), [(52, 211, 153), (34, 211, 238)]).convert("RGBA")
     bar.putalpha(225)
     canvas.alpha_composite(bar, (1094 * S, 772 * S))
-    text(d, (1094, 792), "finish does not grant success", font(F_MONO, 8.5), (150, 170, 206, 255), anchor="la")
+    text(
+        d,
+        (1094, 792),
+        "finish does not grant success",
+        font(F_MONO, 8.5),
+        (150, 170, 206, 255),
+        anchor="la",
+    )
 
     canvas.alpha_composite(layer)
 
@@ -705,8 +843,22 @@ def draw_hierarchy_card(canvas: Image.Image):
     layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer, "RGBA")
 
-    text(d, (1460, 468), "Hierarchical Agent", font(F_SEMI, 20), (240, 245, 255, 255), anchor="la")
-    text(d, (1460, 494), "subgoal routing · shared session", font(F_MONO, 8.5), (162, 182, 218, 255), anchor="la")
+    text(
+        d,
+        (1460, 468),
+        "Hierarchical Agent",
+        font(F_SEMI, 20),
+        (240, 245, 255, 255),
+        anchor="la",
+    )
+    text(
+        d,
+        (1460, 494),
+        "subgoal routing · shared session",
+        font(F_MONO, 8.5),
+        (162, 182, 218, 255),
+        anchor="la",
+    )
 
     rows = [
         ("SFT", "L1–L2 基础流程", (34, 211, 238)),
@@ -716,9 +868,20 @@ def draw_hierarchy_card(canvas: Image.Image):
     ry = 518
     for name, role, col in rows:
         pill(d, (1460, ry, 1778, ry + 60), 12, rgba(col, 18), rgba(col, 90), 1)
-        d.rectangle((1462 * S, (ry + 7) * S, 1465 * S, (ry + 53) * S), fill=rgba(col, 230))
-        text(d, (1478, ry + 16), name, font(F_SEMI, 16), (236, 243, 255, 255), anchor="la")
-        text(d, (1478, ry + 40), role, font(F_CN, 10), (178, 196, 228, 255), anchor="la")
+        d.rectangle(
+            (1462 * S, (ry + 7) * S, 1465 * S, (ry + 53) * S), fill=rgba(col, 230)
+        )
+        text(
+            d,
+            (1478, ry + 16),
+            name,
+            font(F_SEMI, 16),
+            (236, 243, 255, 255),
+            anchor="la",
+        )
+        text(
+            d, (1478, ry + 40), role, font(F_CN, 10), (178, 196, 228, 255), anchor="la"
+        )
         check_badge(d, 1758, ry + 30, 8, col)
         ry += 70
 
@@ -765,7 +928,14 @@ def draw_right(canvas: Image.Image):
         anchor="lm",
     )
     d.ellipse((1698 * S, 115 * S, 1706 * S, 123 * S), fill=(74, 222, 128, 220))
-    text(d, (1714, 120), "AR004 · REAL EPISODE", font(F_MONO_BOLD, 9), (134, 239, 172, 235), anchor="lm")
+    text(
+        d,
+        (1714, 120),
+        "AR004 · REAL EPISODE",
+        font(F_MONO_BOLD, 9),
+        (134, 239, 172, 235),
+        anchor="lm",
+    )
     text(
         d,
         (1072, 836),
@@ -789,12 +959,16 @@ def main():
     full = canvas.convert("RGB")
     full_dir = ROOT / "outputs" / "ar001"
     full_dir.mkdir(parents=True, exist_ok=True)
-    full.resize((W, H), Image.LANCZOS).save(full_dir / "cover_full.png", "PNG", optimize=True)
+    full.resize((W, H), Image.LANCZOS).save(
+        full_dir / "cover_full.png", "PNG", optimize=True
+    )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out = full.resize((1600, 800), Image.LANCZOS)
     out.save(OUT, "JPEG", quality=84, optimize=True, subsampling=0)
-    print(f"[OK] {OUT}  ({out.size[0]}x{out.size[1]}, {OUT.stat().st_size / 1024:.1f} KB)")
+    print(
+        f"[OK] {OUT}  ({out.size[0]}x{out.size[1]}, {OUT.stat().st_size / 1024:.1f} KB)"
+    )
 
 
 if __name__ == "__main__":
