@@ -23,7 +23,16 @@ PREDICATE_HINTS = {
 }
 
 
-def _fmt_element(element: Dict[str, Any]) -> str:
+def _fmt_element(element: Dict[str, Any], semantic: bool = False) -> str:
+    if semantic:
+        parts = [
+            f"- {element.get('eid', '?')}",
+            f"role={element.get('role', '')}",
+            f"name={element.get('accessible_name', '')}",
+        ]
+        if element.get("value"):
+            parts.append(f"value={element['value']}")
+        return " ".join(parts)
     parts = [f"- {element.get('selector', '')}", f"<{element.get('tag', '')}>"]
     if element.get("type"):
         parts.append(f"type={element['type']}")
@@ -53,6 +62,7 @@ def build_prompt(
     progress: Optional[float] = None,
     missing: Optional[List[str]] = None,
     reference_action: Optional[Dict[str, Any]] = None,
+    semantic: bool = False,
 ) -> str:
     elements = observation.get("elements", [])[:max_elements]
     state = observation.get("state", {})
@@ -73,13 +83,17 @@ def build_prompt(
         + progress_line
         + reference_line
         + "可交互元素:\n"
-        + "\n".join(_fmt_element(e) for e in elements)
+        + "\n".join(_fmt_element(e, semantic=semantic) for e in elements)
         + f"\n购物车: {_fmt_cart(state)}\n"
         f"历史:\n{history_text}\n\n"
         '动作格式: {"thought":"简短理由","action":"click|type|goto|scroll|wait|finish",'
         '"params":{...}}\n'
-        '示例: {"thought":"点击搜索","action":"click","params":{"selector":"#search-btn"}}\n'
-        "下一步 JSON:"
+        + (
+            '示例: {"thought":"点击搜索","action":"click","params":{"element":"e2"}}\n'
+            if semantic
+            else '示例: {"thought":"点击搜索","action":"click","params":{"selector":"#search-btn"}}\n'
+        )
+        + "下一步 JSON:"
     )
 
 

@@ -125,6 +125,31 @@ def expert_action(task: TaskSpec, obs: Dict[str, Any]) -> Dict[str, Any]:
     return act("goto", {"url": "/cart"}, "返回购物车")
 
 
+def _to_semantic(
+    action: Dict[str, Any], elements: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Translate a selector-based expert action to an ephemeral element id."""
+
+    if action.get("action") not in ("click", "type"):
+        return action
+    selector = (action.get("params") or {}).get("selector")
+    if not selector:
+        return action
+    eid = None
+    for element in elements:
+        if element.get("selector") == selector:
+            eid = element.get("eid")
+            break
+    if not eid:
+        return action
+    converted = dict(action)
+    params = dict(converted.get("params") or {})
+    params.pop("selector", None)
+    params["element"] = eid
+    converted["params"] = params
+    return converted
+
+
 async def collect_expert_trajectories(
     server_url: str,
     out_path: str,
@@ -133,6 +158,7 @@ async def collect_expert_trajectories(
     max_steps: int = 12,
     headless: bool = True,
     channel: str = "msedge",
+    semantic: bool = False,
 ) -> Dict[str, Any]:
     from .site import LocalShopServer
 
@@ -143,6 +169,7 @@ async def collect_expert_trajectories(
         server if server else _ProxyServer(server_url),  # type: ignore[arg-type]
         channel=channel,
         headless=headless,
+        semantic=semantic,
     )
     records: List[Dict[str, Any]] = []
     stats = {"episodes": 0, "success": 0, "steps": 0}
@@ -166,8 +193,11 @@ async def collect_expert_trajectories(
                         history,
                         progress=prev_phi,
                         missing=missing_before,
+                        semantic=semantic,
                     )
                     action = expert_action(task, obs)
+                    if semantic:
+                        action = _to_semantic(action, obs["elements"])
                     response = render_action(action)
                     exec_result = await env.execute(action)
                     obs = await env.observe()
