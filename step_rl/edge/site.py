@@ -370,7 +370,9 @@ def _render_v2_order(order: Dict[str, object]) -> bytes:
 
 
 def render_error(message: str) -> bytes:
-    return _page("请求错误", f"<div class='card'><h2>请求错误</h2><p>{message}</p></div>")
+    return _page(
+        "请求错误", f"<div class='card'><h2>请求错误</h2><p>{message}</p></div>"
+    )
 
 
 # ---------------------------------------------------------------------------

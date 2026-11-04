@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import statistics
 import sys
 import time
 import urllib.request
@@ -36,7 +35,9 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     catalog = [
         CatalogItem("p1", "iPhone 15 智能手机", 6999, 9, ("iphone", "手机", "apple")),
-        CatalogItem("p2", "USB-C 快充数据线", 59, 9, ("usb", "数据线", "cable", "充电")),
+        CatalogItem(
+            "p2", "USB-C 快充数据线", 59, 9, ("usb", "数据线", "cable", "充电")
+        ),
         CatalogItem("p3", "无线充电器", 199, 9, ("无线", "充电器", "charger")),
         CatalogItem("p4", "蓝牙降噪耳机", 399, 5, ("蓝牙", "耳机", "headphone")),
     ]

@@ -9,7 +9,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 ACTIONS = {"click", "type", "goto", "scroll", "wait", "finish"}
 
-SYSTEM = "你是网页操作代理。根据任务、当前页面元素和历史，选择下一步动作。" "只能输出一个 JSON 对象，不要输出解释或 markdown。"
+SYSTEM = (
+    "你是网页操作代理。根据任务、当前页面元素和历史，选择下一步动作。"
+    "只能输出一个 JSON 对象，不要输出解释或 markdown。"
+)
 
 PREDICATE_HINTS = {
     "search_done": "完成搜索",

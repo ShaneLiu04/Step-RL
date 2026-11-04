@@ -26,7 +26,7 @@ from .modeling import (
     resolve_model_path,
     set_seed,
 )
-from .rollout import Rollout, assign_group_advantages, rollout_task, rollout_to_dict
+from .rollout import Rollout, assign_group_advantages, rollout_task
 from .site import LocalShopServer
 from .tasks import TRAIN_RL_TASKS, TaskSpec
 

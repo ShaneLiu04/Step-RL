@@ -127,7 +127,7 @@ class StateMemory:
             min_val = p
             for s in shingles:
                 if HAS_XXHASH:
-                    h = xxhash.xxh64(s, seed=seed).intdigest()
+                    h = xxhash.xxh64(s.encode(), seed=seed).intdigest()
                 else:
                     h = int(hashlib.md5(s.encode()).hexdigest(), 16)
                 perm = ((h * a + b) & 0xFFFFFFFFFFFFFFFF) % p
