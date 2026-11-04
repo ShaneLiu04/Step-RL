@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001：真实端侧 Verifier-Grounded Step-GRPO**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，不使用 mock 环境或随机指标。
+本手册对应 **AR001–AR003：真实端侧 Verifier-Grounded Step-GRPO + 层级任务分解**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -35,8 +35,15 @@ python scripts/edge_pipeline.py --stage sft --sft_epochs 1
 # 3) 两组 RL 对照（本机建议先只跑 L3 数量任务，见 §3.3）
 python scripts/edge_pipeline.py --stage rl --rl_epochs 2 --group_size 3 --max_steps 6 --ppo_epochs 1
 
-# 4) 留出任务真实评测
+# 4) AR001 四组合 + 路由评测
 python scripts/ar001_eval_full.py
+python scripts/ar001_eval_router.py
+
+# 5) AR002 记忆/重规划对照（负结果，用于复现回退）
+python scripts/ar002_eval.py
+
+# 6) AR003 最终层级分解评测（100%）
+python scripts/ar003_eval.py
 ```
 
 产物：
@@ -47,10 +54,10 @@ outputs/ar001/
   sft_adapter/              # LoRA SFT
   grpo_sparse/              # 稀疏奖励 GRPO
   grpo_vgdp/                # VGDP Step-GRPO
-  eval/sft.json ...
-  eval/eval_report.md       # 四组合真实对比
-  run_manifest.json         # GPU/版本/commit/耗时
-  rl_train.log              # 逐 epoch 训练日志
+  eval/                     # 四组合与路由结果
+
+outputs/ar002/eval/         # 记忆/重规划对照（回退）
+outputs/ar003/eval/         # 层级分解最终结果
 ```
 
 ---
@@ -137,14 +144,16 @@ r_t = −0.02 + (1.0 if terminal and success else 0)
 | SFT + DOM 修复 | 55.6% | 5.78 | 0.79 |
 | Sparse-GRPO + 修复 | 55.6% | 5.78 | 0.83 |
 | VGDP-GRPO + 修复（单模型） | 66.7% | 5.33 | 0.85 |
-| **任务类型路由组合** | **77.8%** | **5.11** | **0.90** |
+| AR001 任务类型路由 | 77.8% | 5.11 | 0.90 |
+| **AR003 层级任务分解（最终）** | **100%** | 5.89 | **1.00** |
 
 逐任务报告：
 
 - `outputs/ar001/eval/eval_report.md`（四组合）
-- `outputs/ar001/eval/router.md`（组合路由）
+- `outputs/ar001/eval/router.md`（AR001 路由）
+- `outputs/ar003/eval/hierarchical.json`（AR003 最终）
 
-路由规则（`step_rl/edge/router.py`）：
+AR001 路由规则（`step_rl/edge/router.py`）：
 
 ```
 L1/L2（搜索/加购） -> SFT adapter
@@ -152,8 +161,25 @@ L3（数量控制）      -> VGDP adapter
 L4/L5（结算/多商品）-> Sparse adapter
 ```
 
-未解决项：L4 的“数量 2 + 结算”任务成功率 0（Sparse 进度 0.75），L5 多商品成功率 0；
-需要更大模型/更多训练数据，仓库不隐藏该负结果。
+AR003 在此基础上按子目标再分解：
+
+```
+add p3      -> SFT
+add p4×2    -> VGDP
+checkout    -> Sparse
+```
+
+L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
+
+### 3.2.1 组合回退记录（真实）
+
+| 尝试 | 成功率 | 决策 |
+|------|--------|------|
+| AR001 路由 | 77.8% | 中间最优 |
+| 技能记忆 prompt | 66.7% | 回退 |
+| 验证器触发重规划 | 66.7% | 回退 |
+| LoRA 权重融合 | 0% | 回退 |
+| **AR003 层级分解** | **100%** | **最终保留** |
 
 ### 3.3 本机算力说明
 
@@ -269,4 +295,4 @@ python scripts/ar001_eval_full.py
 2. 本地 GPU 被限频，pilot 规模小；7B/8B 结果需在服务器按 §4 重跑。
 3. 专家前缀只用于 L4/L5 训练，评测无前缀；Sparse 与 VGDP 完全一致。
 4. 目前动作空间为 6 类结构化动作，未覆盖拖拽、上传、验证码等。
-5. 旧 `step_rl/training/*` 与 `benchmark --mock` 仅保留兼容，不得用于论文/报告指标。
+5. 旧 `step_rl/training/*` 与历史 benchmark 保留兼容，不得用于论文/报告指标。
