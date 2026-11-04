@@ -220,9 +220,11 @@ def render_report(report: Dict[str, Any]) -> str:
             "",
             "## 组合决策",
             "",
-            f"最优组合：**{best['label']}**（成功率 {best['success_rate']:.1%}）"
-            if best
-            else "无可用组合。",
+            (
+                f"最优组合：**{best['label']}**（成功率 {best['success_rate']:.1%}）"
+                if best
+                else "无可用组合。"
+            ),
             "",
             "回退规则：按 `sft → sft_repair → sparse_grpo_repair → vgdp_grpo_repair`",
             "依次比较，只有严格不劣于当前最优才晋级；否则保留上一最优。",

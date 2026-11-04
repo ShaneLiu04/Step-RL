@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from step_rl.edge.evaluate import run_matrix  # noqa: E402
-from step_rl.edge.tasks import EVAL_TASKS  # noqa: E402
 
 CONFIGS = [
     {"label": "sft", "adapter": "outputs/ar001/sft_adapter", "repair": False},
