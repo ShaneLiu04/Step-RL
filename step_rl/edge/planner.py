@@ -159,11 +159,18 @@ def plan_instruction(
     mentions = _mentions(instruction, catalog)
     by_pid = {item.pid: item for item in catalog}
 
+    # Budget-driven substitution: "A 超预算则 B".
+    if "超预算" in instruction and len(mentions) >= 2:
+        for pid, qty in mentions:
+            if budget is not None and by_pid[pid].price * qty <= budget:
+                return _task_from_targets(instruction, catalog, {pid: qty})
+        return None
+
     # Substitution: "A 缺货则 B".
     if "缺货" in instruction and len(mentions) >= 2:
-        in_stock = [pid for pid, _ in mentions if by_pid[pid].stock > 0]
-        if in_stock:
-            return _task_from_targets(instruction, catalog, {in_stock[0]: 1})
+        for pid, qty in mentions:
+            if by_pid[pid].stock >= qty:
+                return _task_from_targets(instruction, catalog, {pid: qty})
         return None
 
     if mentions:

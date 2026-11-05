@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("CATP", "planner"), ("XLT", "cross-layout")]
+    badges = [("CLRR", "replanning"), ("CATP", "planner")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CONSTRAINT PLANNING"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CLOSED-LOOP"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.5",
+        "v3.6",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "约束理解 · 跨布局语义迁移 · 端侧分层强化学习",
+        "环境漂移闭环重规划 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：理解约束、编译任务、跨布局执行、结果可验证",
+        "目标：规划可执行、漂移可感知、失败可重规划",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,10 +412,10 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("约束任务规划", (34, 211, 238)),
-        ("跨布局迁移", (96, 165, 250)),
-        ("语义元素 e1/e2", (167, 139, 250)),
-        ("可执行进度 Φ", (244, 114, 182)),
+        ("闭环重规划", (34, 211, 238)),
+        ("约束任务规划", (96, 165, 250)),
+        ("跨布局迁移", (167, 139, 250)),
+        ("语义元素 e1/e2", (244, 114, 182)),
         ("层级任务分解", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("100%", "约束指令成功率", (125, 211, 252)),
-        ("12.5%", "关键词基线", (167, 139, 250)),
-        ("8", "真实约束指令", (244, 114, 182)),
-        ("47", "真实测试", (74, 222, 128)),
+        ("2/2", "动态场景", (125, 211, 252)),
+        ("0/2", "一次性基线", (167, 139, 250)),
+        ("3/3", "静态回归", (244, 114, 182)),
+        ("51", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
