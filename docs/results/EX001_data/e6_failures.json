@@ -1,0 +1,253 @@
+[
+  {
+    "condition": "AR001 SFT",
+    "tasks": 9,
+    "success_rate": 0.4444444444444444,
+    "failures": 5,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 2,
+      "checkout/form": 3,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_qty_p3",
+      "ev_qty_p4",
+      "ev_checkout_p4",
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR001 SFT+repair",
+    "tasks": 9,
+    "success_rate": 0.5555555555555556,
+    "failures": 4,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 2,
+      "checkout/form": 2,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_qty_p3",
+      "ev_qty_p4",
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR001 sparse",
+    "tasks": 9,
+    "success_rate": 0.5555555555555556,
+    "failures": 4,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 1,
+      "checkout/form": 3,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_qty_p3",
+      "ev_qty_p4",
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR001 VGDP",
+    "tasks": 9,
+    "success_rate": 0.6666666666666666,
+    "failures": 3,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 1,
+      "checkout/form": 2,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_checkout_p4",
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR001 router",
+    "tasks": 9,
+    "success_rate": 0.7777777777777778,
+    "failures": 2,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 1,
+      "checkout/form": 1,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR003 hierarchy",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR004 semantic",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR004 semantic churn",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR005 selector v2",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR005 selector v2 churn",
+    "tasks": 9,
+    "success_rate": 0.0,
+    "failures": 9,
+    "failure_stages": {
+      "search/navigation": 9,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": [
+      "ev_search_p3",
+      "ev_search_p4",
+      "ev_add_p4",
+      "ev_add_p3",
+      "ev_qty_p3",
+      "ev_qty_p4",
+      "ev_checkout_p4",
+      "ev_checkout_p3",
+      "ev_multi_p3p4"
+    ]
+  },
+  {
+    "condition": "AR005 semantic v2",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR005 semantic v2 churn",
+    "tasks": 9,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR006 naive",
+    "tasks": 8,
+    "success_rate": 0.125,
+    "failures": 7,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 7
+    },
+    "failed_tasks": [
+      "买最便宜的商品并完成结算",
+      "买价格不超过300元的最贵商品并结算",
+      "买一件iPhone 15和两件数据线，完成结算",
+      "预算650元，买无线充电器和蓝牙耳机各一件，并结算",
+      "买三件蓝牙耳机并结算",
+      "买最贵的商品并结算",
+      "如果无线充电器缺货，就买蓝牙耳机，并结算"
+    ]
+  },
+  {
+    "condition": "AR006 planner",
+    "tasks": 8,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  },
+  {
+    "condition": "AR006 planner churn",
+    "tasks": 8,
+    "success_rate": 1.0,
+    "failures": 0,
+    "failure_stages": {
+      "search/navigation": 0,
+      "product/cart": 0,
+      "checkout/form": 0,
+      "order/final": 0,
+      "planning/constraint": 0
+    },
+    "failed_tasks": []
+  }
+]

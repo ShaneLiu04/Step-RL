@@ -1,0 +1,73 @@
+{
+  "label": "semantic_hierarchy_no_verifier_hints",
+  "tasks": 9,
+  "success_rate": 0.2222222222222222,
+  "avg_steps": 9.777777777777779,
+  "avg_progress": 0.48148148148148157,
+  "seconds": 446.34,
+  "results": [
+    {
+      "task_id": "ev_search_p3",
+      "level": 1,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 2
+    },
+    {
+      "task_id": "ev_search_p4",
+      "level": 1,
+      "success": true,
+      "final_progress": 1.0,
+      "steps": 2
+    },
+    {
+      "task_id": "ev_add_p4",
+      "level": 2,
+      "success": false,
+      "final_progress": 0.3333333333333333,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_add_p3",
+      "level": 2,
+      "success": false,
+      "final_progress": 0.3333333333333333,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_qty_p3",
+      "level": 3,
+      "success": false,
+      "final_progress": 0.3333333333333333,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_qty_p4",
+      "level": 3,
+      "success": false,
+      "final_progress": 0.3333333333333333,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_checkout_p4",
+      "level": 4,
+      "success": false,
+      "final_progress": 0.25,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_checkout_p3",
+      "level": 4,
+      "success": false,
+      "final_progress": 0.375,
+      "steps": 12
+    },
+    {
+      "task_id": "ev_multi_p3p4",
+      "level": 5,
+      "success": false,
+      "final_progress": 0.375,
+      "steps": 12
+    }
+  ]
+}
