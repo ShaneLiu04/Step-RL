@@ -58,6 +58,7 @@ class SessionState:
     form: Dict[str, str] = field(default_factory=dict)
     order: Optional[Dict[str, object]] = None
     visited: List[str] = field(default_factory=list)
+    flags: Dict[str, bool] = field(default_factory=dict)
 
     def reset(self) -> None:
         self.query = ""
@@ -65,6 +66,7 @@ class SessionState:
         self.form = {}
         self.order = None
         self.visited = []
+        self.flags = {}
 
     def snapshot(self) -> Dict[str, object]:
         return {
@@ -462,8 +464,13 @@ class _Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/products":
             stock = self.server.stock  # type: ignore[attr-defined]
+            prices = self.server.prices  # type: ignore[attr-defined]
             payload = [
-                {**vars(p), "stock": int(stock.get(p.pid, p.stock))}
+                {
+                    **vars(p),
+                    "price": int(prices.get(p.pid, p.price)),
+                    "stock": int(stock.get(p.pid, p.stock)),
+                }
                 for p in PRODUCTS.values()
             ]
             self._send(
@@ -549,6 +556,37 @@ class _Handler(BaseHTTPRequestHandler):
             if not name or not address:
                 self._send(render_error("收货人和地址不能为空"), 400, sid)
                 return
+            # Realistic checkout-time drift: inventory/price may change after
+            # the plan was produced.  Applied once per session.
+            if not state.flags.get("drift_applied"):
+                for pid, stock in getattr(
+                    self.server, "checkout_stock_drop", {}
+                ).items():
+                    self.server.stock[pid] = stock  # type: ignore[attr-defined]
+                for pid, price in getattr(
+                    self.server, "checkout_price_override", {}
+                ).items():
+                    self.server.prices[pid] = price  # type: ignore[attr-defined]
+                state.flags["drift_applied"] = True
+            stock = getattr(self.server, "stock", {})
+            prices = getattr(self.server, "prices", {})
+            over_stock = [
+                pid
+                for pid, qty in state.cart.items()
+                if qty > int(stock.get(pid, PRODUCTS[pid].stock))
+            ]
+            if over_stock:
+                self._send(render_error("库存不足"), 400, sid)
+                return
+            budget = getattr(self.server, "checkout_budget", None)
+            if budget is not None:
+                total = sum(
+                    int(prices.get(pid, PRODUCTS[pid].price)) * qty
+                    for pid, qty in state.cart.items()
+                )
+                if total > budget:
+                    self._send(render_error("预算超限"), 400, sid)
+                    return
             order_id = uuid.uuid4().hex[:10]
             state.order = {"id": order_id, "items": dict(state.cart)}
             state.cart = {}
@@ -567,11 +605,18 @@ class LocalShopServer:
         port: int = 0,
         layout: str = "v1",
         stock_overrides: dict | None = None,
+        checkout_stock_drop: dict | None = None,
+        checkout_price_override: dict | None = None,
+        checkout_budget: int | None = None,
     ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
         self._httpd.layout = layout  # type: ignore[attr-defined]
         self._httpd.stock = {p.pid: p.stock for p in PRODUCTS.values()}
+        self._httpd.prices = {p.pid: p.price for p in PRODUCTS.values()}
+        self._httpd.checkout_stock_drop = checkout_stock_drop or {}
+        self._httpd.checkout_price_override = checkout_price_override or {}
+        self._httpd.checkout_budget = checkout_budget
         if stock_overrides:
             self._httpd.stock.update(stock_overrides)  # type: ignore[attr-defined]
         self.layout = layout
