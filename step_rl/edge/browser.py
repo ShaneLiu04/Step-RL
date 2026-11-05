@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -111,6 +112,7 @@ class BrowserEnv:
         max_elements: int = 24,
         perturb_ids: bool = False,
         semantic: bool = False,
+        perturb_prob: float = 1.0,
     ) -> None:
         self.server = server
         self.channel = channel
@@ -120,6 +122,7 @@ class BrowserEnv:
         self.max_elements = max_elements
         self.perturb_ids = perturb_ids
         self.semantic = semantic
+        self.perturb_prob = perturb_prob
         self._pw = None
         self._browser = None
         self._context = None
@@ -199,7 +202,7 @@ class BrowserEnv:
         }
         # Stress test: mutate ids *after* the observation snapshot.  Legacy
         # selector actions become stale; semantic data-eid handles remain.
-        if self.perturb_ids:
+        if self.perturb_ids and random.random() < self.perturb_prob:
             await self._randomize_ids()
         return observation
 

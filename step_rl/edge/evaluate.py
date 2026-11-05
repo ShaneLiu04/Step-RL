@@ -34,6 +34,8 @@ async def evaluate_policy(
     perturb_ids: bool = False,
     semantic: bool = False,
     layout: str = "v1",
+    perturb_prob: float = 1.0,
+    verifier_hints: bool = True,
 ) -> Dict[str, Any]:
     from .modeling import set_seed
 
@@ -49,6 +51,7 @@ async def evaluate_policy(
         headless=True,
         perturb_ids=perturb_ids,
         semantic=semantic,
+        perturb_prob=perturb_prob,
     )
     started = time.time()
     results = []
@@ -68,6 +71,7 @@ async def evaluate_policy(
                 memory_prompt=memory_prompt,
                 replan=replan,
                 semantic=semantic,
+                verifier_hints=verifier_hints,
             )
             results.append(
                 {

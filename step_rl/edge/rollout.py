@@ -143,6 +143,7 @@ async def rollout_task(
     replan: bool = False,
     initial_obs: Optional[Dict[str, Any]] = None,
     semantic: bool = False,
+    verifier_hints: bool = True,
 ) -> Rollout:
     obs = initial_obs if initial_obs is not None else await env.reset(task)
     progress = compute_progress(obs["state"], obs["url"], task)
@@ -239,8 +240,8 @@ async def rollout_task(
             task.goal,
             obs,
             history,
-            progress=phi,
-            missing=missing,
+            progress=phi if verifier_hints else None,
+            missing=missing if verifier_hints else None,
             reference_action=reference if memory_prompt else None,
             semantic=semantic,
         )
