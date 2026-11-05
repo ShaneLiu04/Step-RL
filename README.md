@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.4 — 跨布局语义迁移 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.5 — 约束理解 · 跨布局语义迁移 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.4
+# Step-RL v3.5
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,19 +14,19 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-40%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-47%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向长链路 Web 任务：让成功**可验证**、让奖励**可归因**、让技能**可组合**、让动作**跨布局迁移**。  
-> 在 9 个真实留出任务上达到 **100%**；在**未见过的第二套布局 + 观测后 DOM id 全随机化**条件下仍为 **100%**，非法动作 **0**。
+> 面向真实用户指令：理解**预算/最值/数量/缺货替代**，编译成可验证任务，再在**未见布局 + 重渲染**下执行。  
+> 8 条约束指令上：关键词基线 **12.5%**，本系统 **100%**；跨布局 + ID churn 下仍 **100%**。
 
 <p align="center">
+  <strong>约束任务规划</strong> ·
   <strong>跨布局语义迁移</strong> ·
   <strong>语义 Set-of-Mark 动作</strong> ·
   <strong>可执行进度 Φ</strong> ·
-  <strong>VGDP 稠密奖励</strong> ·
   <strong>层级任务分解</strong> ·
-  <strong>ID churn 压力测试</strong>
+  <strong>库存/替代推理</strong>
 </p>
 
 </div>
@@ -198,7 +198,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR001 单策略路由 | 77.8% | 5.11 | 0.90 |
 | AR003 层级分解（selector） | 100% | 5.89 | 1.00 |
 | AR004 语义层级 | 100% | 6.33 | 1.00 |
-| **AR005 跨布局语义（最终）** | **100%（未见布局 + churn）** | 7.89 | **1.00** |
+| AR005 跨布局语义 | 100%（未见布局 + churn） | 7.89 | 1.00 |
+| **AR006 约束规划（最终）** | **100%（8 条约束指令）** | 10.50 | **1.00** |
 
 逐任务：
 
@@ -243,7 +244,18 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 结论：仅换布局时 selector 仍可通过观测中的新 selector 工作；一旦真实页面在“决策→执行”之间重渲染，selector 立即失效，而语义元素编号仍可执行。
 
-### 5.4 数量控制消融（L3 留出）
+### 5.4 约束任务规划（8 条真实指令）
+
+| 条件 | 规划准确率 | 按用户期望成功率 | 平均步数 |
+|------|------------|------------------|----------|
+| 关键词基线（v1） | **0%** | **12.5%（1/8 偶然）** | 5.62 |
+| 约束规划（v1） | **100%** | **100%** | 10.50 |
+| **约束规划（v2 + ID churn）** | **100%** | **100%** | 12.00 |
+
+覆盖：最便宜、预算内最贵、指定数量、多商品、预算合计、最贵、缺货替代。  
+成功判定使用**用户期望 TaskSpec**，而不是规划器自证；基线唯一“成功”是模型偶然加购正确数量，但规划仍然错误。
+
+### 5.5 数量控制消融（L3 留出）
 
 | 组合 | 成功率 |
 |------|--------|
@@ -254,7 +266,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 训练日志：VGDP 第 2 轮训练成功率 66.7%，Sparse 33.3%；平均步奖励 +0.322 vs −0.020。
 
-### 5.5 组合回退记录
+### 5.6 组合回退记录
 
 | 尝试 | 成功率 | 决策 |
 |------|--------|------|
@@ -264,7 +276,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | LoRA 权重融合 | 0% | 回退 |
 | AR003 层级分解（selector） | 100% | 稳定 DOM 前最优 |
 | AR004 语义层级 | 100%（同布局 ID 扰动） | 前最优 |
-| **AR005 跨布局语义迁移** | **100%（未见布局 + churn）** | **最终保留** |
+| AR005 跨布局语义迁移 | 100%（未见布局 + churn） | 前最优 |
+| **AR006 约束任务规划** | **100%（8 指令，含跨布局 churn）** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -330,6 +343,7 @@ python scripts/ar002_eval.py       # 记忆/重规划负结果复现
 python scripts/ar003_eval.py       # 层级分解（稳定 DOM）
 python scripts/ar004_train.py --stage all   # 语义数据/SFT/RL/稳定+扰动评测
 python scripts/ar005_eval.py       # 跨布局零样本 + 重渲染压力
+python scripts/ar006_eval.py       # 自然语言约束规划 + 预期判定
 ```
 
 ### 测试
@@ -338,8 +352,9 @@ python scripts/ar005_eval.py       # 跨布局零样本 + 重渲染压力
 pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
-       tests/test_edge_semantic.py -v
-# 37 passed
+       tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
+       tests/test_edge_planner.py -v
+# 47 passed
 ```
 
 ### 产物
@@ -427,7 +442,8 @@ step-rl/
 │   │   ├── rollout.py            # 真实 rollout + 步奖励
 │   │   ├── step_grpo.py          # Step-GRPO
 │   │   ├── skill_memory.py       # 技能记忆（AR002 负结果）
-│   │   ├── hierarchical.py       # 层级分解（AR003/AR004）
+│   │   ├── planner.py            # 自然语言约束 → TaskSpec（AR006）
+│   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
 │   ├── environment/ training/ reward/ memory/ evaluation/  # 历史组件兼容
@@ -438,15 +454,16 @@ step-rl/
 │   ├── ar003_eval.py
 │   ├── ar004_eval.py
 │   ├── ar005_eval.py
+│   ├── ar006_eval.py
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR005-cross-layout-transfer/
-│   └── archive/AR001 / AR002 / AR003 / AR004
+│   ├── changes/AR006-constraint-task-planning/
+│   └── archive/AR001 / AR002 / AR003 / AR004 / AR005
 │
-├── tests/                        # 40 项真实测试
+├── tests/                        # 47 项真实测试
 ├── docs/REPRODUCTION.md
 └── outputs/                      # 实验产物（不入库）
 ```
@@ -475,7 +492,8 @@ step-rl/
 | AR002 | 技能记忆 + 验证器触发重规划 | 66.7% | 回退，归档负结果 |
 | AR003 | 验证器驱动层级任务分解 | 100%（稳定 DOM） | 稳定 DOM 前最优 |
 | AR004 | 语义 Set-of-Mark + ID 扰动鲁棒性 | 100%（同布局） | 前最优 |
-| **AR005** | **跨布局零样本迁移 + 重渲染鲁棒** | **100%（未见布局 + churn）** | **最终方案** |
+| AR005 | 跨布局零样本迁移 + 重渲染鲁棒 | 100%（未见布局 + churn） | 前最优 |
+| **AR006** | **自然语言约束规划 + 库存替代** | **100%（8 指令，含 churn）** | **最终方案** |
 
 规格与完整实验记录：
 
@@ -548,9 +566,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v34,
-  title = {Step-RL: Cross-Layout Verifier-Grounded Hierarchical RL with Semantic Actions},
-  version = {3.4},
+@software{step_rl_v35,
+  title = {Step-RL: Constraint-Aware Cross-Layout Verifier-Grounded Hierarchical RL},
+  version = {3.5},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -564,7 +582,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v3.4 / AR005** | **推荐** | 跨布局零样本 + 重渲染，100% / 0 非法 |
+| **v3.5 / AR006** | **推荐** | 约束规划 100%，基线 12.5% |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |

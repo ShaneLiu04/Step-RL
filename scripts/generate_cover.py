@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("SoM-SAI", "semantic"), ("XLT", "cross-layout")]
+    badges = [("CATP", "planner"), ("XLT", "cross-layout")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CROSS-LAYOUT"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CONSTRAINT PLANNING"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.4",
+        "v3.5",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "跨布局语义迁移 · 端侧分层强化学习",
+        "约束理解 · 跨布局语义迁移 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：未见布局可执行、DOM 改版可迁移、成功可验证",
+        "目标：理解约束、编译任务、跨布局执行、结果可验证",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,11 +412,11 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("跨布局迁移", (34, 211, 238)),
-        ("语义元素 e1/e2", (96, 165, 250)),
-        ("可执行进度 Φ", (167, 139, 250)),
-        ("层级任务分解", (244, 114, 182)),
-        ("ID churn 压力", (74, 222, 128)),
+        ("约束任务规划", (34, 211, 238)),
+        ("跨布局迁移", (96, 165, 250)),
+        ("语义元素 e1/e2", (167, 139, 250)),
+        ("可执行进度 Φ", (244, 114, 182)),
+        ("层级任务分解", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
     cxp = 88
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("100%", "未见布局+churn", (125, 211, 252)),
-        ("0", "非法动作", (167, 139, 250)),
-        ("9/9", "L4/L5 长链路", (244, 114, 182)),
-        ("40", "真实测试", (74, 222, 128)),
+        ("100%", "约束指令成功率", (125, 211, 252)),
+        ("12.5%", "关键词基线", (167, 139, 250)),
+        ("8", "真实约束指令", (244, 114, 182)),
+        ("47", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
