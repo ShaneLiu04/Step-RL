@@ -281,7 +281,26 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
-`docs/results/AR004_semantic_report.md`。
+`docs/results/AR004_semantic_report.md`、`docs/results/AR006_planning_report.md`。
+
+### 5.7 可解释性实验（EX001）
+
+实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
+
+**[docs/results/EX001_report.md](docs/results/EX001_report.md)**
+
+| 归因问题 | 实验 | 结果 |
+|----------|------|------|
+| 语义接口是否必要 | E1 扰动概率曲线 | selector 25% 扰动即 25%；语义全程 100% |
+| 层级分解是否必要 | E2 扁平 vs 层级 | 66.7% vs **100%** |
+| 验证器观测贡献 | E3 移除 Φ/missing | 100% → **22.2%** |
+| 跨布局是否记忆 | E4 v2 + churn | selector 0%；语义 **100%** |
+| 约束规划贡献 | E5 基线 vs 规划器 | 规划准确率 0% → **100%** |
+| 失败发生在哪 | E6 分类学 | selector 全在搜索层；旧 RL 在商品/结算层；基线在规划层 |
+| 稳定性/成本 | E7 重复 + token | 全部 100%；L5 15 步 / 3944 tokens |
+| 端侧瓶颈 | E8 CPU/GPU | 规划 0.03ms；生成 8.3s；显存 1.28GB |
+
+设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
 ---
 
@@ -455,16 +474,19 @@ step-rl/
 │   ├── ar004_eval.py
 │   ├── ar005_eval.py
 │   ├── ar006_eval.py
+│   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR006-constraint-task-planning/
-│   └── archive/AR001 / AR002 / AR003 / AR004 / AR005
+│   ├── changes/EX001-interpretability-ablation/
+│   └── archive/AR001 … AR006
 │
 ├── tests/                        # 47 项真实测试
 ├── docs/REPRODUCTION.md
+├── docs/EXPERIMENTS.md
+├── docs/results/EX001_report.md
 └── outputs/                      # 实验产物（不入库）
 ```
 
