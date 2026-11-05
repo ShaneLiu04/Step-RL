@@ -27,6 +27,7 @@ class Product:
     name: str
     price: int
     keywords: tuple[str, ...]
+    stock: int = 9
 
     def matches(self, query: str) -> bool:
         q = query.strip().lower()
@@ -460,7 +461,11 @@ class _Handler(BaseHTTPRequestHandler):
             )
             return
         if path == "/api/products":
-            payload = [vars(p) for p in PRODUCTS.values()]
+            stock = self.server.stock  # type: ignore[attr-defined]
+            payload = [
+                {**vars(p), "stock": int(stock.get(p.pid, p.stock))}
+                for p in PRODUCTS.values()
+            ]
             self._send(
                 json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                 sid=sid,
@@ -490,10 +495,17 @@ class _Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._send(render_error("数量必须是整数"), 400, sid)
                 return
+            stock = self.server.stock  # type: ignore[attr-defined]
+            available = (
+                int(stock.get(pid, PRODUCTS[pid].stock)) if pid in PRODUCTS else 0
+            )
             if pid not in PRODUCTS or not 1 <= qty <= 9:
                 self._send(render_error("非法商品或数量"), 400, sid)
                 return
-            state.cart[pid] = min(9, state.cart.get(pid, 0) + qty)
+            if state.cart.get(pid, 0) + qty > available:
+                self._send(render_error("库存不足"), 400, sid)
+                return
+            state.cart[pid] = state.cart.get(pid, 0) + qty
             self._redirect("/cart", sid)
             return
         elif path == "/cart":
@@ -550,11 +562,18 @@ class LocalShopServer:
     """Background HTTP server with isolated sessions."""
 
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 0, layout: str = "v1"
+        self,
+        host: str = "127.0.0.1",
+        port: int = 0,
+        layout: str = "v1",
+        stock_overrides: dict | None = None,
     ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
         self._httpd.layout = layout  # type: ignore[attr-defined]
+        self._httpd.stock = {p.pid: p.stock for p in PRODUCTS.values()}
+        if stock_overrides:
+            self._httpd.stock.update(stock_overrides)  # type: ignore[attr-defined]
         self.layout = layout
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self.host = host
