@@ -1,0 +1,109 @@
+{
+  "label": "naive_baseline_v1",
+  "layout": "v1",
+  "perturb_ids": false,
+  "tasks": 8,
+  "plan_accuracy": 0.0,
+  "success_rate": 0.125,
+  "avg_steps": 5.625,
+  "seconds": 323.57,
+  "results": [
+    {
+      "instruction": "买最便宜的商品并完成结算",
+      "expected": {
+        "p2": 1
+      },
+      "planned": null,
+      "plan_correct": false,
+      "success": false,
+      "steps": 0
+    },
+    {
+      "instruction": "买价格不超过300元的最贵商品并结算",
+      "expected": {
+        "p3": 1
+      },
+      "planned": null,
+      "plan_correct": false,
+      "success": false,
+      "steps": 0
+    },
+    {
+      "instruction": "买两件USB-C数据线并结算",
+      "expected": {
+        "p2": 2
+      },
+      "planned": {
+        "p2": 1
+      },
+      "plan_correct": false,
+      "success": true,
+      "own_success": true,
+      "steps": 9
+    },
+    {
+      "instruction": "买一件iPhone 15和两件数据线，完成结算",
+      "expected": {
+        "p1": 1,
+        "p2": 2
+      },
+      "planned": {
+        "p2": 1
+      },
+      "plan_correct": false,
+      "success": false,
+      "own_success": true,
+      "steps": 9
+    },
+    {
+      "instruction": "预算650元，买无线充电器和蓝牙耳机各一件，并结算",
+      "expected": {
+        "p3": 1,
+        "p4": 1
+      },
+      "planned": {
+        "p2": 1
+      },
+      "plan_correct": false,
+      "success": false,
+      "own_success": true,
+      "steps": 9
+    },
+    {
+      "instruction": "买三件蓝牙耳机并结算",
+      "expected": {
+        "p4": 3
+      },
+      "planned": {
+        "p4": 1
+      },
+      "plan_correct": false,
+      "success": false,
+      "own_success": true,
+      "steps": 9
+    },
+    {
+      "instruction": "买最贵的商品并结算",
+      "expected": {
+        "p1": 1
+      },
+      "planned": null,
+      "plan_correct": false,
+      "success": false,
+      "steps": 0
+    },
+    {
+      "instruction": "如果无线充电器缺货，就买蓝牙耳机，并结算",
+      "expected": {
+        "p4": 1
+      },
+      "planned": {
+        "p2": 1
+      },
+      "plan_correct": false,
+      "success": false,
+      "own_success": true,
+      "steps": 9
+    }
+  ]
+}
