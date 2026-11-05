@@ -1,0 +1,19 @@
+{
+  "cpu": {
+    "planner_p50_ms": 0.03090000245720148,
+    "planner_p95_ms": 0.033800024539232254,
+    "verifier_p50_ms": 0.022000051103532314,
+    "verifier_p95_ms": 0.02320006024092436,
+    "http_p50_ms": 1.2634999584406614,
+    "http_p95_ms": 1.4259000308811665
+  },
+  "gpu": {
+    "gpu": "Quadro RTX 5000",
+    "gen_p50_ms": 8311.215199995786,
+    "gen_p95_ms": 8525.640500010923,
+    "peak_memory_mb": 1283.3,
+    "avg_generated_tokens": 48.0,
+    "tokens_per_second": 5.77
+  },
+  "clock_note": "local GPU is clock-capped; see nvidia-smi in report"
+}

@@ -61,3 +61,10 @@ outputs/ar001/
 - 远端：`https://gitee.com/liu-xingyan04/step-rl.git`
 - 企业代理对 >100KB 的 POST 可能返回 403；大提交需分组/小包推送。
 - 不得把 PAT 写入仓库文件；凭据只保存在本机 credential store。
+
+## 7. AR / EX 命名规范
+
+- 创新 AR：`ARxxx-topic`，编号连续，不得被实验类占用。
+- 实验/归因/验收：`EXxxx-topic`，与 AR 编号体系独立。
+- 实验类文档只描述验证设计、指标、结论；创新代码/架构仍走 AR。
+- 已完成 AR/EX 均移入 `specs/archive/`。

@@ -1,0 +1,82 @@
+{
+  "tasks": [
+    "ev_qty_p3",
+    "ev_checkout_p3",
+    "ev_multi_p3p4"
+  ],
+  "repeats": 2,
+  "seconds": 313.39,
+  "per_task": {
+    "ev_qty_p3": {
+      "success_rate": 1.0,
+      "avg_steps": 5.0,
+      "avg_prompt_tokens": 1429.0,
+      "avg_generated_tokens": 104.0,
+      "tokens_per_success": 1533.0
+    },
+    "ev_checkout_p3": {
+      "success_rate": 1.0,
+      "avg_steps": 9.0,
+      "avg_prompt_tokens": 2173.0,
+      "avg_generated_tokens": 174.0,
+      "tokens_per_success": 2347.0
+    },
+    "ev_multi_p3p4": {
+      "success_rate": 1.0,
+      "avg_steps": 15.0,
+      "avg_prompt_tokens": 3667.0,
+      "avg_generated_tokens": 277.0,
+      "tokens_per_success": 3944.0
+    }
+  },
+  "rows": [
+    {
+      "task_id": "ev_qty_p3",
+      "repeat": 0,
+      "success": true,
+      "steps": 5,
+      "prompt_tokens": 1429,
+      "generated_tokens": 104
+    },
+    {
+      "task_id": "ev_qty_p3",
+      "repeat": 1,
+      "success": true,
+      "steps": 5,
+      "prompt_tokens": 1429,
+      "generated_tokens": 104
+    },
+    {
+      "task_id": "ev_checkout_p3",
+      "repeat": 0,
+      "success": true,
+      "steps": 9,
+      "prompt_tokens": 2173,
+      "generated_tokens": 174
+    },
+    {
+      "task_id": "ev_checkout_p3",
+      "repeat": 1,
+      "success": true,
+      "steps": 9,
+      "prompt_tokens": 2173,
+      "generated_tokens": 174
+    },
+    {
+      "task_id": "ev_multi_p3p4",
+      "repeat": 0,
+      "success": true,
+      "steps": 15,
+      "prompt_tokens": 3667,
+      "generated_tokens": 277
+    },
+    {
+      "task_id": "ev_multi_p3p4",
+      "repeat": 1,
+      "success": true,
+      "steps": 15,
+      "prompt_tokens": 3667,
+      "generated_tokens": 277
+    }
+  ]
+}
