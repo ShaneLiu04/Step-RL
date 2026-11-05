@@ -72,6 +72,7 @@ async def run_hierarchy(
     max_steps_per_subtask: int = 8,
     sample: bool = False,
     semantic: bool = False,
+    verifier_hints: bool = True,
 ) -> Rollout:
     obs = await env.reset(task)
     all_steps: List[StepRecord] = []
@@ -115,6 +116,7 @@ async def run_hierarchy(
             reward_mode="vgdp",
             initial_obs=obs,
             semantic=semantic,
+            verifier_hints=verifier_hints,
         )
         all_steps.extend(rollout.steps)
         obs = await env.observe()
