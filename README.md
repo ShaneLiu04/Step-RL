@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.5 — 约束理解 · 跨布局语义迁移 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.6 — 环境漂移闭环重规划 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.5
+# Step-RL v3.6
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,19 +14,19 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-47%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-51%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向真实用户指令：理解**预算/最值/数量/缺货替代**，编译成可验证任务，再在**未见布局 + 重渲染**下执行。  
-> 8 条约束指令上：关键词基线 **12.5%**，本系统 **100%**；跨布局 + ID churn 下仍 **100%**。
+> 面向真实环境：理解**预算/最值/数量/缺货替代**，编译任务，在**未见布局 + 重渲染**下执行，并在**结算时库存/价格漂移**后自动重规划。  
+> 动态场景：一次性基线 **0/2**，本系统 **2/2**；静态回归 **3/3**，无额外重规划。
 
 <p align="center">
+  <strong>闭环运行时重规划</strong> ·
   <strong>约束任务规划</strong> ·
   <strong>跨布局语义迁移</strong> ·
   <strong>语义 Set-of-Mark 动作</strong> ·
-  <strong>可执行进度 Φ</strong> ·
   <strong>层级任务分解</strong> ·
-  <strong>库存/替代推理</strong>
+  <strong>环境漂移检测</strong>
 </p>
 
 </div>
@@ -199,7 +199,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR003 层级分解（selector） | 100% | 5.89 | 1.00 |
 | AR004 语义层级 | 100% | 6.33 | 1.00 |
 | AR005 跨布局语义 | 100%（未见布局 + churn） | 7.89 | 1.00 |
-| **AR006 约束规划（最终）** | **100%（8 条约束指令）** | 10.50 | **1.00** |
+| AR006 约束规划 | 100%（8 条约束指令） | 10.50 | 1.00 |
+| **AR007 闭环重规划（最终）** | **2/2 动态 + 3/3 静态** | 27（动态重试） | **1.00** |
 
 逐任务：
 
@@ -277,13 +278,25 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR003 层级分解（selector） | 100% | 稳定 DOM 前最优 |
 | AR004 语义层级 | 100%（同布局 ID 扰动） | 前最优 |
 | AR005 跨布局语义迁移 | 100%（未见布局 + churn） | 前最优 |
-| **AR006 约束任务规划** | **100%（8 指令，含跨布局 churn）** | **最终保留** |
+| AR006 约束任务规划 | 100%（8 指令，含跨布局 churn） | 前最优 |
+| **AR007 闭环运行时重规划** | **2/2 动态场景；3/3 静态回归** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
-`docs/results/AR004_semantic_report.md`、`docs/results/AR006_planning_report.md`。
+`docs/results/AR004_semantic_report.md`、`docs/results/AR006_planning_report.md`、
+`docs/results/AR007_runtime_report.md`。
 
-### 5.7 可解释性实验（EX001）
+### 5.7 闭环运行时重规划（AR007）
+
+| 场景 | 一次性基线 | 闭环监督器 |
+|------|------------|------------|
+| D1 结算时库存骤降 → 替代 | 失败（18 步） | **成功（p4×2 → p2×2，2 次尝试）** |
+| D2 结算时涨价 → 预算内替代 | 失败（18 步） | **成功（p3×1 → p2×1，2 次尝试）** |
+| 静态回归（3 条） | — | **3/3，0 次重规划** |
+
+机制：`Plan → Act → Verify → 刷新真实目录 → Replan → 重执行`；动态事件由真实服务器状态变化触发。
+
+### 5.8 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -363,6 +376,7 @@ python scripts/ar003_eval.py       # 层级分解（稳定 DOM）
 python scripts/ar004_train.py --stage all   # 语义数据/SFT/RL/稳定+扰动评测
 python scripts/ar005_eval.py       # 跨布局零样本 + 重渲染压力
 python scripts/ar006_eval.py       # 自然语言约束规划 + 预期判定
+python scripts/ar007_eval.py       # 环境漂移闭环重规划
 ```
 
 ### 测试
@@ -372,8 +386,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py -v
-# 47 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py -v
+# 51 passed
 ```
 
 ### 产物
@@ -461,6 +475,7 @@ step-rl/
 │   │   ├── step_grpo.py          # Step-GRPO
 │   │   ├── skill_memory.py       # 技能记忆（AR002 负结果）
 │   │   ├── planner.py            # 自然语言约束 → TaskSpec（AR006）
+│   │   ├── supervisor.py         # 闭环重规划（AR007）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -473,16 +488,17 @@ step-rl/
 │   ├── ar004_eval.py
 │   ├── ar005_eval.py
 │   ├── ar006_eval.py
+│   ├── ar007_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/EX001-interpretability-ablation/
-│   └── archive/AR001 … AR006
+│   ├── changes/AR007-runtime-replanning/
+│   └── archive/AR001 … AR006 / EX001
 │
-├── tests/                        # 47 项真实测试
+├── tests/                        # 51 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -514,7 +530,8 @@ step-rl/
 | AR003 | 验证器驱动层级任务分解 | 100%（稳定 DOM） | 稳定 DOM 前最优 |
 | AR004 | 语义 Set-of-Mark + ID 扰动鲁棒性 | 100%（同布局） | 前最优 |
 | AR005 | 跨布局零样本迁移 + 重渲染鲁棒 | 100%（未见布局 + churn） | 前最优 |
-| **AR006** | **自然语言约束规划 + 库存替代** | **100%（8 指令，含 churn）** | **最终方案** |
+| AR006 | 自然语言约束规划 + 库存替代 | 100%（8 指令） | 前最优 |
+| **AR007** | **环境漂移闭环重规划** | **2/2 动态 + 3/3 静态** | **最终方案** |
 
 规格与完整实验记录：
 
@@ -587,9 +604,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v35,
-  title = {Step-RL: Constraint-Aware Cross-Layout Verifier-Grounded Hierarchical RL},
-  version = {3.5},
+@software{step_rl_v36,
+  title = {Step-RL: Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Hierarchical RL},
+  version = {3.6},
   year = {2026},
   url = {https://github.com/ShaneLiu04/Step-RL}
 }
@@ -603,7 +620,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v3.5 / AR006** | **推荐** | 约束规划 100%，基线 12.5% |
+| **v3.6 / AR007** | **推荐** | 动态漂移 2/2，基线 0/2 |
+| v3.5 / AR006 | 保留 | 约束规划 100%，基线 12.5% |
 | v3.4 / AR005 | 保留 | 跨布局零样本 + 重渲染鲁棒，100% |
 | v3.3 / AR004 | 保留 | 语义 Set-of-Mark + ID 扰动，100% |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
