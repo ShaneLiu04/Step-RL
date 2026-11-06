@@ -1,4 +1,4 @@
-"""Generate the Step-RL v3.5 README cover banner.
+"""Generate the Step-RL v3.6 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CONSTRAINT PLANNING"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   RUNTIME REPLANNING"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v3.5",
+        "v3.6",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Constraint-Aware Cross-Layout RL",
+        "Closed-Loop Runtime Replanning",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "理解约束 · 编译任务 · 跨布局执行 · 结果可验证",
+        "感知漂移 · 刷新目录 · 闭环重规划 · 结果可验证",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,13 +484,13 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "约束任务规划",
-            "预算 / 最值 / 数量 / 缺货替代 → 可验证 TaskSpec",
+            "闭环运行时重规划",
+            "结算时库存 / 价格漂移 → 刷新真实目录并重试",
             (34, 211, 238),
         ),
         (
-            "跨布局语义迁移",
-            "未见布局 + 重渲染 + ID churn 仍 100%",
+            "动态漂移 2/2",
+            "一次性基线 0/2；静态回归 3/3 无额外重规划",
             (167, 139, 250),
         ),
         ("语义 SoM 动作", "DOM id 全扰动后 0 非法动作", (74, 222, 128)),
@@ -518,10 +518,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("100%", "8 条约束指令成功率", (125, 211, 252)),
-        ("12.5%", "关键词基线", (244, 114, 182)),
-        ("100%", "跨布局 + ID churn", (74, 222, 128)),
-        ("47", "真实测试", (167, 139, 250)),
+        ("2/2", "动态漂移场景", (125, 211, 252)),
+        ("0/2", "一次性基线", (244, 114, 182)),
+        ("3/3", "静态回归", (74, 222, 128)),
+        ("51", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -624,70 +624,32 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # Constraint instruction banner
-    pill(d, (1094, 226, 1780, 260), 10, (251, 191, 36, 18), (251, 191, 36, 95), 1)
-    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(251, 191, 36, 245))
+    # Drift banner
+    pill(d, (1094, 226, 1780, 260), 10, (248, 113, 113, 18), (248, 113, 113, 95), 1)
+    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(248, 113, 113, 245))
     text(
         d,
         (1124, 243),
-        "约束：预算 ≤ ¥500 · 2 件 · 缺货可替代",
+        "DRIFT：结算时 P4 库存 3 → 0 · 自动替代",
         font(F_CN, 10.5),
-        (245, 225, 178, 255),
+        (250, 190, 190, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "PARSED ✓",
+        "REPLAN ×1",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Product cards
-    # P3 is out of stock; P4 is the recommended substitute.
-    pill(d, (1094, 268, 1306, 380), 12, (255, 255, 255, 8), (251, 191, 36, 65), 1)
-    draw_product_icon(d, 1106, 278, "keyboard", (251, 191, 36))
+    # Product cards: P4 hit the drift, P2 is the substitute.
+    pill(d, (1094, 268, 1306, 380), 12, (255, 255, 255, 8), (248, 113, 113, 95), 1)
+    draw_product_icon(d, 1106, 278, "mouse", (248, 113, 113))
     text(
         d,
         (1152, 280),
-        "机械键盘 P3",
-        font(F_CN_BOLD, 12.5),
-        (236, 243, 255, 255),
-        anchor="la",
-    )
-    text(
-        d,
-        (1152, 302),
-        "¥299",
-        font(F_MONO_BOLD, 11.5),
-        (251, 191, 36, 255),
-        anchor="la",
-    )
-    text(
-        d,
-        (1152, 322),
-        "缺货 · 替代可用",
-        font(F_CN, 8.5),
-        (245, 190, 130, 255),
-        anchor="la",
-    )
-    pill(d, (1106, 344, 1294, 370), 9, (251, 191, 36, 24), (251, 191, 36, 100), 1)
-    text(
-        d,
-        (1198, 357),
-        "查看替代",
-        font(F_CN, 11.5),
-        (245, 225, 190, 255),
-        anchor="mm",
-    )
-    som_badge(d, 1270, 348, "e1", (251, 191, 36), 20)
-
-    pill(d, (1318, 268, 1530, 380), 12, (255, 255, 255, 10), (96, 165, 250, 110), 1)
-    draw_product_icon(d, 1330, 278, "mouse", (96, 165, 250))
-    text(
-        d,
-        (1376, 280),
         "无线鼠标 P4",
         font(F_CN_BOLD, 12.5),
         (236, 243, 255, 255),
@@ -695,21 +657,58 @@ def draw_browser_card(canvas: Image.Image):
     )
     text(
         d,
-        (1376, 302),
+        (1152, 302),
         "¥159",
         font(F_MONO_BOLD, 11.5),
-        (96, 165, 250, 255),
+        (248, 113, 113, 255),
+        anchor="la",
+    )
+    text(
+        d,
+        (1152, 322),
+        "DRIFT · 库存 3→0",
+        font(F_CN, 8.5),
+        (250, 170, 170, 255),
+        anchor="la",
+    )
+    pill(d, (1106, 344, 1294, 370), 9, (248, 113, 113, 24), (248, 113, 113, 110), 1)
+    text(
+        d,
+        (1198, 357),
+        "查看替代",
+        font(F_CN, 11.5),
+        (255, 215, 215, 255),
+        anchor="mm",
+    )
+    som_badge(d, 1270, 348, "e1", (248, 113, 113), 20)
+
+    pill(d, (1318, 268, 1530, 380), 12, (255, 255, 255, 10), (74, 222, 128, 115), 1)
+    draw_product_icon(d, 1330, 278, "mouse", (74, 222, 128))
+    text(
+        d,
+        (1376, 280),
+        "无线鼠标 Lite P2",
+        font(F_CN_BOLD, 12.5),
+        (236, 243, 255, 255),
+        anchor="la",
+    )
+    text(
+        d,
+        (1376, 302),
+        "¥129",
+        font(F_MONO_BOLD, 11.5),
+        (74, 222, 128, 255),
         anchor="la",
     )
     text(
         d,
         (1376, 322),
-        "库存 3 · 推荐替代",
+        "库存 5 · 推荐替代",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="la",
     )
-    pill(d, (1330, 344, 1518, 370), 9, (96, 165, 250, 30), (96, 165, 250, 125), 1)
+    pill(d, (1330, 344, 1518, 370), 9, (74, 222, 128, 28), (74, 222, 128, 130), 1)
     text(
         d,
         (1422, 357),
@@ -718,9 +717,9 @@ def draw_browser_card(canvas: Image.Image):
         (232, 241, 255, 255),
         anchor="mm",
     )
-    som_badge(d, 1494, 348, "e2", (96, 165, 250), 20)
+    som_badge(d, 1494, 348, "e2", (74, 222, 128), 20)
 
-    # Cart panel
+    # Cart panel after replanning
     pill(d, (1544, 268, 1780, 380), 12, (255, 255, 255, 10), (74, 222, 128, 90), 1)
     text(
         d,
@@ -736,12 +735,12 @@ def draw_browser_card(canvas: Image.Image):
         fill=(255, 255, 255, 22),
         width=max(1, int(1 * S)),
     )
-    text(d, (1560, 302), "P4 × 2", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="la")
-    text(d, (1764, 302), "¥318", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="ra")
+    text(d, (1560, 302), "P2 × 2", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="la")
+    text(d, (1764, 302), "¥258", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="ra")
     text(
         d,
         (1560, 318),
-        "替代 P3 · 预算内",
+        "替代 P4 · 预算内",
         font(F_CN, 8),
         (150, 230, 190, 255),
         anchor="la",
@@ -755,7 +754,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1764, 338),
-        "¥318",
+        "¥258",
         font(F_MONO_BOLD, 11.5),
         (134, 239, 172, 255),
         anchor="ra",
@@ -769,7 +768,7 @@ def draw_browser_card(canvas: Image.Image):
     for r, a in ((28, 28), (20, 48), (13, 85)):
         d.ellipse(
             ((cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S),
-            outline=(96, 165, 250, a),
+            outline=(74, 222, 128, a),
             width=max(1, int(1 * S)),
         )
     d.polygon(
@@ -785,12 +784,12 @@ def draw_browser_card(canvas: Image.Image):
         fill=(244, 249, 255, 240),
     )
 
-    # Planner output chip
+    # Replan output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"plan":["P4x2","checkout"],"alt":"P3>P4"}',
+        '{"plan":["P2x2","checkout"],"replan":1}',
         font(F_MONO, 10),
         (185, 247, 255, 255),
         anchor="lm",
@@ -800,7 +799,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "P3 缺货 → P4 替代",
+        "P4 库存骤降 → P2 替代",
         font(F_CN, 9),
         (150, 230, 190, 255),
         anchor="lm",
@@ -896,7 +895,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "finish does not grant success",
+        "refresh real catalog → replan",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -922,7 +921,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Constraint Planner",
+        "Runtime Supervisor",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -930,17 +929,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "instruction → TaskSpec → adapters",
+        "Plan → Act → Verify → Replan",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Planner", "约束 → 可验证 TaskSpec", (251, 191, 36)),
-        ("SFT", "L1–L2 基础流程", (34, 211, 238)),
-        ("VGDP", "L3 数量控制", (167, 139, 250)),
-        ("Sparse", "L4–L5 结算流程", (74, 222, 128)),
+        ("Supervisor", "漂移检测 · 重试上限", (251, 191, 36)),
+        ("Planner", "约束 → 可验证 TaskSpec", (34, 211, 238)),
+        ("Adapters", "SFT · VGDP · Sparse", (167, 139, 250)),
+        ("Verifier", "真实目录 · 服务端谓词", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -971,7 +970,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "8/8 constraints · cross-layout 100% · 0 illegal",
+        "dynamic 2/2 · static 3/3 · 0 illegal",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -996,7 +995,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "CONSTRAINT PARSER   ·   SEMANTIC BROWSER   ·   VERIFIER Φ",
+        "RUNTIME SUPERVISOR   ·   SEMANTIC BROWSER   ·   VERIFIER Φ",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -1005,7 +1004,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR006 · REAL EPISODE",
+        "AR007 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",

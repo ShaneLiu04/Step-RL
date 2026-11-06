@@ -1,0 +1,100 @@
+[
+  {
+    "scenario": "D1_stock_substitution",
+    "mode": "baseline",
+    "planned": {
+      "p4": 2
+    },
+    "attempts": 1,
+    "replanned": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 130.96
+  },
+  {
+    "scenario": "D1_stock_substitution",
+    "mode": "supervisor",
+    "planned": {
+      "p2": 2
+    },
+    "attempts": 2,
+    "replanned": true,
+    "success": true,
+    "steps": 27,
+    "attempt_targets": [
+      {
+        "p4": 2
+      },
+      {
+        "p2": 2
+      }
+    ],
+    "seconds": 204.7
+  },
+  {
+    "scenario": "D2_price_budget",
+    "mode": "baseline",
+    "planned": {
+      "p3": 1
+    },
+    "attempts": 1,
+    "replanned": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 1021.91
+  },
+  {
+    "scenario": "D2_price_budget",
+    "mode": "supervisor",
+    "planned": {
+      "p2": 1
+    },
+    "attempts": 2,
+    "replanned": true,
+    "success": true,
+    "steps": 27,
+    "attempt_targets": [
+      {
+        "p3": 1
+      },
+      {
+        "p2": 1
+      }
+    ],
+    "seconds": 383.84
+  },
+  {
+    "scenario": "static:买最便宜的商品并完成结算",
+    "mode": "supervisor_static",
+    "planned": {
+      "p2": 1
+    },
+    "attempts": 1,
+    "replanned": false,
+    "success": true,
+    "steps": 9
+  },
+  {
+    "scenario": "static:买两件USB-C数据线并",
+    "mode": "supervisor_static",
+    "planned": {
+      "p2": 2
+    },
+    "attempts": 1,
+    "replanned": false,
+    "success": true,
+    "steps": 9
+  },
+  {
+    "scenario": "static:预算650元，买无线充电",
+    "mode": "supervisor_static",
+    "planned": {
+      "p3": 1,
+      "p4": 1
+    },
+    "attempts": 1,
+    "replanned": false,
+    "success": true,
+    "steps": 15
+  }
+]
