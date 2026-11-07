@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("SKILL", "compiled"), ("CLRR", "replanning")]
+    badges = [("UAR", "unified"), ("SKILL", "compiled")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL COMPILED"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   UNIFIED RUNTIME"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.9",
+        "v4.0",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "技能编译免生成执行 · 端侧分层强化学习",
+        "统一 Agent Runtime · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：技能免生成、成功不降、端侧提速",
+        "目标：30 场景 100%、0 LLM 调用、组合最优",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,8 +412,8 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("技能编译", (34, 211, 238)),
-        ("免生成执行", (96, 165, 250)),
+        ("统一 Runtime", (34, 211, 238)),
+        ("技能编译", (96, 165, 250)),
         ("闭环重规划", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("0", "LLM 调用", (125, 211, 252)),
-        ("21×", "端侧提速", (167, 139, 250)),
-        ("100%", "9 任务", (244, 114, 182)),
-        ("61", "真实测试", (74, 222, 128)),
+        ("30/30", "组合场景", (125, 211, 252)),
+        ("0", "LLM 调用", (167, 139, 250)),
+        ("86.7%", "基线", (244, 114, 182)),
+        ("63", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
