@@ -1,0 +1,486 @@
+[
+  {
+    "instruction": "搜索无线",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.24
+  },
+  {
+    "instruction": "搜索蓝牙",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.21
+  },
+  {
+    "instruction": "买1件蓝牙降噪耳机",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.18
+  },
+  {
+    "instruction": "买1件无线充电器",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.17
+  },
+  {
+    "instruction": "买2件无线充电器",
+    "expected": {
+      "p3": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.14
+  },
+  {
+    "instruction": "买2件蓝牙降噪耳机",
+    "expected": {
+      "p4": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.17
+  },
+  {
+    "instruction": "买1件蓝牙降噪耳机，并结算",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买2件无线充电器，并结算",
+    "expected": {
+      "p3": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.73
+  },
+  {
+    "instruction": "买1件无线充电器，买2件蓝牙降噪耳机，并结算",
+    "expected": {
+      "p3": 1,
+      "p4": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 16,
+    "policy_steps": 0,
+    "skill_steps": 16,
+    "prompt_tokens": 0,
+    "seconds": 3.69
+  },
+  {
+    "instruction": "买最便宜的商品并完成结算",
+    "expected": {
+      "p2": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.75
+  },
+  {
+    "instruction": "买价格不超过300元的最贵商品并结算",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.65
+  },
+  {
+    "instruction": "买两件USB-C数据线并结算",
+    "expected": {
+      "p2": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买一件iPhone 15和两件数据线，完成结算",
+    "expected": {
+      "p1": 1,
+      "p2": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 16,
+    "policy_steps": 0,
+    "skill_steps": 16,
+    "prompt_tokens": 0,
+    "seconds": 3.73
+  },
+  {
+    "instruction": "预算650元，买无线充电器和蓝牙耳机各一件，并结算",
+    "expected": {
+      "p3": 1,
+      "p4": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 16,
+    "policy_steps": 0,
+    "skill_steps": 16,
+    "prompt_tokens": 0,
+    "seconds": 3.66
+  },
+  {
+    "instruction": "买三件蓝牙耳机并结算",
+    "expected": {
+      "p4": 3
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买最贵的商品并结算",
+    "expected": {
+      "p1": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.67
+  },
+  {
+    "instruction": "如果无线充电器缺货，就买蓝牙耳机，并结算",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买两件蓝牙耳机；如果缺货，就买两件USB-C数据线，并结算",
+    "expected": {
+      "p2": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 2,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 4.44
+  },
+  {
+    "instruction": "预算300元，买无线充电器；如果超预算，就买USB-C数据线，并结算",
+    "expected": {
+      "p2": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 2,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 4.36
+  },
+  {
+    "instruction": "买一件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买两件USB-C数据线并结算",
+    "expected": {
+      "p2": 2
+    },
+    "layout": "v1",
+    "perturb_ids": false,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.71
+  },
+  {
+    "instruction": "搜索无线",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.19
+  },
+  {
+    "instruction": "搜索蓝牙",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.19
+  },
+  {
+    "instruction": "买1件蓝牙降噪耳机",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.24
+  },
+  {
+    "instruction": "买1件无线充电器",
+    "expected": {
+      "p3": 1
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.17
+  },
+  {
+    "instruction": "买2件无线充电器",
+    "expected": {
+      "p3": 2
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.18
+  },
+  {
+    "instruction": "买2件蓝牙降噪耳机",
+    "expected": {
+      "p4": 2
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 6,
+    "policy_steps": 0,
+    "skill_steps": 6,
+    "prompt_tokens": 0,
+    "seconds": 2.2
+  },
+  {
+    "instruction": "买1件蓝牙降噪耳机，并结算",
+    "expected": {
+      "p4": 1
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.7
+  },
+  {
+    "instruction": "买2件无线充电器，并结算",
+    "expected": {
+      "p3": 2
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 10,
+    "policy_steps": 0,
+    "skill_steps": 10,
+    "prompt_tokens": 0,
+    "seconds": 2.69
+  },
+  {
+    "instruction": "买1件无线充电器，买2件蓝牙降噪耳机，并结算",
+    "expected": {
+      "p3": 1,
+      "p4": 2
+    },
+    "layout": "v2",
+    "perturb_ids": true,
+    "success": true,
+    "attempts": 1,
+    "fallback": false,
+    "steps": 16,
+    "policy_steps": 0,
+    "skill_steps": 16,
+    "prompt_tokens": 0,
+    "seconds": 3.76
+  }
+]
