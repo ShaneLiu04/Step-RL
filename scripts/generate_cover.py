@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("CLRR", "replanning"), ("CATP", "planner")]
+    badges = [("VGOP", "pruning"), ("CLRR", "replanning")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CLOSED-LOOP"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   EFFICIENT"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.6",
+        "v3.7",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "环境漂移闭环重规划 · 端侧分层强化学习",
+        "验证器引导观测压缩 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：规划可执行、漂移可感知、失败可重规划",
+        "目标：保持成功、降低 token、减少无效控件",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,11 +412,11 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("闭环重规划", (34, 211, 238)),
-        ("约束任务规划", (96, 165, 250)),
-        ("跨布局迁移", (167, 139, 250)),
-        ("语义元素 e1/e2", (244, 114, 182)),
-        ("层级任务分解", (74, 222, 128)),
+        ("观测压缩", (34, 211, 238)),
+        ("闭环重规划", (96, 165, 250)),
+        ("约束任务规划", (167, 139, 250)),
+        ("跨布局迁移", (244, 114, 182)),
+        ("语义动作", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
     cxp = 88
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("2/2", "动态场景", (125, 211, 252)),
-        ("0/2", "一次性基线", (167, 139, 250)),
-        ("3/3", "静态回归", (244, 114, 182)),
-        ("51", "真实测试", (74, 222, 128)),
+        ("100%", "full / pruned", (125, 211, 252)),
+        ("−4.2%", "prompt tokens", (167, 139, 250)),
+        ("5", "代表任务", (244, 114, 182)),
+        ("54", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
