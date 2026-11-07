@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v3.8 — 错误可观测闭环修复 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v3.9 — 技能编译免生成执行 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v3.8
+# Step-RL v3.9
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,19 +14,19 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-57%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-61%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向真实环境：理解约束、跨布局执行、结算漂移重规划，并在**表单校验错误**后回到表单修复再提交。  
-> 错误修复：基线 **0/2**，错误可观测+控制器修复 **2/2**；动态漂移 **2/2** vs 基线 **0/2**。
+> 面向端侧：把成功轨迹中的动作模式编译为**免生成技能**，失败再回退 LLM。  
+> 9 任务：LLM 每步基线 **53 次调用 / 292.7s**；编译技能 **0 次调用 / 13.9s（约 21×）**，成功率仍 100%。
 
 <p align="center">
-  <strong>错误可观测闭环修复</strong> ·
+  <strong>技能编译免生成</strong> ·
   <strong>闭环运行时重规划</strong> ·
+  <strong>错误可观测修复</strong> ·
   <strong>约束任务规划</strong> ·
   <strong>跨布局语义迁移</strong> ·
-  <strong>语义 Set-of-Mark 动作</strong> ·
-  <strong>层级任务分解</strong>
+  <strong>语义 Set-of-Mark 动作</strong>
 </p>
 
 </div>
@@ -202,7 +202,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR006 约束规划 | 100%（8 条约束指令） | 10.50 | 1.00 |
 | AR007 闭环重规划 | 2/2 动态 + 3/3 静态 | 27（动态重试） | 1.00 |
 | AR008 观测压缩（效率层） | 100%（5 任务） | 8.00 | 1.00 |
-| **AR009 错误可观测修复（最终）** | **2/2（表单校验）** | 10 | **1.00** |
+| AR009 错误可观测修复 | 2/2（表单校验） | 10 | 1.00 |
+| **AR010 技能编译（最终）** | **100%（9 任务）** | 7.33 | **1.00** |
 
 逐任务：
 
@@ -283,7 +284,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR006 约束任务规划 | 100%（8 指令，含跨布局 churn） | 前最优 |
 | AR007 闭环运行时重规划 | 2/2 动态场景；3/3 静态回归 | 前最优 |
 | AR008 观测压缩 | 100%，prompt tokens −4.2% | 效率层 |
-| **AR009 错误可观测闭环修复** | **2/2 表单校验；基线 0/2** | **最终保留** |
+| AR009 错误可观测闭环修复 | 2/2 表单校验；基线 0/2 | 前最优 |
+| **AR010 技能编译免生成** | **100%，0 LLM 调用，约 21×** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -325,7 +327,19 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - 仅看到错误不够，错误页没有输入框；控制器执行真实 `goto /checkout → 重填字段 → 提交`；
 - 修复动作真实执行，成功由原验证器确认。
 
-### 5.10 可解释性实验（EX001）
+### 5.10 技能编译免生成执行（AR010）
+
+| 条件 | 成功率 | 平均步数 | LLM 步数 | Prompt tokens | 耗时 |
+|------|--------|----------|----------|---------------|------|
+| LLM 每步基线（v1） | 100% | 6.33 | **53** | 14858 | 292.7s |
+| **编译技能（v1）** | **100%** | 7.33 | **0** | **0** | **13.9s** |
+| **编译技能（v2 + ID churn）** | **100%** | 7.33 | **0** | **0** | **14.2s** |
+
+- 技能：`search` / `add_item(pid,qty)` / `checkout`，真实成功轨迹动作模式参数化；
+- 技能执行走真实浏览器与语义元素解析，不调用模型；失败回退 LLM；
+- 首轮 v1 77.8% 因数量框无可访问名，加入唯一 spinbutton 真实回退后恢复 100%。
+
+### 5.11 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -408,6 +422,7 @@ python scripts/ar006_eval.py       # 自然语言约束规划 + 预期判定
 python scripts/ar007_eval.py       # 环境漂移闭环重规划
 python scripts/ar008_eval.py       # 观测压缩 full vs pruned
 python scripts/ar009_eval.py       # 错误可观测/修复
+python scripts/ar010_eval.py       # 技能编译 vs LLM 每步
 ```
 
 ### 测试
@@ -417,8 +432,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py -v
-# 57 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py -v
+# 61 passed
 ```
 
 ### 产物
@@ -510,6 +525,7 @@ step-rl/
 │   │   ├── supervisor.py         # 闭环重规划（AR007）
 │   │   ├── observation.py        # 验证器引导观测压缩（AR008）
 │   │   ├── error repair          # 错误可观测闭环修复（AR009）
+│   │   ├── skill_library.py     # 技能编译免生成（AR010）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -525,16 +541,17 @@ step-rl/
 │   ├── ar007_eval.py
 │   ├── ar008_eval.py
 │   ├── ar009_eval.py
+│   ├── ar010_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR009-error-feedback-repair/
-│   └── archive/AR001 … AR008 / EX001
+│   ├── changes/AR010-skill-compilation/
+│   └── archive/AR001 … AR009 / EX001
 │
-├── tests/                        # 57 项真实测试
+├── tests/                        # 61 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -569,7 +586,8 @@ step-rl/
 | AR006 | 自然语言约束规划 + 库存替代 | 100%（8 指令） | 前最优 |
 | AR007 | 环境漂移闭环重规划 | 2/2 动态 + 3/3 静态 | 前最优 |
 | AR008 | 验证器引导观测压缩 | 100%，−4.2% tokens | 效率层 |
-| **AR009** | **错误可观测闭环修复** | **2/2，基线 0/2** | **最终保留** |
+| AR009 | 错误可观测闭环修复 | 2/2，基线 0/2 | 前最优 |
+| **AR010** | **技能编译免生成执行** | **100%，0 LLM，约 21×** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -642,9 +660,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v38,
-  title = {Step-RL: Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Hierarchical RL},
-  version = {3.8},
+@software{step_rl_v39,
+  title = {Step-RL: Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Hierarchical RL},
+  version = {3.9},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -658,7 +676,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v3.8 / AR009** | **推荐** | 错误修复 2/2，基线 0/2 |
+| **v3.9 / AR010** | **推荐** | 0 LLM 调用，端侧约 21× |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
