@@ -32,6 +32,7 @@ async def run_task(
             "attempts": attempts,
             "steps": [],
             "fallback": False,
+            "fallback_required": True,
         }
 
     for attempt in range(1, max_attempts + 1):
@@ -67,6 +68,16 @@ async def run_task(
         if new_spec is None or new_spec.targets == spec.targets:
             break
         spec = new_spec
+
+    if model is None:
+        return {
+            "success": False,
+            "spec": dict(spec.targets),
+            "attempts": attempts,
+            "steps": [],
+            "fallback": True,
+            "fallback_required": True,
+        }
 
     # Skill execution could not satisfy the task (or the plan stayed the same):
     # hand the current state to the LLM hierarchy.
