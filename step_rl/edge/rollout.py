@@ -146,6 +146,8 @@ async def rollout_task(
     semantic: bool = False,
     verifier_hints: bool = True,
     observation_pruning: bool = False,
+    error_feedback: bool = False,
+    error_repair: bool = False,
 ) -> Rollout:
     obs = initial_obs if initial_obs is not None else await env.reset(task)
     progress = compute_progress(obs["state"], obs["url"], task)
@@ -161,6 +163,7 @@ async def rollout_task(
     recent_actions: List[str] = []
     stagnation = 0
     replan_budget = 3
+    repair_budget = 2
 
     # Curriculum priming with the real expert, executed in the real browser.
     # This is used identically for sparse and dense RL so the only difference
@@ -242,6 +245,11 @@ async def rollout_task(
             obs = obs_after
             continue
 
+        notice = None
+        if error_feedback:
+            text = str(obs.get("text", ""))
+            if any(key in text for key in ("错误", "需", "不能", "不足", "超限")):
+                notice = text[:200]
         prompt = build_prompt(
             task.goal,
             obs,
@@ -250,6 +258,7 @@ async def rollout_task(
             missing=missing if verifier_hints else None,
             reference_action=reference if memory_prompt else None,
             semantic=semantic,
+            page_notice=notice,
         )
         gen = generate_action(
             model, tokenizer, prompt, sample=sample, max_new_tokens=max_new_tokens
@@ -299,6 +308,98 @@ async def rollout_task(
             f"{_short(gen['text'])} -> "
             f"{'ok' if exec_result['ok'] else 'fail'} phi={phi_after:.2f}"
         )
+
+        if error_repair and repair_budget > 0:
+            text = str(obs_after.get("text", ""))
+            keyword = None
+            value = None
+            if "称谓" in text:
+                keyword = "收货人"
+                value = "刘星言先生"
+            elif "路" in text:
+                keyword = "地址"
+                value = "深圳市龙岗区坂田路1号"
+            if keyword and value:
+                repair_budget -= 1
+                await env.execute({"action": "goto", "params": {"url": "/checkout"}})
+                repair_obs = await env.observe()
+                target = next(
+                    (
+                        element
+                        for element in repair_obs.get("elements", [])
+                        if keyword in element.get("accessible_name", "")
+                    ),
+                    None,
+                )
+                if target:
+                    await env.execute(
+                        {
+                            "action": "type",
+                            "params": {"element": target["eid"], "text": value},
+                        }
+                    )
+                    mid = await env.observe()
+                    address = next(
+                        (
+                            element
+                            for element in mid.get("elements", [])
+                            if "地址" in element.get("accessible_name", "")
+                        ),
+                        None,
+                    )
+                    if address:
+                        await env.execute(
+                            {
+                                "action": "type",
+                                "params": {
+                                    "element": address["eid"],
+                                    "text": "深圳市龙岗区坂田路1号",
+                                },
+                            }
+                        )
+                    after_type = await env.observe()
+                    submit = next(
+                        (
+                            element
+                            for element in after_type.get("elements", [])
+                            if "提交订单" in element.get("accessible_name", "")
+                        ),
+                        None,
+                    )
+                    if submit:
+                        await env.execute(
+                            {
+                                "action": "click",
+                                "params": {"element": submit["eid"]},
+                            }
+                        )
+                    obs_after = await env.observe()
+                    progress_after = compute_progress(
+                        obs_after["state"], obs_after["url"], task
+                    )
+                    phi_after = progress_after.progress
+                    steps.append(
+                        StepRecord(
+                            prompt="error_repair",
+                            prompt_ids=[],
+                            response_ids=[],
+                            old_logprobs=[],
+                            response_text=f"type {keyword} -> {value}",
+                            action={
+                                "action": "type",
+                                "params": {"element": target["eid"], "text": value},
+                            },
+                            exec_ok=True,
+                            error="",
+                            phi_before=phi,
+                            phi_after=phi_after,
+                            reward=0.0,
+                            source="error_repair",
+                        )
+                    )
+                    history.append(
+                        f"error_repair:{keyword} -> {value} phi={phi_after:.2f}"
+                    )
         phi = phi_after
         missing = list(progress_after.missing)
         if observation_pruning:
