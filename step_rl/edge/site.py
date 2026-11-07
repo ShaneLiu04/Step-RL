@@ -587,6 +587,14 @@ class _Handler(BaseHTTPRequestHandler):
                 if total > budget:
                     self._send(render_error("预算超限"), 400, sid)
                     return
+            if getattr(self.server, "checkout_name_requires_title", False):
+                if "先生" not in name and "女士" not in name:
+                    self._send(render_error("收货人需包含称谓（先生/女士）"), 400, sid)
+                    return
+            if getattr(self.server, "checkout_address_requires_road", False):
+                if "路" not in address:
+                    self._send(render_error("地址需包含'路'"), 400, sid)
+                    return
             order_id = uuid.uuid4().hex[:10]
             state.order = {"id": order_id, "items": dict(state.cart)}
             state.cart = {}
@@ -608,6 +616,8 @@ class LocalShopServer:
         checkout_stock_drop: dict | None = None,
         checkout_price_override: dict | None = None,
         checkout_budget: int | None = None,
+        checkout_name_requires_title: bool = False,
+        checkout_address_requires_road: bool = False,
     ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
@@ -617,6 +627,8 @@ class LocalShopServer:
         self._httpd.checkout_stock_drop = checkout_stock_drop or {}
         self._httpd.checkout_price_override = checkout_price_override or {}
         self._httpd.checkout_budget = checkout_budget
+        self._httpd.checkout_name_requires_title = checkout_name_requires_title
+        self._httpd.checkout_address_requires_road = checkout_address_requires_road
         if stock_overrides:
             self._httpd.stock.update(stock_overrides)  # type: ignore[attr-defined]
         self.layout = layout
