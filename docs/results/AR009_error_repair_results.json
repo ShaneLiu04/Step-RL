@@ -1,0 +1,74 @@
+[
+  {
+    "instruction": "买一件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "feedback": false,
+    "repair": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 102.17,
+    "label": "baseline"
+  },
+  {
+    "instruction": "买两件USB-C数据线并结算",
+    "expected": {
+      "p2": 2
+    },
+    "feedback": false,
+    "repair": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 111.7,
+    "label": "baseline"
+  },
+  {
+    "instruction": "买一件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "feedback": true,
+    "repair": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 102.17,
+    "label": "observable"
+  },
+  {
+    "instruction": "买两件USB-C数据线并结算",
+    "expected": {
+      "p2": 2
+    },
+    "feedback": true,
+    "repair": false,
+    "success": false,
+    "steps": 18,
+    "seconds": 108.61,
+    "label": "observable"
+  },
+  {
+    "instruction": "买一件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "feedback": true,
+    "repair": true,
+    "success": true,
+    "steps": 10,
+    "seconds": 55.72,
+    "label": "observable_repair"
+  },
+  {
+    "instruction": "买两件USB-C数据线并结算",
+    "expected": {
+      "p2": 2
+    },
+    "feedback": true,
+    "repair": true,
+    "success": true,
+    "steps": 10,
+    "seconds": 55.72,
+    "label": "observable_repair"
+  }
+]
