@@ -9,6 +9,7 @@ import torch
 
 from .browser import BrowserEnv
 from .expert import expert_action
+from .observation import prune_elements
 from .policy import build_prompt, parse_action, render_action, repair_action
 from .skill_memory import SkillMemory
 from .tasks import TaskSpec
@@ -144,11 +145,14 @@ async def rollout_task(
     initial_obs: Optional[Dict[str, Any]] = None,
     semantic: bool = False,
     verifier_hints: bool = True,
+    observation_pruning: bool = False,
 ) -> Rollout:
     obs = initial_obs if initial_obs is not None else await env.reset(task)
     progress = compute_progress(obs["state"], obs["url"], task)
     phi = progress.progress
     missing = list(progress.missing)
+    if observation_pruning:
+        obs["elements"] = prune_elements(obs["elements"], task, missing)
     history: List[str] = []
     steps: List[StepRecord] = []
     raw_invalid = 0
@@ -168,6 +172,8 @@ async def rollout_task(
         progress = compute_progress(obs["state"], obs["url"], task)
         phi = progress.progress
         missing = list(progress.missing)
+        if observation_pruning:
+            obs["elements"] = prune_elements(obs["elements"], task, missing)
         history.append(
             f"teacher:{teacher.get('action')} -> "
             f"{'ok' if result['ok'] else 'fail'} phi={phi:.2f}"
@@ -290,11 +296,13 @@ async def rollout_task(
             )
         )
         history.append(
-            f"{_short(gen['text'])} -> {'ok' if exec_result['ok'] else 'fail'} "
-            f"phi={phi_after:.2f}"
+            f"{_short(gen['text'])} -> "
+            f"{'ok' if exec_result['ok'] else 'fail'} phi={phi_after:.2f}"
         )
         phi = phi_after
         missing = list(progress_after.missing)
+        if observation_pruning:
+            obs_after["elements"] = prune_elements(obs_after["elements"], task, missing)
         success = phi >= 1.0
         if phi_after <= steps[-1].phi_before or not exec_result["ok"]:
             stagnation += 1
