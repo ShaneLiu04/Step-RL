@@ -1,0 +1,105 @@
+{
+  "label": "compiled_skill_v1",
+  "layout": "v1",
+  "perturb_ids": false,
+  "tasks": 9,
+  "success_rate": 1.0,
+  "avg_steps": 7.333333333333333,
+  "policy_steps": 0,
+  "skill_steps": 66,
+  "prompt_tokens": 0,
+  "generated_tokens": 0,
+  "seconds": 13.94,
+  "results": [
+    {
+      "task_id": "ev_search_p3",
+      "level": 1,
+      "success": true,
+      "steps": 3,
+      "policy_steps": 0,
+      "skill_steps": 3,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_search_p4",
+      "level": 1,
+      "success": true,
+      "steps": 3,
+      "policy_steps": 0,
+      "skill_steps": 3,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_add_p4",
+      "level": 2,
+      "success": true,
+      "steps": 6,
+      "policy_steps": 0,
+      "skill_steps": 6,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_add_p3",
+      "level": 2,
+      "success": true,
+      "steps": 6,
+      "policy_steps": 0,
+      "skill_steps": 6,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_qty_p3",
+      "level": 3,
+      "success": true,
+      "steps": 6,
+      "policy_steps": 0,
+      "skill_steps": 6,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_qty_p4",
+      "level": 3,
+      "success": true,
+      "steps": 6,
+      "policy_steps": 0,
+      "skill_steps": 6,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_checkout_p4",
+      "level": 4,
+      "success": true,
+      "steps": 10,
+      "policy_steps": 0,
+      "skill_steps": 10,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_checkout_p3",
+      "level": 4,
+      "success": true,
+      "steps": 10,
+      "policy_steps": 0,
+      "skill_steps": 10,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    },
+    {
+      "task_id": "ev_multi_p3p4",
+      "level": 5,
+      "success": true,
+      "steps": 16,
+      "policy_steps": 0,
+      "skill_steps": 16,
+      "prompt_tokens": 0,
+      "generated_tokens": 0
+    }
+  ]
+}
