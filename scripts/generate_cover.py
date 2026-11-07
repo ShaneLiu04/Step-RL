@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("VGOP", "pruning"), ("CLRR", "replanning")]
+    badges = [("EOCR", "error repair"), ("CLRR", "replanning")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   EFFICIENT"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   ERROR-AWARE"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v3.7",
+        "v3.8",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "验证器引导观测压缩 · 端侧分层强化学习",
+        "错误可观测闭环修复 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：保持成功、降低 token、减少无效控件",
+        "目标：看到错误、回到表单、修复后成功",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,9 +412,9 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("观测压缩", (34, 211, 238)),
+        ("错误可观测", (34, 211, 238)),
         ("闭环重规划", (96, 165, 250)),
-        ("约束任务规划", (167, 139, 250)),
+        ("约束规划", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
     ]
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("100%", "full / pruned", (125, 211, 252)),
-        ("−4.2%", "prompt tokens", (167, 139, 250)),
-        ("5", "代表任务", (244, 114, 182)),
-        ("54", "真实测试", (74, 222, 128)),
+        ("2/2", "错误修复", (125, 211, 252)),
+        ("0/2", "基线", (167, 139, 250)),
+        ("10", "修复后步数", (244, 114, 182)),
+        ("57", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
