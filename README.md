@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.0 — 统一 Agent Runtime · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.1 — CPU-first 能力门控运行时 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.0
+# Step-RL v4.1
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,18 +14,18 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-63%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-65%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向真实生产：统一 Runtime 组合规划、技能、语义动作、重规划与错误修复。  
-> 30 个真实场景：统一 Runtime **30/30**、**0 LLM 调用**、82s；基线组合 **26/30（86.7%）**。
+> 面向端侧部署：技能覆盖任务 **不加载模型、不占 GPU**；未覆盖任务显式门控。  
+> 30 场景 CPU-only：**30/30**、**0 GPU bytes**、**0 LLM**；4 路并发 12 任务 36.0s → **13.2s（约 2.7×）**。
 
 <p align="center">
+  <strong>CPU-first 运行时</strong> ·
+  <strong>能力门控</strong> ·
   <strong>统一 Agent Runtime</strong> ·
   <strong>技能编译免生成</strong> ·
   <strong>闭环运行时重规划</strong> ·
-  <strong>错误可观测修复</strong> ·
-  <strong>约束任务规划</strong> ·
   <strong>跨布局语义迁移</strong>
 </p>
 
@@ -204,7 +204,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR008 观测压缩（效率层） | 100%（5 任务） | 8.00 | 1.00 |
 | AR009 错误可观测修复 | 2/2（表单校验） | 10 | 1.00 |
 | AR010 技能编译 | 100%（9 任务） | 7.33 | 1.00 |
-| **AR011 统一 Runtime（最终）** | **30/30（组合场景）** | 9.20 | **1.00** |
+| AR011 统一 Runtime | 30/30（组合场景） | 9.20 | 1.00 |
+| **AR012 CPU-first Runtime（最终）** | **30/30（0 GPU / 0 LLM）** | 9.20 | **1.00** |
 
 逐任务：
 
@@ -287,7 +288,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR008 观测压缩 | 100%，prompt tokens −4.2% | 效率层 |
 | AR009 错误可观测闭环修复 | 2/2 表单校验；基线 0/2 | 前最优 |
 | AR010 技能编译免生成 | 100%，0 LLM 调用，约 21× | 前最优 |
-| **AR011 统一 Agent Runtime** | **30/30，0 LLM 调用** | **最终保留** |
+| AR011 统一 Agent Runtime | 30/30，0 LLM 调用 | 前最优 |
+| **AR012 CPU-first 能力门控** | **30/30，0 GPU，2.7× 并发** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -356,7 +358,21 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - 本轮实测 **0 LLM 调用、0 prompt tokens、82s**；
 - 基线为 AR004/AR005/AR006/AR007/AR009 的真实 JSON 汇总。
 
-### 5.12 可解释性实验（EX001）
+### 5.12 CPU-first 能力门控运行时（AR012）
+
+| 指标 | 结果 |
+|------|------|
+| 30 场景成功率 | **100%** |
+| LLM 调用 | **0** |
+| GPU 显存 | **0 bytes（未加载模型）** |
+| 串行 12 任务 | 35.97s |
+| **4 路并发 12 任务** | **13.16s（约 2.7×）** |
+| 未覆盖指令“写一首诗” | covered=false，fallback_required=true |
+
+- 能力清单显式判断覆盖率，未覆盖任务不误执行；
+- 技能覆盖任务完全在 CPU 上运行，适合端侧/无 GPU 服务。
+
+### 5.13 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -441,6 +457,7 @@ python scripts/ar008_eval.py       # 观测压缩 full vs pruned
 python scripts/ar009_eval.py       # 错误可观测/修复
 python scripts/ar010_eval.py       # 技能编译 vs LLM 每步
 python scripts/ar011_eval.py       # 30 场景统一 Runtime
+python scripts/ar012_cpu.py        # CPU-only + 并发
 ```
 
 ### 测试
@@ -450,8 +467,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py -v
-# 63 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py -v
+# 65 passed
 ```
 
 ### 产物
@@ -545,6 +562,7 @@ step-rl/
 │   │   ├── error repair          # 错误可观测闭环修复（AR009）
 │   │   ├── skill_library.py     # 技能编译免生成（AR010）
 │   │   ├── runtime.py           # 统一 Agent Runtime（AR011）
+│   │   ├── capability.py        # 能力门控（AR012）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -562,16 +580,17 @@ step-rl/
 │   ├── ar009_eval.py
 │   ├── ar010_eval.py
 │   ├── ar011_eval.py
+│   ├── ar012_cpu.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR011-unified-runtime/
-│   └── archive/AR001 … AR010 / EX001
+│   ├── changes/AR012-cpu-capability-runtime/
+│   └── archive/AR001 … AR011 / EX001
 │
-├── tests/                        # 63 项真实测试
+├── tests/                        # 65 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -608,13 +627,15 @@ step-rl/
 | AR008 | 验证器引导观测压缩 | 100%，−4.2% tokens | 效率层 |
 | AR009 | 错误可观测闭环修复 | 2/2，基线 0/2 | 前最优 |
 | AR010 | 技能编译免生成执行 | 100%，0 LLM，约 21× | 前最优 |
-| **AR011** | **统一 Agent Runtime** | **30/30，0 LLM** | **最终保留** |
+| AR011 | 统一 Agent Runtime | 30/30，0 LLM | 前最优 |
+| **AR012** | **CPU-first 能力门控** | **30/30，0 GPU，2.7×** | **最终保留** |
 
 规格与完整实验记录：
 
 - `specs/archive/AR001-edge-verifier-step-grpo/` … `AR010-skill-compilation/`
 - `specs/archive/EX001-interpretability-ablation/`
-- `specs/changes/AR011-unified-runtime/`
+- `specs/archive/AR011-unified-runtime/`
+- `specs/changes/AR012-cpu-capability-runtime/`
 
 ---
 
@@ -680,9 +701,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v40,
-  title = {Step-RL: Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.0},
+@software{step_rl_v41,
+  title = {Step-RL: CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
+  version = {4.1},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -696,7 +717,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.0 / AR011** | **推荐** | 30/30 场景，0 LLM 调用 |
+| **v4.1 / AR012** | **推荐** | 30/30，0 GPU，2.7× 并发 |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
