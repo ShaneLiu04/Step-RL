@@ -155,6 +155,22 @@ def plan_instruction(
 ) -> Optional[TaskSpec]:
     """Compile a constrained instruction into a TaskSpec."""
 
+    if not any(
+        word in instruction
+        for word in (
+            "买",
+            "购买",
+            "下单",
+            "结算",
+            "搜索",
+            "加入购物车",
+            "最便宜",
+            "最贵",
+            "预算",
+        )
+    ):
+        return None
+
     budget = _budget(instruction)
     mentions = _mentions(instruction, catalog)
     by_pid = {item.pid: item for item in catalog}
