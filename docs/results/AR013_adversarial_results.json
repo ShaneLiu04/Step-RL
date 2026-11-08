@@ -1,0 +1,77 @@
+[
+  {
+    "label": "baseline_llm",
+    "instruction": "买1件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "success": false,
+    "order": {},
+    "steps": 12,
+    "seconds": 65.23
+  },
+  {
+    "label": "baseline_llm",
+    "instruction": "买2件蓝牙耳机并结算",
+    "expected": {
+      "p4": 2
+    },
+    "success": false,
+    "order": {},
+    "steps": 12,
+    "seconds": 66.98
+  },
+  {
+    "label": "baseline_llm",
+    "instruction": "买1件iPhone 15和1件USB-C数据线，并结算",
+    "expected": {
+      "p1": 1,
+      "p2": 1
+    },
+    "success": false,
+    "order": {},
+    "steps": 18,
+    "seconds": 88.93
+  },
+  {
+    "label": "runtime_skill",
+    "instruction": "买1件无线充电器并结算",
+    "expected": {
+      "p3": 1
+    },
+    "success": true,
+    "order": {
+      "p3": 1
+    },
+    "steps": 10,
+    "seconds": 2.68
+  },
+  {
+    "label": "runtime_skill",
+    "instruction": "买2件蓝牙耳机并结算",
+    "expected": {
+      "p4": 2
+    },
+    "success": true,
+    "order": {
+      "p4": 2
+    },
+    "steps": 10,
+    "seconds": 2.72
+  },
+  {
+    "label": "runtime_skill",
+    "instruction": "买1件iPhone 15和1件USB-C数据线，并结算",
+    "expected": {
+      "p1": 1,
+      "p2": 1
+    },
+    "success": true,
+    "order": {
+      "p1": 1,
+      "p2": 1
+    },
+    "steps": 16,
+    "seconds": 3.71
+  }
+]

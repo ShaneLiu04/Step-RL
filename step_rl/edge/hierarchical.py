@@ -73,6 +73,9 @@ async def run_hierarchy(
     sample: bool = False,
     semantic: bool = False,
     verifier_hints: bool = True,
+    observation_pruning: bool = False,
+    error_feedback: bool = False,
+    error_repair: bool = False,
 ) -> Rollout:
     obs = await env.reset(task)
     all_steps: List[StepRecord] = []
@@ -117,6 +120,9 @@ async def run_hierarchy(
             initial_obs=obs,
             semantic=semantic,
             verifier_hints=verifier_hints,
+            observation_pruning=observation_pruning,
+            error_feedback=error_feedback,
+            error_repair=error_repair,
         )
         all_steps.extend(rollout.steps)
         obs = await env.observe()

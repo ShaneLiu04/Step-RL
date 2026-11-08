@@ -1,4 +1,4 @@
-"""Generate the Step-RL v3.6 README cover banner.
+"""Generate the Step-RL v4.4 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   RUNTIME REPLANNING"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL EXTENSION"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v3.6",
+        "v4.4",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Closed-Loop Runtime Replanning",
+        "Extensible Skill Library Runtime",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "感知漂移 · 刷新目录 · 闭环重规划 · 结果可验证",
+        "演示扩展技能 · 能力门控 · 检查点恢复",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,16 +484,20 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "闭环运行时重规划",
-            "结算时库存 / 价格漂移 → 刷新真实目录并重试",
+            "技能库扩展",
+            "真实演示 → update_quantity 技能，能力门控自动覆盖",
             (34, 211, 238),
         ),
         (
-            "动态漂移 2/2",
-            "一次性基线 0/2；静态回归 3/3 无额外重规划",
+            "3/3 vs 基线 2/3",
+            "0 LLM，1.7s vs 35–81s（约 20–45×）",
             (167, 139, 250),
         ),
-        ("语义 SoM 动作", "DOM id 全扰动后 0 非法动作", (74, 222, 128)),
+        (
+            "检查点恢复",
+            "崩溃后可恢复执行，3/3 vs 基线 0/3",
+            (74, 222, 128),
+        ),
     ]
     f_bar_title = font(F_CN_BOLD, 19)
     f_bar_body = font(F_CN, 17)
@@ -518,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("2/2", "动态漂移场景", (125, 211, 252)),
-        ("0/2", "一次性基线", (244, 114, 182)),
-        ("3/3", "静态回归", (74, 222, 128)),
-        ("51", "真实测试", (167, 139, 250)),
+        ("3/3", "购物车更新任务", (125, 211, 252)),
+        ("2/3", "LLM 基线", (244, 114, 182)),
+        ("20–45×", "推理加速", (74, 222, 128)),
+        ("72", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -624,29 +628,29 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # Drift banner
-    pill(d, (1094, 226, 1780, 260), 10, (248, 113, 113, 18), (248, 113, 113, 95), 1)
-    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(248, 113, 113, 245))
+    # Instruction banner
+    pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
+    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "DRIFT：结算时 P4 库存 3 → 0 · 自动替代",
+        "指令：把购物车 P4 数量 2 → 4",
         font(F_CN, 10.5),
-        (250, 190, 190, 255),
+        (182, 236, 250, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "REPLAN ×1",
+        "SKILL ROUTED",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Product cards: P4 hit the drift, P2 is the substitute.
-    pill(d, (1094, 268, 1306, 380), 12, (255, 255, 255, 8), (248, 113, 113, 95), 1)
-    draw_product_icon(d, 1106, 278, "mouse", (248, 113, 113))
+    # Cart item card
+    pill(d, (1094, 268, 1390, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
+    draw_product_icon(d, 1106, 278, "mouse", (34, 211, 238))
     text(
         d,
         (1152, 280),
@@ -660,115 +664,104 @@ def draw_browser_card(canvas: Image.Image):
         (1152, 302),
         "¥159",
         font(F_MONO_BOLD, 11.5),
-        (248, 113, 113, 255),
+        (34, 211, 238, 255),
         anchor="la",
     )
     text(
         d,
         (1152, 322),
-        "DRIFT · 库存 3→0",
+        "当前数量 2 · 目标 4",
         font(F_CN, 8.5),
-        (250, 170, 170, 255),
+        (150, 210, 236, 255),
         anchor="la",
     )
-    pill(d, (1106, 344, 1294, 370), 9, (248, 113, 113, 24), (248, 113, 113, 110), 1)
+
+    # Quantity stepper
+    pill(d, (1106, 344, 1266, 372), 10, (255, 255, 255, 10), (34, 211, 238, 105), 1)
+    text(d, (1122, 358), "−", font(F_SEMI, 14), (182, 236, 250, 255), anchor="mm")
+    text(d, (1186, 358), "2", font(F_MONO_BOLD, 12), (240, 248, 255, 255), anchor="mm")
+    text(d, (1250, 358), "+", font(F_SEMI, 14), (182, 236, 250, 255), anchor="mm")
+    som_badge(d, 1114, 340, "e1", (34, 211, 238), 18)
+    som_badge(d, 1242, 340, "e2", (34, 211, 238), 18)
+
+    # Update button
+    pill(d, (1282, 344, 1378, 372), 10, (74, 222, 128, 26), (74, 222, 128, 125), 1)
     text(
         d,
-        (1198, 357),
-        "查看替代",
-        font(F_CN, 11.5),
-        (255, 215, 215, 255),
+        (1326, 358),
+        "更新",
+        font(F_CN_BOLD, 11),
+        (224, 252, 234, 255),
         anchor="mm",
     )
-    som_badge(d, 1270, 348, "e1", (248, 113, 113), 20)
+    som_badge(d, 1352, 340, "e3", (74, 222, 128), 18)
 
-    pill(d, (1318, 268, 1530, 380), 12, (255, 255, 255, 10), (74, 222, 128, 115), 1)
-    draw_product_icon(d, 1330, 278, "mouse", (74, 222, 128))
+    # Skill card
+    pill(d, (1404, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
-        (1376, 280),
-        "无线鼠标 Lite P2",
-        font(F_CN_BOLD, 12.5),
+        (1420, 278),
+        "Skill Library",
+        font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
     )
     text(
         d,
-        (1376, 302),
-        "¥129",
+        (1420, 298),
+        "update_quantity",
         font(F_MONO_BOLD, 11.5),
-        (74, 222, 128, 255),
-        anchor="la",
-    )
-    text(
-        d,
-        (1376, 322),
-        "库存 5 · 推荐替代",
-        font(F_CN, 8.5),
-        (150, 230, 190, 255),
-        anchor="la",
-    )
-    pill(d, (1330, 344, 1518, 370), 9, (74, 222, 128, 28), (74, 222, 128, 130), 1)
-    text(
-        d,
-        (1422, 357),
-        "加入购物车",
-        font(F_CN, 11.5),
-        (232, 241, 255, 255),
-        anchor="mm",
-    )
-    som_badge(d, 1494, 348, "e2", (74, 222, 128), 20)
-
-    # Cart panel after replanning
-    pill(d, (1544, 268, 1780, 380), 12, (255, 255, 255, 10), (74, 222, 128, 90), 1)
-    text(
-        d,
-        (1560, 280),
-        "购物车",
-        font(F_CN_BOLD, 11.5),
-        (236, 243, 255, 255),
-        anchor="la",
-    )
-    text(d, (1764, 280), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
-    d.line(
-        [(1560 * S, 294 * S), (1764 * S, 294 * S)],
-        fill=(255, 255, 255, 22),
-        width=max(1, int(1 * S)),
-    )
-    text(d, (1560, 302), "P2 × 2", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="la")
-    text(d, (1764, 302), "¥258", font(F_MONO, 9.5), (214, 226, 246, 255), anchor="ra")
-    text(
-        d,
-        (1560, 318),
-        "替代 P4 · 预算内",
-        font(F_CN, 8),
-        (150, 230, 190, 255),
+        (185, 247, 255, 255),
         anchor="la",
     )
     d.line(
-        [(1560 * S, 330 * S), (1764 * S, 330 * S)],
-        fill=(255, 255, 255, 22),
+        [(1420 * S, 316 * S), (1764 * S, 316 * S)],
+        fill=(255, 255, 255, 20),
         width=max(1, int(1 * S)),
     )
-    text(d, (1560, 338), "合计", font(F_CN, 8.5), (156, 176, 210, 255), anchor="la")
+    check_badge(d, 1428, 330, 5.5, (52, 211, 153))
     text(
         d,
-        (1764, 338),
-        "¥258",
-        font(F_MONO_BOLD, 11.5),
+        (1440, 330),
+        "真实演示 → 参数化技能",
+        font(F_CN, 9),
+        (196, 212, 240, 255),
+        anchor="lm",
+    )
+    check_badge(d, 1428, 350, 5.5, (52, 211, 153))
+    text(
+        d,
+        (1440, 350),
+        "能力门控自动覆盖新子目标",
+        font(F_CN, 9),
+        (196, 212, 240, 255),
+        anchor="lm",
+    )
+    pill(d, (1440, 362, 1502, 376), 7, (34, 197, 94, 26), (74, 222, 128, 100), 1)
+    text(
+        d,
+        (1471, 369),
+        "0 LLM",
+        font(F_MONO_BOLD, 7.5),
         (134, 239, 172, 255),
-        anchor="ra",
+        anchor="mm",
     )
-    pill(d, (1556, 350, 1768, 376), 9, (34, 197, 94, 30), (74, 222, 128, 125), 1)
-    text(d, (1648, 363), "结算", font(F_CN_BOLD, 11), (224, 252, 234, 255), anchor="mm")
-    som_badge(d, 1740, 354, "e3", (74, 222, 128), 20)
+    pill(d, (1508, 362, 1562, 376), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
+    text(
+        d,
+        (1535, 369),
+        "1.7s",
+        font(F_MONO_BOLD, 7.5),
+        (182, 236, 250, 255),
+        anchor="mm",
+    )
 
     # Click ripple on e2
-    cx, cy = 1494 + 10, 348 + 10
-    for r, a in ((28, 28), (20, 48), (13, 85)):
+    cx, cy = 1250, 350
+    for r, a in ((26, 28), (18, 48), (11, 85)):
         d.ellipse(
             ((cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S),
-            outline=(74, 222, 128, a),
+            outline=(34, 211, 238, a),
             width=max(1, int(1 * S)),
         )
     d.polygon(
@@ -784,12 +777,12 @@ def draw_browser_card(canvas: Image.Image):
         fill=(244, 249, 255, 240),
     )
 
-    # Replan output chip
+    # Skill plan chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"plan":["P2x2","checkout"],"replan":1}',
+        '{"skill":"update_quantity","qty":4}',
         font(F_MONO, 10),
         (185, 247, 255, 255),
         anchor="lm",
@@ -799,8 +792,8 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "P4 库存骤降 → P2 替代",
-        font(F_CN, 9),
+        "P4 2→4 · 基线 35.1s → 1.69s",
+        font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
     )
@@ -895,7 +888,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "refresh real catalog → replan",
+        "exact quantity verified",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -921,7 +914,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Runtime Supervisor",
+        "Skill Library + Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -929,17 +922,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "Plan → Act → Verify → Replan",
+        "demo → skill → gate → execute",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Supervisor", "漂移检测 · 重试上限", (251, 191, 36)),
-        ("Planner", "约束 → 可验证 TaskSpec", (34, 211, 238)),
-        ("Adapters", "SFT · VGDP · Sparse", (167, 139, 250)),
-        ("Verifier", "真实目录 · 服务端谓词", (74, 222, 128)),
+        ("Skill Library", "演示 → 技能 · 能力门控", (251, 191, 36)),
+        ("Runtime", "checkpoint · CPU-first", (34, 211, 238)),
+        ("Planner", "约束 → 可验证 TaskSpec", (167, 139, 250)),
+        ("Verifier", "精确数量 · 服务端谓词", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -970,7 +963,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "dynamic 2/2 · static 3/3 · 0 illegal",
+        "cart 3/3 · checkpoint 3/3 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -995,7 +988,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "RUNTIME SUPERVISOR   ·   SEMANTIC BROWSER   ·   VERIFIER Φ",
+        "SKILL LIBRARY   ·   CAPABILITY GATING   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -1004,7 +997,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR007 · REAL EPISODE",
+        "AR015 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",

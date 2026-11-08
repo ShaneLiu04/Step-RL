@@ -23,6 +23,7 @@ PREDICATE_HINTS = {
     "name_filled": "填写收货人",
     "address_filled": "填写地址",
     "order_placed": "提交订单",
+    "cart_quantity_exact": "修改购物车数量",
 }
 
 
@@ -66,6 +67,7 @@ def build_prompt(
     missing: Optional[List[str]] = None,
     reference_action: Optional[Dict[str, Any]] = None,
     semantic: bool = False,
+    page_notice: Optional[str] = None,
 ) -> str:
     elements = observation.get("elements", [])[:max_elements]
     state = observation.get("state", {})
@@ -77,8 +79,10 @@ def build_prompt(
         missing_text = "、".join(hints) if hints else "无"
         progress_line = f"进度: {progress:.2f} | 未完成: {missing_text}\n"
     reference_line = ""
+    if page_notice:
+        reference_line += f"页面提示: {page_notice[:200]}\n"
     if reference_action:
-        reference_line = f"参考动作: {render_action(reference_action)}\n"
+        reference_line += f"参考动作: {render_action(reference_action)}\n"
     return (
         f"{SYSTEM}\n\n"
         f"任务: {task_goal}\n"
