@@ -77,10 +77,17 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         cart = state.get("cart", {})
         order = state.get("order") or {}
         ordered = order.get("items", {}) if order else {}
+        compare = (
+            (lambda a, b: a == b) if task.exact_quantity else (lambda a, b: a >= b)
+        )
         return all(
-            max(int(cart.get(pid, 0)), int(ordered.get(pid, 0))) >= qty
+            compare(max(int(cart.get(pid, 0)), int(ordered.get(pid, 0))), qty)
             for pid, qty in task.targets.items()
         )
+
+    def cart_quantity_exact(state: Dict, url: str) -> bool:
+        cart = state.get("cart", {})
+        return all(int(cart.get(pid, 0)) == qty for pid, qty in task.targets.items())
 
     def cart_viewed(state: Dict, url: str) -> bool:
         return _visited(state, _path_is("/cart"))
@@ -99,12 +106,18 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         if not order:
             return False
         items = order.get("items", {})
-        return all(int(items.get(pid, 0)) >= qty for pid, qty in task.targets.items())
+        compare = (
+            (lambda a, b: a == b) if task.exact_quantity else (lambda a, b: a >= b)
+        )
+        return all(
+            compare(int(items.get(pid, 0)), qty) for pid, qty in task.targets.items()
+        )
 
     return {
         "search_done": search_done,
         "product_viewed": product_viewed,
         "cart_contains": cart_contains,
+        "cart_quantity_exact": cart_quantity_exact,
         "cart_viewed": cart_viewed,
         "checkout_viewed": checkout_viewed,
         "name_filled": name_filled,
