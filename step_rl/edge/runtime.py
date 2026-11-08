@@ -8,6 +8,8 @@ from .browser import BrowserEnv
 from .hierarchical import run_hierarchy
 from .planner import fetch_catalog, plan_instruction
 from .skill_library import run_skill_hierarchy
+from .tasks import TaskSpec
+from .verifier import compute_progress
 
 
 async def run_task(
@@ -106,4 +108,55 @@ async def run_task(
         "attempts": attempts,
         "steps": rollout.steps,
         "fallback": True,
+    }
+
+
+async def run_order_sequence(
+    env: BrowserEnv,
+    task: TaskSpec,
+    model,
+    tokenizer,
+    *,
+    semantic: bool = True,
+    max_steps_per_subtask: int = 12,
+) -> Dict[str, Any]:
+    """Execute an ordered list of independent orders."""
+
+    attempts = []
+    for index, targets in enumerate(task.order_sequence):
+        subtask = TaskSpec(
+            task_id=f"{task.task_id}_order_{index}",
+            level=5 if len(targets) > 1 else 4,
+            goal=f"完成第 {index + 1} 笔订单",
+            search_query=next(iter(targets)),
+            targets=dict(targets),
+            require_checkout=True,
+        )
+        rollout = await run_skill_hierarchy(
+            env,
+            subtask,
+            model,
+            tokenizer,
+            fallback=False,
+            semantic=semantic,
+            max_steps_per_subtask=max_steps_per_subtask,
+            reset=(index == 0),
+        )
+        attempts.append(
+            {
+                "order": index + 1,
+                "targets": dict(targets),
+                "success": rollout.success,
+                "steps": rollout.total_steps,
+            }
+        )
+        if not rollout.success:
+            break
+    state = await env.get_state()
+    progress = compute_progress(state, env.page_url_path, task)
+    return {
+        "success": progress.success,
+        "orders": state.get("orders", []),
+        "attempts": attempts,
+        "steps": [],
     }
