@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("AUG", "grounding"), ("UAR", "unified")]
+    badges = [("CSE", "checkpoint"), ("UAR", "unified")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   ADVERSARIAL GROUNDING"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CHECKPOINTED EXECUTION"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.2",
+        "v4.3",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "对抗 UI 接地鲁棒性 · 端侧分层强化学习",
+        "崩溃恢复持久化执行 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：对抗 UI 不点错、精确接地、端侧提速",
+        "目标：崩溃可恢复、数量精确、会话不丢",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,8 +412,8 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("对抗 UI", (34, 211, 238)),
-        ("精确接地", (96, 165, 250)),
+        ("检查点恢复", (34, 211, 238)),
+        ("精确数量", (96, 165, 250)),
         ("技能编译", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("0/3", "LLM 基线", (125, 211, 252)),
-        ("3/3", "技能 Runtime", (167, 139, 250)),
-        ("25×", "端侧提速", (244, 114, 182)),
-        ("67", "真实测试", (74, 222, 128)),
+        ("3/3", "恢复成功", (125, 211, 252)),
+        ("0/3", "重启基线", (167, 139, 250)),
+        ("4-5s", "恢复耗时", (244, 114, 182)),
+        ("69", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
