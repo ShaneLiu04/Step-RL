@@ -1,0 +1,64 @@
+[
+  {
+    "task_id": "cp_p4x2",
+    "checkpointed": false,
+    "skill_ok": true,
+    "success": false,
+    "order": {
+      "p4": 4
+    },
+    "seconds": 5.14
+  },
+  {
+    "task_id": "cp_p4x2",
+    "checkpointed": true,
+    "skill_ok": true,
+    "success": true,
+    "order": {
+      "p4": 2
+    },
+    "seconds": 3.97
+  },
+  {
+    "task_id": "cp_p3x2",
+    "checkpointed": false,
+    "skill_ok": true,
+    "success": false,
+    "order": {
+      "p3": 4
+    },
+    "seconds": 4.9
+  },
+  {
+    "task_id": "cp_p3x2",
+    "checkpointed": true,
+    "skill_ok": true,
+    "success": true,
+    "order": {
+      "p3": 2
+    },
+    "seconds": 3.98
+  },
+  {
+    "task_id": "cp_multi",
+    "checkpointed": false,
+    "skill_ok": true,
+    "success": false,
+    "order": {
+      "p1": 2,
+      "p2": 2
+    },
+    "seconds": 6.84
+  },
+  {
+    "task_id": "cp_multi",
+    "checkpointed": true,
+    "skill_ok": true,
+    "success": true,
+    "order": {
+      "p1": 1,
+      "p2": 1
+    },
+    "seconds": 4.95
+  }
+]
