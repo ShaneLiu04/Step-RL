@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.3 — 崩溃恢复持久化执行 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.4 — 技能库扩展与购物车更新 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.3
+# Step-RL v4.4
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,17 +14,17 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-69%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-72%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向真实生产：浏览器崩溃后从检查点恢复会话，避免重复加购；精确数量验证拒绝“多买算成功”。  
-> 崩溃恢复 3 任务：重启基线 **0/3**（qty 翻倍），检查点恢复 **3/3**，4–5s。
+> 面向可扩展技能：通过真实演示新增购物车数量更新技能，能力门控自动覆盖新子目标。  
+> 购物车更新 3 任务：LLM 基线 **2/3**，扩展技能 **3/3**、0 LLM、1.7s vs 35–81s（约 20–45×）。
 
 <p align="center">
-  <strong>检查点恢复</strong> ·
+  <strong>技能库扩展</strong> ·
+  <strong>购物车更新</strong> ·
   <strong>精确数量验证</strong> ·
-  <strong>会话持久化</strong> ·
-  <strong>对抗 UI 接地</strong> ·
+  <strong>检查点恢复</strong> ·
   <strong>CPU-first 运行时</strong> ·
   <strong>统一 Agent Runtime</strong>
 </p>
@@ -207,7 +207,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR011 统一 Runtime | 30/30（组合场景） | 9.20 | 1.00 |
 | AR012 CPU-first Runtime | 30/30（0 GPU / 0 LLM） | 9.20 | 1.00 |
 | AR013 对抗 UI 接地 | 3/3（基线 0/3） | 10–16 | 1.00 |
-| **AR014 检查点恢复（最终）** | **3/3（基线 0/3）** | 9–16 | **1.00** |
+| AR014 检查点恢复 | 3/3（基线 0/3） | 9–16 | 1.00 |
+| **AR015 技能库扩展（最终）** | **3/3（基线 2/3）** | 3 | **1.00** |
 
 逐任务：
 
@@ -293,7 +294,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR011 统一 Agent Runtime | 30/30，0 LLM 调用 | 前最优 |
 | AR012 CPU-first 能力门控 | 30/30，0 GPU，2.7× 并发 | 前最优 |
 | AR013 对抗 UI 接地 | 3/3，基线 0/3，20–25× | 前最优 |
-| **AR014 检查点恢复** | **3/3，基线 0/3，精确数量** | **最终保留** |
+| AR014 检查点恢复 | 3/3，基线 0/3，精确数量 | 前最优 |
+| **AR015 技能库扩展** | **3/3，基线 2/3，20–45×** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -399,7 +401,20 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - 精确数量验证器（`==`）防止“多买也算成功”；
 - 恢复 4–5s，基线 5–7s；不加载模型、不占 GPU。
 
-### 5.15 可解释性实验（EX001）
+### 5.15 技能库扩展：购物车数量更新（AR015）
+
+| 任务 | LLM 基线 | 扩展技能 |
+|------|----------|----------|
+| p3 1→3 | ✓（61.7s） | **✓（1.75s）** |
+| p4 2→4 | ✓（35.1s） | **✓（1.69s）** |
+| p3 3→1 | ✗（p3=4） | **✓（1.68s）** |
+
+- 新增真实 `/update` 路由、购物车数量输入/更新按钮；
+- 新增精确谓词 `cart_quantity_exact` 与 `seed_cart`；
+- `update_quantity` 技能由真实演示动作参数化，扩展后能力门控自动覆盖；
+- 基线能加量但不能可靠减量。
+
+### 5.16 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -487,6 +502,7 @@ python scripts/ar011_eval.py       # 30 场景统一 Runtime
 python scripts/ar012_cpu.py        # CPU-only + 并发
 python scripts/ar013_eval.py       # 对抗 UI 基线 vs Runtime
 python scripts/ar014_checkpoint.py # 崩溃恢复 vs 重启
+python scripts/ar015_eval.py       # 购物车更新 基线 vs 技能
 ```
 
 ### 测试
@@ -496,8 +512,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py -v
-# 69 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py -v
+# 72 passed
 ```
 
 ### 产物
@@ -594,6 +610,7 @@ step-rl/
 │   │   ├── capability.py        # 能力门控（AR012）
 │   │   ├── (site injection)     # 对抗 UI（AR013）
 │   │   ├── (storage_state)      # 检查点恢复（AR014）
+│   │   ├── update_quantity      # 技能扩展（AR015）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -614,16 +631,17 @@ step-rl/
 │   ├── ar012_cpu.py
 │   ├── ar013_eval.py
 │   ├── ar014_checkpoint.py
+│   ├── ar015_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR014-checkpointed-execution/
-│   └── archive/AR001 … AR013 / EX001
+│   ├── changes/AR015-skill-extension-cart/
+│   └── archive/AR001 … AR014 / EX001
 │
-├── tests/                        # 69 项真实测试
+├── tests/                        # 72 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -663,7 +681,8 @@ step-rl/
 | AR011 | 统一 Agent Runtime | 30/30，0 LLM | 前最优 |
 | AR012 | CPU-first 能力门控 | 30/30，0 GPU，2.7× | 前最优 |
 | AR013 | 对抗 UI 接地 | 3/3，基线 0/3 | 前最优 |
-| **AR014** | **检查点恢复** | **3/3，基线 0/3** | **最终保留** |
+| AR014 | 检查点恢复 | 3/3，基线 0/3 | 前最优 |
+| **AR015** | **技能库扩展（购物车更新）** | **3/3，基线 2/3** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -672,7 +691,8 @@ step-rl/
 - `specs/archive/AR011-unified-runtime/`
 - `specs/archive/AR012-cpu-capability-runtime/`
 - `specs/archive/AR013-adversarial-ui-grounding/`
-- `specs/changes/AR014-checkpointed-execution/`
+- `specs/archive/AR014-checkpointed-execution/`
+- `specs/changes/AR015-skill-extension-cart/`
 
 ---
 
@@ -738,9 +758,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v43,
-  title = {Step-RL: Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.3},
+@software{step_rl_v44,
+  title = {Step-RL: Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
+  version = {4.4},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -754,7 +774,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.3 / AR014** | **推荐** | 检查点恢复 3/3，基线 0/3 |
+| **v4.4 / AR015** | **推荐** | 技能扩展 3/3，基线 2/3 |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
