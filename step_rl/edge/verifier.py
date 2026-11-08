@@ -101,6 +101,24 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
     def address_filled(state: Dict, url: str) -> bool:
         return bool(str((state.get("form") or {}).get("address", "")).strip())
 
+    def orders_sequence_placed(state: Dict, url: str) -> bool:
+        history = state.get("orders") or []
+        available = list(range(len(history)))
+        for expected in task.order_sequence:
+            matched = None
+            for index in available:
+                order = history[index]
+                if all(
+                    int(order.get("items", {}).get(pid, 0)) == qty
+                    for pid, qty in expected.items()
+                ):
+                    matched = index
+                    break
+            if matched is None:
+                return False
+            available.remove(matched)
+        return True
+
     def order_placed(state: Dict, url: str) -> bool:
         order = state.get("order")
         if not order:
@@ -122,6 +140,7 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         "checkout_viewed": checkout_viewed,
         "name_filled": name_filled,
         "address_filled": address_filled,
+        "orders_sequence_placed": orders_sequence_placed,
         "order_placed": order_placed,
     }
 

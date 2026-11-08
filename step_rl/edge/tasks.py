@@ -25,8 +25,11 @@ class TaskSpec:
     operation: str = "add"
     seed_cart: Dict[str, int] = field(default_factory=dict)
     predicates: List[str] = field(default_factory=list)
+    order_sequence: List[Dict[str, int]] = field(default_factory=list)
 
     def predicate_names(self) -> List[str]:
+        if self.order_sequence:
+            return ["orders_sequence_placed"]
         if self.predicates:
             return list(self.predicates)
         names = ["search_done"]
