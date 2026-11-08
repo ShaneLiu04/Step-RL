@@ -69,6 +69,27 @@ def add_item_skill(pid: str, qty: int) -> Skill:
     )
 
 
+def update_quantity_skill(pid: str, qty: int) -> Skill:
+    product = PRODUCTS[pid]
+    return Skill(
+        "update_quantity",
+        [
+            SkillStep("goto", url="/cart"),
+            SkillStep(
+                "type",
+                name=product.name,
+                role="spinbutton",
+                value=str(qty),
+            ),
+            SkillStep(
+                "click",
+                name=f"更新数量 {product.name}",
+                role="button",
+            ),
+        ],
+    )
+
+
 def checkout_skill() -> Skill:
     return Skill(
         "checkout",
@@ -82,6 +103,11 @@ def checkout_skill() -> Skill:
 
 
 def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
+    if task.operation == "update":
+        pid = next(iter(task.targets), None)
+        if pid:
+            return update_quantity_skill(pid, task.targets[pid])
+        return None
     if task.level == 1:
         return search_skill(task.search_query)
     if task.require_checkout:

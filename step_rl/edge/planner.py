@@ -167,6 +167,9 @@ def plan_instruction(
             "最便宜",
             "最贵",
             "预算",
+            "改为",
+            "改成",
+            "更新",
         )
     ):
         return None
@@ -174,6 +177,23 @@ def plan_instruction(
     budget = _budget(instruction)
     mentions = _mentions(instruction, catalog)
     by_pid = {item.pid: item for item in catalog}
+
+    target_qty = re.search(r"(?:改为|改成|更新为)\s*(\d+)", instruction)
+    if target_qty and mentions:
+        pid = mentions[0][0]
+        qty = int(target_qty.group(1))
+        first = by_pid[pid]
+        return TaskSpec(
+            task_id="planned_update",
+            level=2,
+            goal=instruction,
+            search_query=first.keywords[0] if first.keywords else first.name,
+            targets={pid: qty},
+            require_checkout=False,
+            operation="update",
+            predicates=["cart_quantity_exact"],
+            exact_quantity=True,
+        )
 
     # Budget-driven substitution: "A 超预算则 B".
     if "超预算" in instruction and len(mentions) >= 2:

@@ -22,8 +22,13 @@ class TaskSpec:
     start_path: str = "/"
     split: str = "train"
     exact_quantity: bool = False
+    operation: str = "add"
+    seed_cart: Dict[str, int] = field(default_factory=dict)
+    predicates: List[str] = field(default_factory=list)
 
     def predicate_names(self) -> List[str]:
+        if self.predicates:
+            return list(self.predicates)
         names = ["search_done"]
         if self.level >= 2:
             names.append("product_viewed")

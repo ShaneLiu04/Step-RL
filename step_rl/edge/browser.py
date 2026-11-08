@@ -174,6 +174,9 @@ class BrowserEnv:
         if self._page is None:
             await self.start()
         await self._page.goto(urljoin(self.server.base_url, "/api/reset"))
+        for pid, qty in getattr(task, "seed_cart", {}).items():
+            seed_url = f"/api/cart/set?pid={pid}&qty={qty}"
+            await self._page.goto(urljoin(self.server.base_url, seed_url))
         self.step_count = 0
         await self._page.goto(urljoin(self.server.base_url, task.start_path))
         await self._settle()
