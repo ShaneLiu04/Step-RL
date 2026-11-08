@@ -219,7 +219,12 @@ def render_cart(state: SessionState, layout: str = "v1") -> bytes:
         total += p.price * qty
         rows.append(
             f"<div class='card row'><span id='cart-{pid}'>{p.name} × {qty}</span>"
-            f"<span class='price'>¥{p.price * qty}</span></div>"
+            f"<span class='price'>¥{p.price * qty}</span>"
+            f"<form action='/update/{pid}' method='get'>"
+            f"<input name='qty' type='number' value='{qty}' min='1' max='9' "
+            f"aria-label='数量 {p.name}'>"
+            f"<button type='submit' aria-label='更新数量 {p.name}'>更新</button>"
+            f"</form></div>"
         )
     if not rows:
         rows.append("<p class='muted'>购物车是空的</p>")
@@ -335,7 +340,12 @@ def _render_v2_cart(state: SessionState) -> bytes:
         total += p.price * qty
         rows.append(
             f"<div class='card row'><span>{p.name} × {qty}</span>"
-            f"<span class='price'>¥{p.price * qty}</span></div>"
+            f"<span class='price'>¥{p.price * qty}</span>"
+            f"<form action='/update/{pid}' method='get'>"
+            f"<input name='qty' type='number' value='{qty}' min='1' max='9' "
+            f"aria-label='数量 {p.name}'>"
+            f"<button type='submit' aria-label='更新数量 {p.name}'>更新</button>"
+            f"</form></div>"
         )
     if not rows:
         rows.append("<p class='muted'>购物袋是空的</p>")
@@ -467,6 +477,17 @@ class _Handler(BaseHTTPRequestHandler):
                 b'{"ok": true}', sid=sid, ctype="application/json; charset=utf-8"
             )
             return
+        if path == "/api/cart/set":
+            pid = qs.get("pid", [""])[0]
+            try:
+                qty = int(qs.get("qty", ["0"])[0])
+            except ValueError:
+                self._send(render_error("数量必须是整数"), 400, sid)
+                return
+            if pid in PRODUCTS and 1 <= qty <= 9:
+                state.cart[pid] = qty
+            self._send(b'{"ok": true}', sid=sid, ctype="application/json")
+            return
         if path == "/api/form":
             if "name" in qs:
                 state.form["name"] = qs["name"][0]
@@ -530,6 +551,19 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(render_error("库存不足"), 400, sid)
                 return
             state.cart[pid] = state.cart.get(pid, 0) + qty
+            self._redirect("/cart", sid)
+            return
+        elif path.startswith("/update/"):
+            pid = path.split("/", 2)[2]
+            try:
+                qty = int(qs.get("qty", ["1"])[0])
+            except ValueError:
+                self._send(render_error("数量必须是整数"), 400, sid)
+                return
+            if pid not in PRODUCTS or not 1 <= qty <= 9:
+                self._send(render_error("非法商品或数量"), 400, sid)
+                return
+            state.cart[pid] = qty
             self._redirect("/cart", sid)
             return
         elif path == "/cart":

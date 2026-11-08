@@ -20,6 +20,7 @@ PREDICATE_HINTS = {
     "name_filled": "填写收货人",
     "address_filled": "填写地址",
     "order_placed": "提交订单",
+    "cart_quantity_exact": "修改购物车数量",
 }
 
 
