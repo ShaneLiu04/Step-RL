@@ -1,0 +1,74 @@
+[
+  {
+    "task_id": "up_p3_1to3",
+    "mode": "baseline_llm",
+    "success": true,
+    "cart": {
+      "p3": 3
+    },
+    "steps": 9,
+    "policy_steps": 9,
+    "skill_steps": 0,
+    "seconds": 61.72
+  },
+  {
+    "task_id": "up_p3_1to3",
+    "mode": "skill",
+    "success": true,
+    "cart": {
+      "p3": 3
+    },
+    "steps": 3,
+    "policy_steps": 0,
+    "skill_steps": 3,
+    "seconds": 1.75
+  },
+  {
+    "task_id": "up_p4_2to4",
+    "mode": "baseline_llm",
+    "success": true,
+    "cart": {
+      "p4": 4
+    },
+    "steps": 5,
+    "policy_steps": 5,
+    "skill_steps": 0,
+    "seconds": 35.06
+  },
+  {
+    "task_id": "up_p4_2to4",
+    "mode": "skill",
+    "success": true,
+    "cart": {
+      "p4": 4
+    },
+    "steps": 3,
+    "policy_steps": 0,
+    "skill_steps": 3,
+    "seconds": 1.69
+  },
+  {
+    "task_id": "up_p3_3to1",
+    "mode": "baseline_llm",
+    "success": false,
+    "cart": {
+      "p3": 4
+    },
+    "steps": 12,
+    "policy_steps": 12,
+    "skill_steps": 0,
+    "seconds": 81.43
+  },
+  {
+    "task_id": "up_p3_3to1",
+    "mode": "skill",
+    "success": true,
+    "cart": {
+      "p3": 1
+    },
+    "steps": 3,
+    "policy_steps": 0,
+    "skill_steps": 3,
+    "seconds": 1.68
+  }
+]
