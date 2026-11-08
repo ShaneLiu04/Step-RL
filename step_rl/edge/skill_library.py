@@ -93,14 +93,22 @@ def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
 
 
 def _find(elements: List[Dict[str, Any]], step: SkillStep) -> Optional[Dict[str, Any]]:
+    candidates = []
     for element in elements:
         if step.role and element.get("role") != step.role:
             continue
         name = element.get("accessible_name", "")
         if step.name and step.name.lower() not in name.lower():
             continue
-        return element
-    return None
+        if any(word in name for word in ("推荐", "广告", "赞助")):
+            continue
+        candidates.append(element)
+    if not candidates:
+        return None
+    for element in candidates:
+        if element.get("accessible_name", "").strip().lower() == step.name.lower():
+            return element
+    return candidates[0]
 
 
 async def run_skill(env: BrowserEnv, skill: Skill) -> SkillResult:
