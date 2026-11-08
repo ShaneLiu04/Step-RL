@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("SKILL", "extension"), ("UAR", "unified")]
+    badges = [("MOC", "orders"), ("UAR", "unified")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL EXTENSION"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   MULTI-ORDER COMPOSITION"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.4",
+        "v4.5",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "技能库扩展与购物车更新 · 端侧分层强化学习",
+        "多订单序列组合 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：技能可扩展、数量可修改、0 LLM 执行",
+        "目标：多订单可拆分、序列可验证、0 LLM",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,8 +412,8 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("技能扩展", (34, 211, 238)),
-        ("购物车更新", (96, 165, 250)),
+        ("多订单组合", (34, 211, 238)),
+        ("订单序列", (96, 165, 250)),
         ("技能编译", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "扩展技能", (125, 211, 252)),
-        ("2/3", "LLM 基线", (167, 139, 250)),
-        ("20-45×", "端侧提速", (244, 114, 182)),
-        ("72", "真实测试", (74, 222, 128)),
+        ("2/2", "序列 Runtime", (125, 211, 252)),
+        ("0/2", "合并基线", (167, 139, 250)),
+        ("20×", "端侧提速", (244, 114, 182)),
+        ("75", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
