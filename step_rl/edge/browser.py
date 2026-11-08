@@ -113,6 +113,7 @@ class BrowserEnv:
         perturb_ids: bool = False,
         semantic: bool = False,
         perturb_prob: float = 1.0,
+        storage_state: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.server = server
         self.channel = channel
@@ -123,6 +124,7 @@ class BrowserEnv:
         self.perturb_ids = perturb_ids
         self.semantic = semantic
         self.perturb_prob = perturb_prob
+        self.storage_state = storage_state
         self._pw = None
         self._browser = None
         self._context = None
@@ -143,9 +145,17 @@ class BrowserEnv:
             launch_kwargs.pop("channel", None)
             launch_kwargs["executable_path"] = executable
         self._browser = await self._pw.chromium.launch(**launch_kwargs)
-        self._context = await self._browser.new_context(viewport=self.viewport)
+        self._context = await self._browser.new_context(
+            viewport=self.viewport,
+            storage_state=self.storage_state,
+        )
         self._page = await self._context.new_page()
         self._page.set_default_timeout(self.action_timeout_ms)
+
+    async def save_state(self) -> Dict[str, Any]:
+        if self._context is None:
+            return {}
+        return await self._context.storage_state()
 
     async def close(self) -> None:
         for obj in (self._context, self._browser):
