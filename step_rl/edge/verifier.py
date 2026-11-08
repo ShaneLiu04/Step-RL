@@ -77,8 +77,11 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         cart = state.get("cart", {})
         order = state.get("order") or {}
         ordered = order.get("items", {}) if order else {}
+        compare = (
+            (lambda a, b: a == b) if task.exact_quantity else (lambda a, b: a >= b)
+        )
         return all(
-            max(int(cart.get(pid, 0)), int(ordered.get(pid, 0))) >= qty
+            compare(max(int(cart.get(pid, 0)), int(ordered.get(pid, 0))), qty)
             for pid, qty in task.targets.items()
         )
 
@@ -99,7 +102,12 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         if not order:
             return False
         items = order.get("items", {})
-        return all(int(items.get(pid, 0)) >= qty for pid, qty in task.targets.items())
+        compare = (
+            (lambda a, b: a == b) if task.exact_quantity else (lambda a, b: a >= b)
+        )
+        return all(
+            compare(int(items.get(pid, 0)), qty) for pid, qty in task.targets.items()
+        )
 
     return {
         "search_done": search_done,

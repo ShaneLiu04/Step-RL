@@ -21,6 +21,7 @@ class TaskSpec:
     require_checkout: bool = False
     start_path: str = "/"
     split: str = "train"
+    exact_quantity: bool = False
 
     def predicate_names(self) -> List[str]:
         names = ["search_done"]
