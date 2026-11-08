@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.1 — CPU-first 能力门控运行时 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.2 — 对抗 UI 接地鲁棒性 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.1
+# Step-RL v4.2
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,18 +14,18 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-65%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-67%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向端侧部署：技能覆盖任务 **不加载模型、不占 GPU**；未覆盖任务显式门控。  
-> 30 场景 CPU-only：**30/30**、**0 GPU bytes**、**0 LLM**；4 路并发 12 任务 36.0s → **13.2s（约 2.7×）**。
+> 面向真实页面：对抗 UI 中的伪装“加入购物车（推荐）”按钮会让 LLM 基线失败；技能按 role + 精确名称接地。  
+> 对抗 UI 3 任务：基线 **0/3**，统一 Runtime **3/3**，2.7–3.7s vs 65–89s（约 20–25×）。
 
 <p align="center">
+  <strong>对抗 UI 接地</strong> ·
+  <strong>精确 role/name</strong> ·
   <strong>CPU-first 运行时</strong> ·
-  <strong>能力门控</strong> ·
-  <strong>统一 Agent Runtime</strong> ·
   <strong>技能编译免生成</strong> ·
-  <strong>闭环运行时重规划</strong> ·
+  <strong>统一 Agent Runtime</strong> ·
   <strong>跨布局语义迁移</strong>
 </p>
 
@@ -205,7 +205,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR009 错误可观测修复 | 2/2（表单校验） | 10 | 1.00 |
 | AR010 技能编译 | 100%（9 任务） | 7.33 | 1.00 |
 | AR011 统一 Runtime | 30/30（组合场景） | 9.20 | 1.00 |
-| **AR012 CPU-first Runtime（最终）** | **30/30（0 GPU / 0 LLM）** | 9.20 | **1.00** |
+| AR012 CPU-first Runtime | 30/30（0 GPU / 0 LLM） | 9.20 | 1.00 |
+| **AR013 对抗 UI 接地（最终）** | **3/3（基线 0/3）** | 10–16 | **1.00** |
 
 逐任务：
 
@@ -289,7 +290,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR009 错误可观测闭环修复 | 2/2 表单校验；基线 0/2 | 前最优 |
 | AR010 技能编译免生成 | 100%，0 LLM 调用，约 21× | 前最优 |
 | AR011 统一 Agent Runtime | 30/30，0 LLM 调用 | 前最优 |
-| **AR012 CPU-first 能力门控** | **30/30，0 GPU，2.7× 并发** | **最终保留** |
+| AR012 CPU-first 能力门控 | 30/30，0 GPU，2.7× 并发 | 前最优 |
+| **AR013 对抗 UI 接地** | **3/3，基线 0/3，20–25×** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -372,7 +374,18 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - 能力清单显式判断覆盖率，未覆盖任务不误执行；
 - 技能覆盖任务完全在 CPU 上运行，适合端侧/无 GPU 服务。
 
-### 5.13 可解释性实验（EX001）
+### 5.13 对抗 UI 接地鲁棒性（AR013）
+
+| 条件 | 成功率 | 订单 | 耗时 |
+|------|--------|------|------|
+| 基线 LLM（伪装按钮） | **0/3** | 无订单 | 65–89s |
+| **统一 Runtime（技能）** | **3/3** | **p3×1 / p4×2 / p1×1+p2×1** | **2.7–3.7s** |
+
+- 商品页注入 `role=button`、名称为“加入购物车（推荐）”的伪装按钮，实际指向错误商品；
+- 技能按 role=button + 精确名称 + 排除“推荐/广告/赞助”选真实按钮；
+- 首版 `role=link` 未诱导基线（3/3），已如实记录；安全结论只适用于按钮级伪装。
+
+### 5.14 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -458,6 +471,7 @@ python scripts/ar009_eval.py       # 错误可观测/修复
 python scripts/ar010_eval.py       # 技能编译 vs LLM 每步
 python scripts/ar011_eval.py       # 30 场景统一 Runtime
 python scripts/ar012_cpu.py        # CPU-only + 并发
+python scripts/ar013_eval.py       # 对抗 UI 基线 vs Runtime
 ```
 
 ### 测试
@@ -467,8 +481,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py -v
-# 65 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py -v
+# 67 passed
 ```
 
 ### 产物
@@ -563,6 +577,7 @@ step-rl/
 │   │   ├── skill_library.py     # 技能编译免生成（AR010）
 │   │   ├── runtime.py           # 统一 Agent Runtime（AR011）
 │   │   ├── capability.py        # 能力门控（AR012）
+│   │   ├── (site injection)     # 对抗 UI（AR013）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -581,16 +596,17 @@ step-rl/
 │   ├── ar010_eval.py
 │   ├── ar011_eval.py
 │   ├── ar012_cpu.py
+│   ├── ar013_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR012-cpu-capability-runtime/
-│   └── archive/AR001 … AR011 / EX001
+│   ├── changes/AR013-adversarial-ui-grounding/
+│   └── archive/AR001 … AR012 / EX001
 │
-├── tests/                        # 65 项真实测试
+├── tests/                        # 67 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -628,14 +644,16 @@ step-rl/
 | AR009 | 错误可观测闭环修复 | 2/2，基线 0/2 | 前最优 |
 | AR010 | 技能编译免生成执行 | 100%，0 LLM，约 21× | 前最优 |
 | AR011 | 统一 Agent Runtime | 30/30，0 LLM | 前最优 |
-| **AR012** | **CPU-first 能力门控** | **30/30，0 GPU，2.7×** | **最终保留** |
+| AR012 | CPU-first 能力门控 | 30/30，0 GPU，2.7× | 前最优 |
+| **AR013** | **对抗 UI 接地** | **3/3，基线 0/3** | **最终保留** |
 
 规格与完整实验记录：
 
 - `specs/archive/AR001-edge-verifier-step-grpo/` … `AR010-skill-compilation/`
 - `specs/archive/EX001-interpretability-ablation/`
 - `specs/archive/AR011-unified-runtime/`
-- `specs/changes/AR012-cpu-capability-runtime/`
+- `specs/archive/AR012-cpu-capability-runtime/`
+- `specs/changes/AR013-adversarial-ui-grounding/`
 
 ---
 
@@ -701,9 +719,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v41,
-  title = {Step-RL: CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.1},
+@software{step_rl_v42,
+  title = {Step-RL: Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
+  version = {4.2},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -717,7 +735,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.1 / AR012** | **推荐** | 30/30，0 GPU，2.7× 并发 |
+| **v4.2 / AR013** | **推荐** | 对抗 UI 3/3，基线 0/3 |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
