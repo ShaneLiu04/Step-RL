@@ -177,8 +177,9 @@ async def run_skill_hierarchy(
     fallback: bool = True,
     semantic: bool = True,
     max_steps_per_subtask: int = 12,
+    reset: bool = True,
 ) -> Rollout:
-    obs = await env.reset(task)
+    obs = await env.reset(task) if reset else await env.observe()
     steps: List[StepRecord] = []
     for subtask in decompose_task(task):
         adapter = adapter_for_subtask(subtask)
