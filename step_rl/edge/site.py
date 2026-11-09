@@ -480,6 +480,19 @@ class _Handler(BaseHTTPRequestHandler):
                 b'{"ok": true}', sid=sid, ctype="application/json; charset=utf-8"
             )
             return
+        if path.startswith("/cancel/"):
+            order_id = path.split("/", 2)[2]
+            for order in state.orders:
+                if order.get("id") == order_id:
+                    order["status"] = "cancelled"
+                    if state.order and state.order.get("id") == order_id:
+                        state.order["status"] = "cancelled"
+            self._send(
+                json.dumps({"ok": True}, ensure_ascii=False).encode("utf-8"),
+                sid=sid,
+                ctype="application/json; charset=utf-8",
+            )
+            return
         if path == "/api/cart/set":
             pid = qs.get("pid", [""])[0]
             try:
@@ -651,7 +664,11 @@ class _Handler(BaseHTTPRequestHandler):
                     self._send(render_error("地址需包含'路'"), 400, sid)
                     return
             order_id = uuid.uuid4().hex[:10]
-            state.order = {"id": order_id, "items": dict(state.cart)}
+            state.order = {
+                "id": order_id,
+                "items": dict(state.cart),
+                "status": "active",
+            }
             state.orders.append(json.loads(json.dumps(state.order)))
             state.cart = {}
             self._redirect(f"/order/{order_id}", sid)
