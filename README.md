@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.4 — 技能库扩展与购物车更新 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.6 — Saga 补偿与失败回滚 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.4
+# Step-RL v4.6
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,17 +14,17 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-72%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-78%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向可扩展技能：通过真实演示新增购物车数量更新技能，能力门控自动覆盖新子目标。  
-> 购物车更新 3 任务：LLM 基线 **2/3**，扩展技能 **3/3**、0 LLM、1.7s vs 35–81s（约 20–45×）。
+> 面向事务可靠性：多步订单第二单失败时，Saga 自动取消已成功订单，避免半完成状态。  
+> 补偿 2 场景：无补偿基线 **0/2**（第一单 active），Saga **2/2**（全部 cancelled）。
 
 <p align="center">
-  <strong>技能库扩展</strong> ·
-  <strong>购物车更新</strong> ·
-  <strong>精确数量验证</strong> ·
-  <strong>检查点恢复</strong> ·
+  <strong>Saga 补偿</strong> ·
+  <strong>订单回滚</strong> ·
+  <strong>多订单组合</strong> ·
+  <strong>订单序列验证</strong> ·
   <strong>CPU-first 运行时</strong> ·
   <strong>统一 Agent Runtime</strong>
 </p>
@@ -208,7 +208,9 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR012 CPU-first Runtime | 30/30（0 GPU / 0 LLM） | 9.20 | 1.00 |
 | AR013 对抗 UI 接地 | 3/3（基线 0/3） | 10–16 | 1.00 |
 | AR014 检查点恢复 | 3/3（基线 0/3） | 9–16 | 1.00 |
-| **AR015 技能库扩展（最终）** | **3/3（基线 2/3）** | 3 | **1.00** |
+| AR015 技能库扩展 | 3/3（基线 2/3） | 3 | 1.00 |
+| AR016 多订单组合 | 2/2（基线 0/2） | 20 | 1.00 |
+| **AR017 Saga 补偿（最终）** | **2/2（基线 0/2）** | 16 | **1.00** |
 
 逐任务：
 
@@ -295,7 +297,9 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR012 CPU-first 能力门控 | 30/30，0 GPU，2.7× 并发 | 前最优 |
 | AR013 对抗 UI 接地 | 3/3，基线 0/3，20–25× | 前最优 |
 | AR014 检查点恢复 | 3/3，基线 0/3，精确数量 | 前最优 |
-| **AR015 技能库扩展** | **3/3，基线 2/3，20–45×** | **最终保留** |
+| AR015 技能库扩展 | 3/3，基线 2/3，20–45× | 前最优 |
+| AR016 多订单组合 | 2/2，基线 0/2，约 20× | 前最优 |
+| **AR017 Saga 补偿** | **2/2，基线 0/2，全部 cancelled** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -414,7 +418,29 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - `update_quantity` 技能由真实演示动作参数化，扩展后能力门控自动覆盖；
 - 基线能加量但不能可靠减量。
 
-### 5.16 可解释性实验（EX001）
+### 5.16 多订单序列组合（AR016）
+
+| 任务 | 合并 LLM 基线 | 序列 Runtime |
+|------|----------------|--------------|
+| M1（p3×1；p2×2） | ✗ 一笔 p3=2,p2=2 | **✓ 两笔** |
+| M2（p4×2；p1×1） | ✗ 一笔 p4=2,p1=2 | **✓ 两笔** |
+
+- 服务端维护订单历史；序列验证要求每个目标订单匹配不同历史订单；
+- 第 1 单 reset，后续不 reset，购物车订单后真实清空；
+- 4.3–4.4s vs 101–294s（约 20×），0 LLM。
+
+### 5.17 Saga 补偿与失败回滚（AR017）
+
+| 场景 | 无补偿基线 | Saga |
+|------|------------|------|
+| S1：p3 成功 → p4 缺货 | ✗ 第一单 active | **✓ cancelled** |
+| S2：p2 成功 → p3 缺货 | ✗ 第一单 active | **✓ cancelled** |
+
+- 服务端订单含 `active/cancelled` 状态与真实 `/cancel` 接口；
+- 运行时记录已成功订单，失败后逐个取消；
+- 不需要模型/GPU，验证器要求历史订单全部 cancelled。
+
+### 5.18 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -503,6 +529,8 @@ python scripts/ar012_cpu.py        # CPU-only + 并发
 python scripts/ar013_eval.py       # 对抗 UI 基线 vs Runtime
 python scripts/ar014_checkpoint.py # 崩溃恢复 vs 重启
 python scripts/ar015_eval.py       # 购物车更新 基线 vs 技能
+python scripts/ar016_eval.py       # 多订单 合并 vs 序列
+python scripts/ar017_eval.py       # Saga 补偿 vs 无补偿
 ```
 
 ### 测试
@@ -512,8 +540,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py -v
-# 72 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py -v
+# 78 passed
 ```
 
 ### 产物
@@ -610,6 +638,8 @@ step-rl/
 │   │   ├── (site injection)     # 对抗 UI（AR013）
 │   │   ├── (storage_state)      # 检查点恢复（AR014）
 │   │   ├── update_quantity      # 技能扩展（AR015）
+│   │   ├── order_sequence       # 多订单（AR016）
+│   │   ├── cancel_order         # Saga 补偿（AR017）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -631,16 +661,18 @@ step-rl/
 │   ├── ar013_eval.py
 │   ├── ar014_checkpoint.py
 │   ├── ar015_eval.py
+│   ├── ar016_eval.py
+│   ├── ar017_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR015-skill-extension-cart/
-│   └── archive/AR001 … AR014 / EX001
+│   ├── changes/AR017-saga-compensation/
+│   └── archive/AR001 … AR016 / EX001
 │
-├── tests/                        # 72 项真实测试
+├── tests/                        # 78 项真实测试
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -681,7 +713,9 @@ step-rl/
 | AR012 | CPU-first 能力门控 | 30/30，0 GPU，2.7× | 前最优 |
 | AR013 | 对抗 UI 接地 | 3/3，基线 0/3 | 前最优 |
 | AR014 | 检查点恢复 | 3/3，基线 0/3 | 前最优 |
-| **AR015** | **技能库扩展（购物车更新）** | **3/3，基线 2/3** | **最终保留** |
+| AR015 | 技能库扩展（购物车更新） | 3/3，基线 2/3 | 前最优 |
+| AR016 | 多订单序列组合 | 2/2，基线 0/2 | 前最优 |
+| **AR017** | **Saga 补偿与失败回滚** | **2/2，基线 0/2** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -691,7 +725,9 @@ step-rl/
 - `specs/archive/AR012-cpu-capability-runtime/`
 - `specs/archive/AR013-adversarial-ui-grounding/`
 - `specs/archive/AR014-checkpointed-execution/`
-- `specs/changes/AR015-skill-extension-cart/`
+- `specs/archive/AR015-skill-extension-cart/`
+- `specs/archive/AR016-multi-order-composition/`
+- `specs/changes/AR017-saga-compensation/`
 
 ---
 
@@ -757,9 +793,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ## 引用与许可
 
 ```bibtex
-@software{step_rl_v44,
-  title = {Step-RL: Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.4},
+@software{step_rl_v46,
+  title = {Step-RL: Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
+  version = {4.6},
   year = {2026},
   url = {https://github.com/ShaneLiu04/Step-RL}
 }
@@ -773,7 +809,9 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.4 / AR015** | **推荐** | 技能扩展 3/3，基线 2/3 |
+| **v4.6 / AR017** | **推荐** | Saga 2/2，基线 0/2 |
+| v4.4 / AR015 | 保留 | 技能扩展 3/3，基线 2/3 |
+| AR008–AR016 | 归档 | 观测压缩 / Runtime / 检查点 / 多订单 |
 | v3.6 / AR007 | 保留 | 动态漂移 2/2，基线 0/2 |
 | v3.5 / AR006 | 保留 | 约束规划 100%，基线 12.5% |
 | v3.4 / AR005 | 保留 | 跨布局零样本 + 重渲染鲁棒，100% |

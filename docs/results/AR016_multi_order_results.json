@@ -1,0 +1,76 @@
+[
+  {
+    "task_id": "M1",
+    "mode": "merged_llm",
+    "success": false,
+    "orders": [
+      {
+        "id": "372cc3922e",
+        "items": {
+          "p3": 2,
+          "p2": 2
+        }
+      }
+    ],
+    "steps": 15,
+    "seconds": 294.25
+  },
+  {
+    "task_id": "M1",
+    "mode": "ordered_runtime",
+    "success": true,
+    "orders": [
+      {
+        "id": "4b595fe81f",
+        "items": {
+          "p3": 1
+        }
+      },
+      {
+        "id": "b90e4c011c",
+        "items": {
+          "p2": 2
+        }
+      }
+    ],
+    "steps": 20,
+    "seconds": 4.4
+  },
+  {
+    "task_id": "M2",
+    "mode": "merged_llm",
+    "success": false,
+    "orders": [
+      {
+        "id": "644a28b44a",
+        "items": {
+          "p4": 2,
+          "p1": 2
+        }
+      }
+    ],
+    "steps": 15,
+    "seconds": 100.98
+  },
+  {
+    "task_id": "M2",
+    "mode": "ordered_runtime",
+    "success": true,
+    "orders": [
+      {
+        "id": "66abd557e2",
+        "items": {
+          "p4": 2
+        }
+      },
+      {
+        "id": "92361b4f22",
+        "items": {
+          "p1": 1
+        }
+      }
+    ],
+    "steps": 20,
+    "seconds": 4.31
+  }
+]

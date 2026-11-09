@@ -57,6 +57,7 @@ class SessionState:
     cart: Dict[str, int] = field(default_factory=dict)
     form: Dict[str, str] = field(default_factory=dict)
     order: Optional[Dict[str, object]] = None
+    orders: List[Dict[str, object]] = field(default_factory=list)
     visited: List[str] = field(default_factory=list)
     flags: Dict[str, bool] = field(default_factory=dict)
 
@@ -65,6 +66,7 @@ class SessionState:
         self.cart = {}
         self.form = {}
         self.order = None
+        self.orders = []
         self.visited = []
         self.flags = {}
 
@@ -75,6 +77,7 @@ class SessionState:
             "cart": dict(self.cart),
             "form": dict(self.form),
             "order": json.loads(json.dumps(self.order)) if self.order else None,
+            "orders": json.loads(json.dumps(self.orders)),
             "visited": list(self.visited),
         }
 
@@ -479,6 +482,19 @@ class _Handler(BaseHTTPRequestHandler):
                 b'{"ok": true}', sid=sid, ctype="application/json; charset=utf-8"
             )
             return
+        if path.startswith("/cancel/"):
+            order_id = path.split("/", 2)[2]
+            for order in state.orders:
+                if order.get("id") == order_id:
+                    order["status"] = "cancelled"
+                    if state.order and state.order.get("id") == order_id:
+                        state.order["status"] = "cancelled"
+            self._send(
+                json.dumps({"ok": True}, ensure_ascii=False).encode("utf-8"),
+                sid=sid,
+                ctype="application/json; charset=utf-8",
+            )
+            return
         if path == "/api/cart/set":
             pid = qs.get("pid", [""])[0]
             try:
@@ -573,7 +589,8 @@ class _Handler(BaseHTTPRequestHandler):
         elif path == "/checkout":
             body = render_checkout(state, layout)
         elif path.startswith("/order/"):
-            if state.order and state.order.get("id") == path.split("/", 2)[2]:
+            order_id = path.split("/", 2)[2]
+            if any(order.get("id") == order_id for order in state.orders):
                 body = render_order(state.order, layout)
             else:
                 body = render_error("订单不存在")
@@ -649,7 +666,12 @@ class _Handler(BaseHTTPRequestHandler):
                     self._send(render_error("地址需包含'路'"), 400, sid)
                     return
             order_id = uuid.uuid4().hex[:10]
-            state.order = {"id": order_id, "items": dict(state.cart)}
+            state.order = {
+                "id": order_id,
+                "items": dict(state.cart),
+                "status": "active",
+            }
+            state.orders.append(json.loads(json.dumps(state.order)))
             state.cart = {}
             self._redirect(f"/order/{order_id}", sid)
             return

@@ -1,0 +1,130 @@
+[
+  {
+    "task_id": "S1_p3_then_p4_oos",
+    "mode": "no_compensation",
+    "success": false,
+    "orders": [
+      {
+        "id": "c6fb8cc5c9",
+        "items": {
+          "p3": 1
+        },
+        "status": "active"
+      }
+    ],
+    "attempts": [
+      {
+        "order": 1,
+        "targets": {
+          "p3": 1
+        },
+        "success": true,
+        "steps": 10
+      },
+      {
+        "order": 2,
+        "targets": {
+          "p4": 2
+        },
+        "success": false,
+        "steps": 6
+      }
+    ]
+  },
+  {
+    "task_id": "S1_p3_then_p4_oos",
+    "mode": "saga",
+    "success": true,
+    "orders": [
+      {
+        "id": "6fce4ad940",
+        "items": {
+          "p3": 1
+        },
+        "status": "cancelled"
+      }
+    ],
+    "attempts": [
+      {
+        "order": 1,
+        "targets": {
+          "p3": 1
+        },
+        "success": true,
+        "steps": 10
+      },
+      {
+        "order": 2,
+        "targets": {
+          "p4": 2
+        },
+        "success": false,
+        "steps": 6
+      }
+    ]
+  },
+  {
+    "task_id": "S2_p2_then_p3_oos",
+    "mode": "no_compensation",
+    "success": false,
+    "orders": [
+      {
+        "id": "5c82381193",
+        "items": {
+          "p2": 1
+        },
+        "status": "active"
+      }
+    ],
+    "attempts": [
+      {
+        "order": 1,
+        "targets": {
+          "p2": 1
+        },
+        "success": true,
+        "steps": 10
+      },
+      {
+        "order": 2,
+        "targets": {
+          "p3": 2
+        },
+        "success": false,
+        "steps": 6
+      }
+    ]
+  },
+  {
+    "task_id": "S2_p2_then_p3_oos",
+    "mode": "saga",
+    "success": true,
+    "orders": [
+      {
+        "id": "a9cb5b0c98",
+        "items": {
+          "p2": 1
+        },
+        "status": "cancelled"
+      }
+    ],
+    "attempts": [
+      {
+        "order": 1,
+        "targets": {
+          "p2": 1
+        },
+        "success": true,
+        "steps": 10
+      },
+      {
+        "order": 2,
+        "targets": {
+          "p3": 2
+        },
+        "success": false,
+        "steps": 6
+      }
+    ]
+  }
+]
