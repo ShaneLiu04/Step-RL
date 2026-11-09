@@ -152,6 +152,17 @@ class BrowserEnv:
         self._page = await self._context.new_page()
         self._page.set_default_timeout(self.action_timeout_ms)
 
+    async def cancel_order(self, order_id: str) -> Dict[str, Any]:
+        if self._page is None:
+            return {}
+        try:
+            return await self._page.evaluate(
+                "(id) => fetch('/cancel/' + id).then(r => r.json())",
+                order_id,
+            )
+        except Exception:
+            return {}
+
     async def save_state(self) -> Dict[str, Any]:
         if self._context is None:
             return {}

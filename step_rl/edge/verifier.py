@@ -101,6 +101,12 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
     def address_filled(state: Dict, url: str) -> bool:
         return bool(str((state.get("form") or {}).get("address", "")).strip())
 
+    def orders_all_cancelled(state: Dict, url: str) -> bool:
+        history = state.get("orders") or []
+        return bool(history) and all(
+            order.get("status") == "cancelled" for order in history
+        )
+
     def orders_sequence_placed(state: Dict, url: str) -> bool:
         history = state.get("orders") or []
         available = list(range(len(history)))
@@ -140,6 +146,7 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         "checkout_viewed": checkout_viewed,
         "name_filled": name_filled,
         "address_filled": address_filled,
+        "orders_all_cancelled": orders_all_cancelled,
         "orders_sequence_placed": orders_sequence_placed,
         "order_placed": order_placed,
     }

@@ -119,10 +119,13 @@ async def run_order_sequence(
     *,
     semantic: bool = True,
     max_steps_per_subtask: int = 12,
+    compensate: bool = False,
 ) -> Dict[str, Any]:
     """Execute an ordered list of independent orders."""
 
+    compensate = compensate or task.compensate_on_failure
     attempts = []
+    placed: List[str] = []
     for index, targets in enumerate(task.order_sequence):
         subtask = TaskSpec(
             task_id=f"{task.task_id}_order_{index}",
@@ -132,6 +135,8 @@ async def run_order_sequence(
             targets=dict(targets),
             require_checkout=True,
         )
+        before = await env.get_state()
+        before_ids = {order["id"] for order in before.get("orders", [])}
         rollout = await run_skill_hierarchy(
             env,
             subtask,
@@ -150,8 +155,19 @@ async def run_order_sequence(
                 "steps": rollout.total_steps,
             }
         )
-        if not rollout.success:
-            break
+        if rollout.success:
+            after = await env.get_state()
+            placed.extend(
+                order["id"]
+                for order in after.get("orders", [])
+                if order["id"] not in before_ids
+            )
+            continue
+
+        if compensate:
+            for order_id in placed:
+                await env.cancel_order(order_id)
+        break
     state = await env.get_state()
     progress = compute_progress(state, env.page_url_path, task)
     return {
