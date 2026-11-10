@@ -568,6 +568,12 @@ class _Handler(BaseHTTPRequestHandler):
             if state.cart.get(pid, 0) + qty > available:
                 self._send(render_error("库存不足"), 400, sid)
                 return
+            if getattr(self.server, "fault_add_once", False) and not getattr(
+                self.server, "fault_add_used", False
+            ):
+                self.server.fault_add_used = True
+                self._send(render_error("临时服务错误"), 500, sid)
+                return
             state.cart[pid] = state.cart.get(pid, 0) + qty
             self._redirect("/cart", sid)
             return
@@ -665,6 +671,12 @@ class _Handler(BaseHTTPRequestHandler):
                 if "路" not in address:
                     self._send(render_error("地址需包含'路'"), 400, sid)
                     return
+            if getattr(self.server, "fault_order_once", False) and not getattr(
+                self.server, "fault_order_used", False
+            ):
+                self.server.fault_order_used = True
+                self._send(render_error("临时服务错误"), 500, sid)
+                return
             order_id = uuid.uuid4().hex[:10]
             state.order = {
                 "id": order_id,
@@ -694,6 +706,8 @@ class LocalShopServer:
         checkout_name_requires_title: bool = False,
         checkout_address_requires_road: bool = False,
         injection: bool = False,
+        fault_add_once: bool = False,
+        fault_order_once: bool = False,
     ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
@@ -706,6 +720,10 @@ class LocalShopServer:
         self._httpd.checkout_name_requires_title = checkout_name_requires_title
         self._httpd.checkout_address_requires_road = checkout_address_requires_road
         self._httpd.injection = injection
+        self._httpd.fault_add_once = fault_add_once
+        self._httpd.fault_order_once = fault_order_once
+        self._httpd.fault_add_used = False
+        self._httpd.fault_order_used = False
         if stock_overrides:
             self._httpd.stock.update(stock_overrides)  # type: ignore[attr-defined]
         self.layout = layout
