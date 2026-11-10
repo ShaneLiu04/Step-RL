@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.6 README cover banner.
+"""Generate the Step-RL v4.7 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SAGA COMPENSATION"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   TRANSIENT RETRY"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.6",
+        "v4.7",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Saga Compensation & Rollback",
+        "Transient Fault Retry & Recovery",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "多步事务 · 失败即补偿 · 全取消 · 可验证",
+        "真实 500 · 同 TaskSpec 重试 · reset 会话 · 可审计",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "Saga 补偿",
-            "多步订单第二单失败 → 自动取消已成功订单",
+            "瞬时故障重试",
+            "真实 HTTP 500 后，同 TaskSpec 自动重试一次",
             (34, 211, 238),
         ),
         (
-            "2/2 vs 基线 0/2",
-            "基线残留 active 订单，Saga 全部 cancelled",
+            "3/3 vs 基线 0/3",
+            "全部 2 次尝试，真实 reset 会话后恢复",
             (167, 139, 250),
         ),
         (
-            "多订单序列",
-            "2/2，0 LLM，4.3s vs 101–294s（约 20×）",
+            "可审计恢复",
+            "0 LLM / 0 GPU，重试次数与订单状态可审计",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("2/2", "Saga 补偿场景", (125, 211, 252)),
-        ("0/2", "无补偿基线", (244, 114, 182)),
-        ("100%", "订单全部 cancelled", (74, 222, 128)),
-        ("78", "真实测试", (167, 139, 250)),
+        ("3/3", "瞬时故障任务", (125, 211, 252)),
+        ("0/3", "单次基线", (244, 114, 182)),
+        ("2×", "尝试次数", (74, 222, 128)),
+        ("81", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/orders",
+        "shop.local/cart",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -601,7 +601,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1731, 167),
-        "SAGA ON",
+        "RETRY ON",
         font(F_MONO_BOLD, 8.5),
         (134, 239, 172, 255),
         anchor="mm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "真实 HTTP 商城",
+        "指令：加入购物车 P3×1",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -622,38 +622,57 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1780, 206),
-        "订单    购物车",
+        "商品    购物车",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="rm",
     )
 
-    # Instruction banner
-    pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
-    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
+    # Failure / recovery banners
+    pill(d, (1094, 226, 1430, 260), 10, (248, 113, 113, 18), (248, 113, 113, 95), 1)
+    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(248, 113, 113, 245))
     text(
         d,
         (1124, 243),
-        "指令：下单 P3×1，然后 P4×2",
+        "HTTP 500 · add 失败",
         font(F_CN, 10.5),
-        (182, 236, 250, 255),
+        (250, 190, 190, 255),
+        anchor="lm",
+    )
+    text(
+        d,
+        (1416, 243),
+        "1 / 2",
+        font(F_MONO, 8),
+        (250, 170, 170, 255),
+        anchor="rm",
+    )
+
+    pill(d, (1444, 226, 1780, 260), 10, (34, 197, 94, 18), (74, 222, 128, 95), 1)
+    d.ellipse((1458 * S, 239 * S, 1466 * S, 247 * S), fill=(74, 222, 128, 245))
+    text(
+        d,
+        (1474, 243),
+        "RETRY 1/1 · reset 后成功",
+        font(F_CN, 10.5),
+        (150, 230, 190, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "AUTO COMPENSATE",
+        "RECOVERED",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Order history card
+    # Request log card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "订单历史",
+        "请求日志",
         font(F_CN_BOLD, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -665,61 +684,54 @@ def draw_browser_card(canvas: Image.Image):
         width=max(1, int(1 * S)),
     )
 
-    # Order 1: compensated
-    som_badge(d, 1106, 304, "e1", (34, 211, 238), 18)
-    text(
-        d, (1130, 313), "#1  P3 ×1", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm"
-    )
-    check_badge(d, 1362, 313, 5.5, (52, 211, 153))
-    text(
-        d, (1374, 313), "cancelled", font(F_MONO, 9), (134, 239, 172, 255), anchor="lm"
-    )
-
-    # Order 2: failed due to stock
-    som_badge(d, 1106, 330, "e2", (34, 211, 238), 18)
-    text(
-        d, (1130, 339), "#2  P4 ×2", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm"
-    )
-    d.ellipse(
-        (1357 * S, 333 * S, 1368 * S, 344 * S),
-        fill=(248, 113, 113, 36),
-        outline=(248, 113, 113, 180),
-        width=max(1, int(0.8 * S)),
-    )
+    som_badge(d, 1106, 304, "e1", (248, 113, 113), 18)
     text(
         d,
-        (1362.5, 338.5),
-        "!",
-        font(F_MONO_BOLD, 7.5),
-        (248, 113, 113, 255),
-        anchor="mm",
+        (1130, 313),
+        "Attempt 1  POST /add",
+        font(F_MONO, 9),
+        (214, 226, 246, 255),
+        anchor="lm",
     )
-    text(d, (1374, 339), "缺货", font(F_CN, 9), (250, 170, 170, 255), anchor="lm")
+    pill(d, (1382, 305, 1414, 321), 6, (248, 113, 113, 24), (248, 113, 113, 110), 1)
+    text(
+        d, (1398, 313), "500", font(F_MONO_BOLD, 7.5), (250, 170, 170, 255), anchor="mm"
+    )
+
+    som_badge(d, 1106, 330, "e2", (74, 222, 128), 18)
+    text(
+        d,
+        (1130, 339),
+        "Attempt 2  POST /add",
+        font(F_MONO, 9),
+        (214, 226, 246, 255),
+        anchor="lm",
+    )
+    check_badge(d, 1388, 339, 5.5, (52, 211, 153))
+    text(d, (1398, 339), "200", font(F_MONO_BOLD, 8), (134, 239, 172, 255), anchor="lm")
 
     d.line(
         [(1106 * S, 354 * S), (1416 * S, 354 * S)],
         fill=(255, 255, 255, 18),
         width=max(1, int(1 * S)),
     )
-
-    # Saga compensation row
-    som_badge(d, 1106, 360, "e3", (74, 222, 128), 18)
+    som_badge(d, 1106, 360, "e3", (34, 211, 238), 18)
     text(
         d,
         (1130, 369),
-        "SAGA 补偿：取消 Order #1",
-        font(F_CN, 9.5),
-        (150, 230, 190, 255),
+        "reset session → 同 TaskSpec 重试",
+        font(F_CN, 9),
+        (182, 236, 250, 255),
         anchor="lm",
     )
     check_badge(d, 1398, 369, 6, (52, 211, 153))
 
-    # Saga runtime card
+    # Retry runtime card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "Saga Runtime",
+        "Retry Runtime",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -729,7 +741,7 @@ def draw_browser_card(canvas: Image.Image):
         d, (1671, 284), "0 LLM", font(F_MONO_BOLD, 7), (134, 239, 172, 255), anchor="mm"
     )
     pill(d, (1706, 276, 1764, 292), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
-    text(d, (1735, 284), "16S", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm")
+    text(d, (1735, 284), "2×", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm")
     d.line(
         [(1456 * S, 300 * S), (1764 * S, 300 * S)],
         fill=(255, 255, 255, 20),
@@ -737,11 +749,11 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "检测 Order #2 失败"),
-        ("2", "取消 Order #1"),
-        ("3", "校验全部 cancelled"),
+        ("1", "捕获 HTTP 500"),
+        ("2", "reset + 重试一次"),
+        ("3", "校验订单成功"),
     ]
-    sy = 318
+    sy = 320
     for num, label in steps:
         check_badge(d, 1464, sy, 5.5, (52, 211, 153))
         text(
@@ -754,12 +766,12 @@ def draw_browser_card(canvas: Image.Image):
         )
         sy += 22
 
-    # Saga output chip
+    # Retry output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"saga":"compensate","cancel":["order-1"]}',
+        '{"retry":1,"reset":true,"task":"add_p3"}',
         font(F_MONO, 9.5),
         (185, 247, 255, 255),
         anchor="lm",
@@ -769,7 +781,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "Order #1 active → cancelled",
+        "2 attempts · recovered",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -865,7 +877,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "all history orders cancelled",
+        "retry count auditable",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -891,7 +903,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Saga Runtime",
+        "Retry Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -899,17 +911,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "Plan → Act → Fail → Compensate",
+        "fail → reset → retry → verify",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Supervisor", "失败检测 · 补偿触发", (251, 191, 36)),
-        ("Saga", "逐个取消已成功订单", (34, 211, 238)),
+        ("Supervisor", "HTTP 500 检测", (251, 191, 36)),
+        ("Retry", "同 TaskSpec · reset 会话", (34, 211, 238)),
         ("Runtime", "checkpoint · CPU-first", (167, 139, 250)),
-        ("Verifier", "历史订单全部 cancelled", (74, 222, 128)),
+        ("Verifier", "重试次数可审计", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -940,7 +952,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "saga 2/2 · multi-order 2/2 · 0 LLM",
+        "retry 3/3 · saga 2/2 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -965,7 +977,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "SAGA RUNTIME   ·   COMPENSATION   ·   VERIFIER",
+        "TRANSIENT RETRY   ·   RECOVERY   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -974,7 +986,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR017 · REAL EPISODE",
+        "AR018 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",

@@ -1,0 +1,68 @@
+[
+  {
+    "task_id": "F1",
+    "mode": "single_attempt",
+    "success": false,
+    "attempts": 1,
+    "orders": []
+  },
+  {
+    "task_id": "F1",
+    "mode": "retry",
+    "success": true,
+    "attempts": 2,
+    "orders": [
+      {
+        "id": "4aeebfdfce",
+        "items": {
+          "p3": 1
+        },
+        "status": "active"
+      }
+    ]
+  },
+  {
+    "task_id": "F2",
+    "mode": "single_attempt",
+    "success": false,
+    "attempts": 1,
+    "orders": []
+  },
+  {
+    "task_id": "F2",
+    "mode": "retry",
+    "success": true,
+    "attempts": 2,
+    "orders": [
+      {
+        "id": "e46d3cc495",
+        "items": {
+          "p4": 2
+        },
+        "status": "active"
+      }
+    ]
+  },
+  {
+    "task_id": "F3",
+    "mode": "single_attempt",
+    "success": false,
+    "attempts": 1,
+    "orders": []
+  },
+  {
+    "task_id": "F3",
+    "mode": "retry",
+    "success": true,
+    "attempts": 2,
+    "orders": [
+      {
+        "id": "59345288bd",
+        "items": {
+          "p2": 1
+        },
+        "status": "active"
+      }
+    ]
+  }
+]
