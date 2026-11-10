@@ -21,6 +21,7 @@ async def run_task(
     max_attempts: int = 2,
     semantic: bool = True,
     max_steps_per_subtask: int = 12,
+    skill_retries: int = 0,
 ) -> Dict[str, Any]:
     """Execute one natural-language task with the full composed runtime."""
 
@@ -37,6 +38,7 @@ async def run_task(
             "fallback_required": True,
         }
 
+    retries_used = 0
     for attempt in range(1, max_attempts + 1):
         rollout = await run_skill_hierarchy(
             env,
@@ -64,6 +66,11 @@ async def run_task(
                 "steps": rollout.steps,
                 "fallback": False,
             }
+
+        if retries_used < skill_retries and attempt < max_attempts:
+            retries_used += 1
+            attempts[-1]["mode"] = "retry"
+            continue
 
         refreshed = fetch_catalog(env.server.base_url)
         new_spec = plan_instruction(instruction, refreshed)
