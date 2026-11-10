@@ -283,7 +283,7 @@ def draw_agent_loop(canvas: Image.Image):
         )
 
     # Bottom badges
-    badges = [("SAGA", "compensation"), ("MOC", "orders")]
+    badges = [("TFR", "retry"), ("SAGA", "compensation")]
     bx = 984
     for label, value in badges:
         w = 128
@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SAGA COMPENSATION"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   TRANSIENT RETRY"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.6",
+        "v4.7",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "Saga 补偿与失败回滚 · 端侧分层强化学习",
+        "瞬时故障重试与恢复 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：失败可补偿、订单可回滚、状态可验证",
+        "目标：瞬时故障可重试、成功可恢复、0 LLM",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,8 +412,8 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("Saga 补偿", (34, 211, 238)),
-        ("订单回滚", (96, 165, 250)),
+        ("瞬时重试", (34, 211, 238)),
+        ("故障恢复", (96, 165, 250)),
         ("技能编译", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("2/2", "Saga 成功", (125, 211, 252)),
-        ("0/2", "无补偿基线", (167, 139, 250)),
-        ("100%", "订单已取消", (244, 114, 182)),
-        ("78", "真实测试", (74, 222, 128)),
+        ("3/3", "重试成功", (125, 211, 252)),
+        ("0/3", "单次基线", (167, 139, 250)),
+        ("2", "重试次数", (244, 114, 182)),
+        ("81", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
