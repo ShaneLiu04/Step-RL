@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.7 — 瞬时故障重试与恢复 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.8 — 失败驱动技能自动归纳 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.7
+# Step-RL v4.8
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,13 +14,14 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-81%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-88%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
-> 面向服务可靠性：真实 HTTP 500 瞬时故障后，同一 TaskSpec 技能重试一次并恢复。  
-> 故障 3 任务：单次执行 **0/3**，技能重试 **3/3**，全部 2 次尝试，0 LLM。
+> 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
+> 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens。
 
 <p align="center">
+  <strong>失败驱动技能归纳</strong> ·
   <strong>瞬时故障重试</strong> ·
   <strong>故障恢复</strong> ·
   <strong>Saga 补偿</strong> ·
@@ -211,7 +212,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR015 技能库扩展 | 3/3（基线 2/3） | 3 | 1.00 |
 | AR016 多订单组合 | 2/2（基线 0/2） | 20 | 1.00 |
 | AR017 Saga 补偿 | 2/2（基线 0/2） | 16 | 1.00 |
-| **AR018 瞬时重试（最终）** | **3/3（基线 0/3）** | 10–20 | **1.00** |
+| AR018 瞬时重试 | 3/3（基线 0/3） | 10–20 | 1.00 |
+| **AR019 技能自动归纳（最终）** | **3/3（归纳前未覆盖）** | 4 | **1.00** |
 
 逐任务：
 
@@ -301,7 +303,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR015 技能库扩展 | 3/3，基线 2/3，20–45× | 前最优 |
 | AR016 多订单组合 | 2/2，基线 0/2，约 20× | 前最优 |
 | AR017 Saga 补偿 | 2/2，基线 0/2，全部 cancelled | 前最优 |
-| **AR018 瞬时重试** | **3/3，基线 0/3** | **最终保留** |
+| AR018 瞬时重试 | 3/3，基线 0/3 | 前最优 |
+| **AR019 技能自动归纳** | **3/3，0 LLM，约 11×** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -454,7 +457,23 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - Runtime 同 TaskSpec 重试一次，真实 reset 会话后成功；
 - 不加载模型/GPU，重试次数与订单状态可审计。
 
-### 5.19 可解释性实验（EX001）
+### 5.19 失败驱动技能自动归纳（AR019）
+
+| 阶段 | 结果 |
+|------|------|
+| P0 能力门控（归纳前） | covered=false（`no_skill_for_level_2`） |
+| P1 真实 LLM 兜底（GPU） | ✓，4 步，1092 prompt tokens，19.8s |
+| P2 归纳注册 | 4 步模板（`{product}` 泛化），门控翻转为 covered |
+| P3 同任务技能复跑 | ✓，**0 LLM / 0 tokens，1.83s（约 11×）** |
+| P4 迁移 p4（v1）/ p3（v2 + ID churn） | ✓ / ✓，均 0 LLM |
+| P5 组合门禁 | edge 套件 153 passed；AR011 30 场景 0 LLM |
+
+- 轨迹记录器包装真实 `BrowserEnv`：执行前把 eid 解析回 role + accessible_name，归纳模板以语义名定位；
+- 归纳器只做两种泛化：商品名 → `{product}`、目标数量 → `{qty}`，模板 JSON 持久化复用；
+- 未注册非 add 操作一律显式返回 None：能力缺口不得静默误路由到加购技能；
+- 遗留技术债：legacy 三文件（locator/progress_estimator/smart_wait）17 个历史失败，git-stash 对照验证与 AR019 无关。
+
+### 5.20 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -546,6 +565,7 @@ python scripts/ar015_eval.py       # 购物车更新 基线 vs 技能
 python scripts/ar016_eval.py       # 多订单 合并 vs 序列
 python scripts/ar017_eval.py       # Saga 补偿 vs 无补偿
 python scripts/ar018_eval.py       # 瞬时故障 单次 vs 重试
+python scripts/ar019_eval.py       # 失败驱动技能归纳 全链路（GPU）
 ```
 
 ### 测试
@@ -555,8 +575,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py -v
-# 81 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py -v
+# 88 passed
 ```
 
 ### 产物
@@ -657,6 +677,7 @@ step-rl/
 │   │   ├── order_sequence       # 多订单（AR016）
 │   │   ├── cancel_order         # Saga 补偿（AR017）
 │   │   ├── skill_retries        # 瞬时重试（AR018）
+│   │   ├── skill_induction.py   # 失败驱动技能归纳（AR019）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -681,14 +702,16 @@ step-rl/
 │   ├── ar016_eval.py
 │   ├── ar017_eval.py
 │   ├── ar018_eval.py
+│   ├── ar019_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
 │
 ├── specs/
 │   ├── component-detail-design/Step-RL_spec.md
-│   ├── changes/AR018-transient-retry/
-│   └── archive/AR001 … AR017 / EX001
+│   ├── BACKLOG.md               # 夜间自动化取材队列
+│   ├── changes/（进行中 AR）
+│   └── archive/AR001 … AR019 / EX001
 │
 ├── tests/                        # 81 项真实测试
 ├── docs/REPRODUCTION.md
@@ -734,7 +757,8 @@ step-rl/
 | AR015 | 技能库扩展（购物车更新） | 3/3，基线 2/3 | 前最优 |
 | AR016 | 多订单序列组合 | 2/2，基线 0/2 | 前最优 |
 | AR017 | Saga 补偿与失败回滚 | 2/2，基线 0/2 | 前最优 |
-| **AR018** | **瞬时故障重试** | **3/3，基线 0/3** | **最终保留** |
+| AR018 | 瞬时故障重试 | 3/3，基线 0/3 | 前最优 |
+| **AR019** | **失败驱动技能自动归纳** | **3/3，0 LLM，约 11×** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -747,7 +771,8 @@ step-rl/
 - `specs/archive/AR015-skill-extension-cart/`
 - `specs/archive/AR016-multi-order-composition/`
 - `specs/archive/AR017-saga-compensation/`
-- `specs/changes/AR018-transient-retry/`
+- `specs/archive/AR018-transient-retry/`
+- `specs/archive/AR019-skill-induction/`
 
 ---
 
@@ -829,7 +854,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.7 / AR018** | **推荐** | 重试 3/3，基线 0/3 |
+| **v4.8 / AR019** | **推荐** | 技能归纳 3/3，0 LLM，约 11× |
+| v4.7 / AR018 | 保留 | 重试 3/3，基线 0/3 |
 | v3.2 / AR003 | 保留 | 层级分解，稳定 DOM 100% |
 | v3.1 / AR001 | 保留 | VGDP + Step-GRPO，单策略路由 |
 | AR002 | 归档 | 记忆/重规划负结果，默认关闭 |
