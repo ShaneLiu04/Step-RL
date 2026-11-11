@@ -2,10 +2,16 @@
 
 Skills execute against the real DOM through semantic names; they do not call
 the language model.  A failed skill falls back to the regular LLM hierarchy.
+
+AR019 adds an induced-skill registry: successful LLM-fallback trajectories
+are generalised into parameterised templates (``{product}`` / ``{qty}``
+placeholders), registered here and persisted as JSON, so later tasks of the
+same operation run with zero LLM calls.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -18,6 +24,71 @@ from .verifier import compute_progress
 
 NAME_VALUE = "刘星言先生"
 ADDRESS_VALUE = "深圳市龙岗区坂田路1号"
+
+# operation -> {"name": str, "steps": [step template dicts]}
+_INDUCED: Dict[str, Dict[str, Any]] = {}
+
+
+def register_induced_skill(
+    operation: str,
+    template: List[Dict[str, Any]],
+    name: str = "",
+) -> None:
+    """Register an induced skill template for ``operation``."""
+
+    _INDUCED[operation] = {
+        "name": name or f"induced_{operation}",
+        "steps": [dict(step) for step in template],
+    }
+
+
+def clear_induced_skills() -> None:
+    _INDUCED.clear()
+
+
+def induced_operations() -> List[str]:
+    return sorted(_INDUCED)
+
+
+def save_induced_skills(path: str) -> None:
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(_INDUCED, handle, ensure_ascii=False, indent=2)
+
+
+def load_induced_skills(path: str) -> List[str]:
+    """Load and register persisted induced-skill templates."""
+
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
+    for operation, entry in data.items():
+        register_induced_skill(operation, entry.get("steps", []), entry.get("name", ""))
+    return sorted(data)
+
+
+def _materialize(entry: Dict[str, Any], task: TaskSpec) -> Skill:
+    """Instantiate a template for ``task`` by resolving placeholders."""
+
+    pid = next(iter(task.targets), None)
+    product = PRODUCTS.get(pid) if pid else None
+    qty = task.targets.get(pid, 1) if pid else 1
+    steps: List[SkillStep] = []
+    for item in entry.get("steps", []):
+        name = str(item.get("name", ""))
+        value = str(item.get("value", ""))
+        if product is not None:
+            name = name.replace("{product}", product.name)
+            value = value.replace("{product}", product.name)
+        value = value.replace("{qty}", str(qty))
+        steps.append(
+            SkillStep(
+                kind=str(item.get("kind", "")),
+                name=name,
+                role=str(item.get("role", "")),
+                value=value,
+                url=str(item.get("url", "")),
+            )
+        )
+    return Skill(str(entry.get("name", "induced")), steps)
 
 
 @dataclass(frozen=True)
@@ -107,6 +178,12 @@ def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
         pid = next(iter(task.targets), None)
         if pid:
             return update_quantity_skill(pid, task.targets[pid])
+        return None
+    if task.operation in _INDUCED:
+        return _materialize(_INDUCED[task.operation], task)
+    if task.operation not in ("add", ""):
+        # Unregistered non-add operations are an explicit capability gap:
+        # never silently route them to the add-item skill.
         return None
     if task.level == 1:
         return search_skill(task.search_query)
