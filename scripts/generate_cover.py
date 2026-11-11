@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.7 README cover banner.
+"""Generate the Step-RL v4.8 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   TRANSIENT RETRY"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL INDUCTION"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.7",
+        "v4.8",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Transient Fault Retry & Recovery",
+        "Failure-Driven Skill Induction",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "真实 500 · 同 TaskSpec 重试 · reset 会话 · 可审计",
+        "能力门控 · LLM 兜底一次 · 轨迹归纳 · 同类任务 0 LLM",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "瞬时故障重试",
-            "真实 HTTP 500 后，同 TaskSpec 自动重试一次",
+            "失败驱动技能归纳",
+            "门控发现未覆盖任务，LLM 兜底后自动归纳",
             (34, 211, 238),
         ),
         (
-            "3/3 vs 基线 0/3",
-            "全部 2 次尝试，真实 reset 会话后恢复",
+            "3/3 迁移",
+            "跨商品 / 跨布局 + ID churn，0 prompt tokens",
             (167, 139, 250),
         ),
         (
-            "可审计恢复",
-            "0 LLM / 0 GPU，重试次数与订单状态可审计",
+            "自进化运行时",
+            "归纳后 0 LLM，1.83s（约 11×）",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "瞬时故障任务", (125, 211, 252)),
-        ("0/3", "单次基线", (244, 114, 182)),
-        ("2×", "尝试次数", (74, 222, 128)),
-        ("81", "真实测试", (167, 139, 250)),
+        ("3/3", "归纳后任务", (125, 211, 252)),
+        ("0", "归纳后 LLM", (244, 114, 182)),
+        ("11×", "推理加速", (74, 222, 128)),
+        ("88", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/cart",
+        "shop.local/add?product=p5",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -601,8 +601,8 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1731, 167),
-        "RETRY ON",
-        font(F_MONO_BOLD, 8.5),
+        "SoM ON",
+        font(F_MONO_BOLD, 9),
         (134, 239, 172, 255),
         anchor="mm",
     )
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：加入购物车 P3×1",
+        "指令：加入购物车 P5×1（未覆盖）",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -628,150 +628,94 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # Failure / recovery banners
-    pill(d, (1094, 226, 1430, 260), 10, (248, 113, 113, 18), (248, 113, 113, 95), 1)
-    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(248, 113, 113, 245))
+    # Gate banner
+    pill(d, (1094, 226, 1780, 260), 10, (251, 191, 36, 16), (251, 191, 36, 95), 1)
+    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(251, 191, 36, 245))
     text(
         d,
         (1124, 243),
-        "HTTP 500 · add 失败",
+        "GATE：covered = false · no_skill_for_L2",
         font(F_CN, 10.5),
-        (250, 190, 190, 255),
-        anchor="lm",
-    )
-    text(
-        d,
-        (1416, 243),
-        "1 / 2",
-        font(F_MONO, 8),
-        (250, 170, 170, 255),
-        anchor="rm",
-    )
-
-    pill(d, (1444, 226, 1780, 260), 10, (34, 197, 94, 18), (74, 222, 128, 95), 1)
-    d.ellipse((1458 * S, 239 * S, 1466 * S, 247 * S), fill=(74, 222, 128, 245))
-    text(
-        d,
-        (1474, 243),
-        "RETRY 1/1 · reset 后成功",
-        font(F_CN, 10.5),
-        (150, 230, 190, 255),
+        (245, 225, 178, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "RECOVERED",
+        "INDUCE ON",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Request log card
-    pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
-    text(
-        d,
-        (1106, 278),
-        "请求日志",
-        font(F_CN_BOLD, 12.5),
-        (236, 243, 255, 255),
-        anchor="la",
-    )
-    text(d, (1416, 278), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
-    d.line(
-        [(1106 * S, 296 * S), (1416 * S, 296 * S)],
-        fill=(255, 255, 255, 20),
-        width=max(1, int(1 * S)),
-    )
-
-    som_badge(d, 1106, 304, "e1", (248, 113, 113), 18)
-    text(
-        d,
-        (1130, 313),
-        "Attempt 1  POST /add",
-        font(F_MONO, 9),
-        (214, 226, 246, 255),
-        anchor="lm",
-    )
-    pill(d, (1382, 305, 1414, 321), 6, (248, 113, 113, 24), (248, 113, 113, 110), 1)
-    text(
-        d, (1398, 313), "500", font(F_MONO_BOLD, 7.5), (250, 170, 170, 255), anchor="mm"
-    )
-
-    som_badge(d, 1106, 330, "e2", (74, 222, 128), 18)
-    text(
-        d,
-        (1130, 339),
-        "Attempt 2  POST /add",
-        font(F_MONO, 9),
-        (214, 226, 246, 255),
-        anchor="lm",
-    )
-    check_badge(d, 1388, 339, 5.5, (52, 211, 153))
-    text(d, (1398, 339), "200", font(F_MONO_BOLD, 8), (134, 239, 172, 255), anchor="lm")
-
-    d.line(
-        [(1106 * S, 354 * S), (1416 * S, 354 * S)],
-        fill=(255, 255, 255, 18),
-        width=max(1, int(1 * S)),
-    )
-    som_badge(d, 1106, 360, "e3", (34, 211, 238), 18)
-    text(
-        d,
-        (1130, 369),
-        "reset session → 同 TaskSpec 重试",
-        font(F_CN, 9),
-        (182, 236, 250, 255),
-        anchor="lm",
-    )
-    check_badge(d, 1398, 369, 6, (52, 211, 153))
-
-    # Retry runtime card
-    pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
-    text(
-        d,
-        (1456, 278),
-        "Retry Runtime",
-        font(F_SEMI, 12.5),
-        (236, 243, 255, 255),
-        anchor="la",
-    )
-    pill(d, (1642, 276, 1700, 292), 7, (34, 197, 94, 26), (74, 222, 128, 100), 1)
-    text(
-        d, (1671, 284), "0 LLM", font(F_MONO_BOLD, 7), (134, 239, 172, 255), anchor="mm"
-    )
-    pill(d, (1706, 276, 1764, 292), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
-    text(d, (1735, 284), "2×", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm")
-    d.line(
-        [(1456 * S, 300 * S), (1764 * S, 300 * S)],
-        fill=(255, 255, 255, 20),
-        width=max(1, int(1 * S)),
-    )
-
-    steps = [
-        ("1", "捕获 HTTP 500"),
-        ("2", "reset + 重试一次"),
-        ("3", "校验订单成功"),
+    # Four-stage induction pipeline
+    stages = [
+        ("01  GATE", "covered = false", "no_skill_for_L2", (251, 191, 36)),
+        ("02  LLM", "4 steps · 19.8s", "1092 tokens", (96, 165, 250)),
+        ("03  INDUCE", "{product} × {qty}", "template saved", (167, 139, 250)),
+        ("04  REUSE", "0 LLM · 1.83s", "3/3 transfer", (74, 222, 128)),
     ]
-    sy = 320
-    for num, label in steps:
-        check_badge(d, 1464, sy, 5.5, (52, 211, 153))
+    sx = 1094
+    for idx, (header, title, sub, col) in enumerate(stages):
+        strong = idx == 3
+        pill(
+            d,
+            (sx, 268, sx + 170, 360),
+            12,
+            rgba(col, 24 if strong else 14),
+            rgba(col, 120 if strong else 80),
+            1,
+        )
+        d.rectangle((sx + 10 * S, 268 * S, (sx + 62) * S, 270 * S), fill=rgba(col, 230))
         text(
             d,
-            (1478, sy),
-            f"{num}  {label}",
-            font(F_CN, 9),
-            (196, 212, 240, 255),
-            anchor="lm",
+            (sx + 12, 282),
+            header,
+            font(F_MONO_BOLD, 8),
+            rgba(col, 245),
+            anchor="la",
         )
-        sy += 22
+        text(
+            d,
+            (sx + 12, 300),
+            title,
+            font(F_SEMI, 12) if idx != 2 else font(F_MONO_BOLD, 10.5),
+            (236, 243, 255, 255),
+            anchor="la",
+        )
+        text(
+            d,
+            (sx + 12, 322),
+            sub,
+            font(F_MONO, 8),
+            (166, 185, 218, 255),
+            anchor="la",
+        )
+        if strong:
+            check_badge(d, sx + 148, 286, 8, (74, 222, 128))
+        else:
+            d.ellipse(
+                ((sx + 146) * S, 282 * S, (sx + 156) * S, 292 * S),
+                fill=rgba(col, 60),
+                outline=rgba(col, 190),
+                width=max(1, int(0.8 * S)),
+            )
+            text(
+                d,
+                (sx + 151, 287),
+                str(idx + 1),
+                font(F_MONO_BOLD, 6),
+                rgba(col, 255),
+                anchor="mm",
+            )
+        sx += 178
 
-    # Retry output chip
+    # Induction template chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"retry":1,"reset":true,"task":"add_p3"}',
+        '{"template":"add {product} x{qty}"}',
         font(F_MONO, 9.5),
         (185, 247, 255, 255),
         anchor="lm",
@@ -781,7 +725,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "2 attempts · recovered",
+        "p4 / p3 + ID churn · 3/3",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -877,7 +821,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "retry count auditable",
+        "gate flips to covered",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -903,7 +847,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Retry Runtime",
+        "Induction Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -911,17 +855,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "fail → reset → retry → verify",
+        "gate → fallback → induce → reuse",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Supervisor", "HTTP 500 检测", (251, 191, 36)),
-        ("Retry", "同 TaskSpec · reset 会话", (34, 211, 238)),
-        ("Runtime", "checkpoint · CPU-first", (167, 139, 250)),
-        ("Verifier", "重试次数可审计", (74, 222, 128)),
+        ("Gate", "未覆盖 → covered", (251, 191, 36)),
+        ("LLM Fallback", "真实兜底一次", (34, 211, 238)),
+        ("Inducer", "轨迹 → 参数化模板", (167, 139, 250)),
+        ("Reuse", "0 LLM · 跨布局", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -952,7 +896,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "retry 3/3 · saga 2/2 · 0 LLM",
+        "induct 3/3 · 0 LLM · 11×",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -977,7 +921,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "TRANSIENT RETRY   ·   RECOVERY   ·   RUNTIME",
+        "SKILL INDUCTION   ·   CAPABILITY GATE   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -986,7 +930,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR018 · REAL EPISODE",
+        "AR019 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",

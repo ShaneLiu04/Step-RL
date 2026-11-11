@@ -170,6 +170,8 @@ def plan_instruction(
             "改为",
             "改成",
             "更新",
+            "移除",
+            "删除",
         )
     ):
         return None
@@ -193,6 +195,23 @@ def plan_instruction(
             operation="update",
             predicates=["cart_quantity_exact"],
             exact_quantity=True,
+        )
+
+    # Removal: "把购物车中的 X 移除/删除".
+    if any(word in instruction for word in ("移除", "删除")) and mentions:
+        pid = mentions[0][0]
+        first = by_pid[pid]
+        return TaskSpec(
+            task_id="planned_remove",
+            level=2,
+            goal=instruction,
+            search_query=first.keywords[0] if first.keywords else first.name,
+            targets={pid: 0},
+            require_checkout=False,
+            operation="remove",
+            predicates=["cart_without"],
+            start_path="/cart",
+            seed_cart={pid: max(mentions[0][1], 1)},
         )
 
     # Budget-driven substitution: "A 超预算则 B".
