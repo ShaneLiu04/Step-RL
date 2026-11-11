@@ -89,6 +89,10 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         cart = state.get("cart", {})
         return all(int(cart.get(pid, 0)) == qty for pid, qty in task.targets.items())
 
+    def cart_without(state: Dict, url: str) -> bool:
+        cart = state.get("cart", {})
+        return all(int(cart.get(pid, 0)) == 0 for pid in task.targets)
+
     def cart_viewed(state: Dict, url: str) -> bool:
         return _visited(state, _path_is("/cart"))
 
@@ -142,6 +146,7 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         "product_viewed": product_viewed,
         "cart_contains": cart_contains,
         "cart_quantity_exact": cart_quantity_exact,
+        "cart_without": cart_without,
         "cart_viewed": cart_viewed,
         "checkout_viewed": checkout_viewed,
         "name_filled": name_filled,
