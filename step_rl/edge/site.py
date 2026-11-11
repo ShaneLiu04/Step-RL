@@ -227,6 +227,9 @@ def render_cart(state: SessionState, layout: str = "v1") -> bytes:
             f"<input name='qty' type='number' value='{qty}' min='1' max='9' "
             f"aria-label='数量 {p.name}'>"
             f"<button type='submit' aria-label='更新数量 {p.name}'>更新</button>"
+            f"</form> "
+            f"<form action='/remove/{pid}' method='get' style='display:inline'>"
+            f"<button type='submit' aria-label='移除 {p.name}'>移除</button>"
             f"</form></div>"
         )
     if not rows:
@@ -348,6 +351,9 @@ def _render_v2_cart(state: SessionState) -> bytes:
             f"<input name='qty' type='number' value='{qty}' min='1' max='9' "
             f"aria-label='数量 {p.name}'>"
             f"<button type='submit' aria-label='更新数量 {p.name}'>更新</button>"
+            f"</form> "
+            f"<form action='/remove/{pid}' method='get' style='display:inline'>"
+            f"<button type='submit' aria-label='移除 {p.name}'>移除</button>"
             f"</form></div>"
         )
     if not rows:
@@ -586,6 +592,14 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(render_error("非法商品或数量"), 400, sid)
                 return
             state.cart[pid] = qty
+            self._redirect("/cart", sid)
+            return
+        elif path.startswith("/remove/"):
+            pid = path.split("/", 2)[2]
+            if pid not in PRODUCTS:
+                self._send(render_error("非法商品"), 400, sid)
+                return
+            state.cart.pop(pid, None)
             self._redirect("/cart", sid)
             return
         elif path == "/cart":
