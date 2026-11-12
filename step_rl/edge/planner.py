@@ -197,21 +197,20 @@ def plan_instruction(
             exact_quantity=True,
         )
 
-    # Removal: "把购物车中的 X 移除/删除".
+    # Removal: "把购物车中的 X 移除/删除"（X 可含多个商品，AR020 批量）。
     if any(word in instruction for word in ("移除", "删除")) and mentions:
-        pid = mentions[0][0]
-        first = by_pid[pid]
+        first = by_pid[mentions[0][0]]
         return TaskSpec(
             task_id="planned_remove",
             level=2,
             goal=instruction,
             search_query=first.keywords[0] if first.keywords else first.name,
-            targets={pid: 0},
+            targets={pid: 0 for pid, _ in mentions},
             require_checkout=False,
             operation="remove",
             predicates=["cart_without"],
             start_path="/cart",
-            seed_cart={pid: max(mentions[0][1], 1)},
+            seed_cart={pid: max(qty, 1) for pid, qty in mentions},
         )
 
     # Budget-driven substitution: "A 超预算则 B".

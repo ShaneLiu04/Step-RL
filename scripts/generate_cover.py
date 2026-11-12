@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.8 README cover banner.
+"""Generate the Step-RL v4.9 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL INDUCTION"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   BATCH REMOVAL"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.8",
+        "v4.9",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Failure-Driven Skill Induction",
+        "Multi-Item Batch Removal",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "能力门控 · LLM 兜底一次 · 轨迹归纳 · 同类任务 0 LLM",
+        "一条指令多商品 · 前缀 + 单元×N · 块式归纳 · 0 LLM",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "失败驱动技能归纳",
-            "门控发现未覆盖任务，LLM 兜底后自动归纳",
+            "多商品批量移除",
+            "「移除 p3 和 p2」→ 多目标解析 + 运行时展开",
             (34, 211, 238),
         ),
         (
-            "3/3 迁移",
-            "跨商品 / 跨布局 + ID churn，0 prompt tokens",
+            "批量 3/3 + 单商品 3/3",
+            "块式归纳单元，模板不随 N 漂移",
             (167, 139, 250),
         ),
         (
-            "自进化运行时",
-            "归纳后 0 LLM，1.83s（约 11×）",
+            "0 LLM · 约 10.5×",
+            "1.80–1.85s vs 19.22s 首次 LLM 兜底",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "归纳后任务", (125, 211, 252)),
-        ("0", "归纳后 LLM", (244, 114, 182)),
-        ("11×", "推理加速", (74, 222, 128)),
-        ("88", "真实测试", (167, 139, 250)),
+        ("3/3", "批量移除", (125, 211, 252)),
+        ("0", "批量 LLM 调用", (244, 114, 182)),
+        ("10.5×", "复用加速", (74, 222, 128)),
+        ("166", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/add?product=p5",
+        "shop.local/cart",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：加入购物车 P5×1（未覆盖）",
+        "指令：移除购物车中的 P3 和 P2",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -628,94 +628,122 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # Gate banner
-    pill(d, (1094, 226, 1780, 260), 10, (251, 191, 36, 16), (251, 191, 36, 95), 1)
-    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(251, 191, 36, 245))
+    # Batch banner
+    pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
+    d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "GATE：covered = false · no_skill_for_L2",
+        "BATCH：targets = {p3:0, p2:0}",
         font(F_CN, 10.5),
-        (245, 225, 178, 255),
+        (182, 236, 250, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "INDUCE ON",
+        "2 TARGETS",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Four-stage induction pipeline
-    stages = [
-        ("01  GATE", "covered = false", "no_skill_for_L2", (251, 191, 36)),
-        ("02  LLM", "4 steps · 19.8s", "1092 tokens", (96, 165, 250)),
-        ("03  INDUCE", "{product} × {qty}", "template saved", (167, 139, 250)),
-        ("04  REUSE", "0 LLM · 1.83s", "3/3 transfer", (74, 222, 128)),
-    ]
-    sx = 1094
-    for idx, (header, title, sub, col) in enumerate(stages):
-        strong = idx == 3
-        pill(
-            d,
-            (sx, 268, sx + 170, 360),
-            12,
-            rgba(col, 24 if strong else 14),
-            rgba(col, 120 if strong else 80),
-            1,
-        )
-        d.rectangle((sx + 10 * S, 268 * S, (sx + 62) * S, 270 * S), fill=rgba(col, 230))
-        text(
-            d,
-            (sx + 12, 282),
-            header,
-            font(F_MONO_BOLD, 8),
-            rgba(col, 245),
-            anchor="la",
-        )
-        text(
-            d,
-            (sx + 12, 300),
-            title,
-            font(F_SEMI, 12) if idx != 2 else font(F_MONO_BOLD, 10.5),
-            (236, 243, 255, 255),
-            anchor="la",
-        )
-        text(
-            d,
-            (sx + 12, 322),
-            sub,
-            font(F_MONO, 8),
-            (166, 185, 218, 255),
-            anchor="la",
-        )
-        if strong:
-            check_badge(d, sx + 148, 286, 8, (74, 222, 128))
-        else:
-            d.ellipse(
-                ((sx + 146) * S, 282 * S, (sx + 156) * S, 292 * S),
-                fill=rgba(col, 60),
-                outline=rgba(col, 190),
-                width=max(1, int(0.8 * S)),
-            )
-            text(
-                d,
-                (sx + 151, 287),
-                str(idx + 1),
-                font(F_MONO_BOLD, 6),
-                rgba(col, 255),
-                anchor="mm",
-            )
-        sx += 178
+    # Cart card
+    pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
+    text(
+        d,
+        (1106, 278),
+        "购物车",
+        font(F_CN_BOLD, 12.5),
+        (236, 243, 255, 255),
+        anchor="la",
+    )
+    text(d, (1416, 278), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
+    d.line(
+        [(1106 * S, 296 * S), (1416 * S, 296 * S)],
+        fill=(255, 255, 255, 20),
+        width=max(1, int(1 * S)),
+    )
 
-    # Induction template chip
+    som_badge(d, 1106, 304, "e1", (34, 211, 238), 18)
+    text(d, (1130, 313), "P3 × 2", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
+    check_badge(d, 1362, 313, 5.5, (52, 211, 153))
+    text(
+        d, (1374, 313), "selected", font(F_MONO, 8.5), (134, 239, 172, 255), anchor="lm"
+    )
+
+    som_badge(d, 1106, 330, "e2", (34, 211, 238), 18)
+    text(d, (1130, 339), "P2 × 3", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
+    check_badge(d, 1362, 339, 5.5, (52, 211, 153))
+    text(
+        d, (1374, 339), "selected", font(F_MONO, 8.5), (134, 239, 172, 255), anchor="lm"
+    )
+
+    d.line(
+        [(1106 * S, 352 * S), (1416 * S, 352 * S)],
+        fill=(255, 255, 255, 18),
+        width=max(1, int(1 * S)),
+    )
+    pill(d, (1106, 356, 1418, 378), 9, (74, 222, 128, 28), (74, 222, 128, 125), 1)
+    text(
+        d,
+        (1252, 367),
+        "批量移除 · cart → empty",
+        font(F_CN, 9.5),
+        (220, 252, 231, 255),
+        anchor="mm",
+    )
+    som_badge(d, 1394, 358, "e3", (74, 222, 128), 18)
+
+    # Block induction card
+    pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
+    text(
+        d,
+        (1456, 278),
+        "Block Induction",
+        font(F_SEMI, 12.5),
+        (236, 243, 255, 255),
+        anchor="la",
+    )
+    pill(d, (1642, 276, 1700, 292), 7, (34, 197, 94, 26), (74, 222, 128, 100), 1)
+    text(
+        d, (1671, 284), "0 LLM", font(F_MONO_BOLD, 7), (134, 239, 172, 255), anchor="mm"
+    )
+    pill(d, (1706, 276, 1764, 292), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
+    text(
+        d, (1735, 284), "10.5×", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm"
+    )
+    d.line(
+        [(1456 * S, 300 * S), (1764 * S, 300 * S)],
+        fill=(255, 255, 255, 20),
+        width=max(1, int(1 * S)),
+    )
+
+    steps = [
+        ("1", "parse targets"),
+        ("2", "block cut + LCS"),
+        ("3", "expand unit × N"),
+        ("4", "cart empty"),
+    ]
+    sy = 316
+    for num, label in steps:
+        check_badge(d, 1464, sy, 5, (52, 211, 153))
+        text(
+            d,
+            (1476, sy),
+            f"{num}  {label}",
+            font(F_MONO, 8.5),
+            (196, 212, 240, 255),
+            anchor="lm",
+        )
+        sy += 17
+
+    # Batch output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"template":"add {product} x{qty}"}',
+        '{"targets":{"p3":0,"p2":0},"batch":2}',
         font(F_MONO, 9.5),
         (185, 247, 255, 255),
         anchor="lm",
@@ -725,7 +753,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "p4 / p3 + ID churn · 3/3",
+        "batch 3/3 · single 3/3",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -821,7 +849,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "gate flips to covered",
+        "multi-target verified",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -847,7 +875,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Induction Runtime",
+        "Batch Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -855,17 +883,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "gate → fallback → induce → reuse",
+        "parse → induce → expand → verify",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Gate", "未覆盖 → covered", (251, 191, 36)),
-        ("LLM Fallback", "真实兜底一次", (34, 211, 238)),
-        ("Inducer", "轨迹 → 参数化模板", (167, 139, 250)),
-        ("Reuse", "0 LLM · 跨布局", (74, 222, 128)),
+        ("Parser", "「和 / 与 / 顿号」多商品", (251, 191, 36)),
+        ("Induction", "块式切分 + LCS 后缀", (34, 211, 238)),
+        ("Expand", "前缀 1× + unit×N + 后缀", (167, 139, 250)),
+        ("Verify", "cart 全空 · 0 LLM", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -896,7 +924,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "induct 3/3 · 0 LLM · 11×",
+        "batch 3/3 · single 3/3 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -921,7 +949,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "SKILL INDUCTION   ·   CAPABILITY GATE   ·   RUNTIME",
+        "BATCH REMOVAL   ·   BLOCK INDUCTION   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -930,7 +958,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR019 · REAL EPISODE",
+        "AR020 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
