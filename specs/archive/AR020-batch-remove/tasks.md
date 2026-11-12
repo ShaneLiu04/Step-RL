@@ -16,9 +16,9 @@
 - [x] T9 组合门禁：edge pytest ≥153 passed、AR011 30/30 0 LLM（真实执行） — passing
 - [x] T10 README（v4.9、AR 表、5.x 章节、组合回退记录、快速开始、目录树、
       徽章、cover）+ docs/REPRODUCTION.md + BACKLOG 毕业 — passing
-- [ ] T11 本地 git mv 归档 specs/changes/AR020 → specs/archive/ — in_progress
-- [ ] T12 gitee 双历史同步（AGENTS.md §6：worktree 增量、逐包 ≤50KB、
-      收尾 `git diff -w --stat gitee/main main` 为空） — in_progress
+- [x] T11 本地 git mv 归档 specs/changes/AR020 → specs/archive/ — passing
+- [x] T12 gitee 双历史同步（AGENTS.md §6：worktree 增量、逐包 ≤50KB、
+      收尾 `git diff -w --stat gitee/main main` 为空） — passing
 
 ## 执行记录
 
@@ -63,4 +63,9 @@
 - REPRODUCTION：补 AR019 漏登记 + 新增 AR020（命令 22/23、产物、§3.2、
   §3.2.16）；
 - BACKLOG：B01 毕业登记；
-- T11/T12（归档 + gitee 同步）执行后回填。
+- T11：`git mv` 归档（commit 9013400），specs/changes 已清空；
+- T12：worktree（D:\agentRL\_sync_wt，gitee/main）三个增量包推送：
+  代码/脚本/测试（c7719df）、文档/规格/BACKLOG（3aa3ff8）、
+  cover 71KB 单包（83837b1）；tasks 回填小包（推送后为远端 HEAD，
+  `git log gitee/main -1` 可查）；收尾 `git diff -w --stat gitee/main
+  main` 为空 ✓。
