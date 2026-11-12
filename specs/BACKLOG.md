@@ -24,3 +24,4 @@
 | 主题 | AR | 结论 |
 |------|----|------|
 | 失败驱动技能自动归纳 | AR019 | 见 specs/archive/AR019-skill-induction/ |
+| 多商品批量移除（remove 扩展） | AR020 | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5×；见 specs/archive/AR020-batch-remove/ |
