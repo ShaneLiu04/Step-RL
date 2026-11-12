@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.8 — 失败驱动技能自动归纳 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.9 — 多商品批量移除 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.8
+# Step-RL v4.9
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,14 +14,16 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-88%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-166%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
-> 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens。
+> 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens；  
+> **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。
 
 <p align="center">
   <strong>失败驱动技能归纳</strong> ·
+  <strong>多商品批量移除</strong> ·
   <strong>瞬时故障重试</strong> ·
   <strong>故障恢复</strong> ·
   <strong>Saga 补偿</strong> ·
@@ -112,11 +114,16 @@ flowchart LR
     T --> P2
     V --> O
     V --> E["真实评测"]
+    G -. 未覆盖缺口 .-> I["技能归纳<br/>兜底成功 → 参数化模板"]
+    I --> K["技能库注册<br/>0-LLM 复用"]
+    K --> H
 
     style S fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
     style V fill:#ede9fe,stroke:#7c3aed,stroke-width:2px
     style H fill:#fef3c7,stroke:#d97706,stroke-width:2px
     style E fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    style I fill:#ecfccb,stroke:#65a30d,stroke-width:2px
+    style K fill:#ecfccb,stroke:#65a30d,stroke-width:2px
 ```
 
 ### 1. 可执行验证器（Φ）
@@ -183,6 +190,25 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 - Prompt 写入 `进度: 0.75 | 未完成: 填写收货人、提交订单`；
 - selector 模式下，选择器失效时用真实 DOM 做唯一匹配修复；多候选一律放弃。
+
+### 7. 失败驱动的技能自动归纳（AR019）
+
+能力闭环的最后一环：兜底成功一次，永久转为 0-LLM 技能。
+
+```
+能力门控判缺口 (covered=false)
+  → 真实 LLM 兜底执行一次（GPU + 真实浏览器）
+  → TrajectoryRecorder 记录动作 + 语义元素元数据（执行前解析）
+  → induce_skill 泛化为参数化模板（{product} / {qty}）
+  → 注册技能库 + JSON 持久化 → 同类任务 0-LLM 直接执行
+```
+
+- 记录发生在**执行前**：eid 在当时观测中解析回 `role + accessible_name`，
+  页面随后重渲染或 ID 扰动不丢失语义信息；
+- 未注册的非 add 操作显式返回 `None`：能力缺口不得静默误路由到加购技能；
+- 归纳技能与人工技能同标准：注册即过能力门控，30 场景统一套件回归检验；
+- AR020 批量扩展：多目标规划解析 + 运行时「前缀一次 + 单元×N」展开 +
+  块式轨迹归纳（最长公共后缀 unit），模板不随商品数漂移。
 
 ---
 
@@ -304,7 +330,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR016 多订单组合 | 2/2，基线 0/2，约 20× | 前最优 |
 | AR017 Saga 补偿 | 2/2，基线 0/2，全部 cancelled | 前最优 |
 | AR018 瞬时重试 | 3/3，基线 0/3 | 前最优 |
-| **AR019 技能自动归纳** | **3/3，0 LLM，约 11×** | **最终保留** |
+| AR019 技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
+| **AR020 多商品批量移除** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -457,23 +484,111 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - Runtime 同 TaskSpec 重试一次，真实 reset 会话后成功；
 - 不加载模型/GPU，重试次数与订单状态可审计。
 
-### 5.19 失败驱动技能自动归纳（AR019）
+### 5.19 失败驱动的技能自动归纳（AR019）
 
-| 阶段 | 结果 |
+**动机。** AR012 能力门控发现未覆盖任务后会拒绝执行或回退 LLM，但兜底成功的
+轨迹此前被直接丢弃——同类任务下次仍要重新付出一次 LLM 成本。能力闭环
+缺了最后一环：**把兜底成功经验自动沉淀为可复用技能**。此前所有技能
+（AR010/AR015）都来自真实专家演示的人工参数化；AR019 把
+「成功轨迹 → 参数化技能」这一步自动化：任何能力缺口，只要 LLM 兜底
+成功一次，运行时自行完成沉淀，无需专家在场。
+
+**真实评测（P0–P5，全部真实浏览器 / GPU / 服务端状态）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 能力门控检查「移除」指令（归纳前） | covered=false（`no_skill_for_level_2`）——真实缺口证据 |
+| P1 | LLM 兜底真实执行移除 p3（GPU，seed p3×2） | ✓，4 步，1092 prompt tokens，19.8s |
+| P2 | 轨迹归纳 → 注册 → JSON 持久化 | 4 步模板，门控翻转为 covered（skills=`induced_remove`） |
+| P3 | 同任务技能复跑（新会话，不加载模型） | ✓，**0 LLM / 0 tokens，1.83s（约 11× 提速）** |
+| P4 | 迁移：换商品 p4（v1）/ p3（v2 + 全量 ID churn） | ✓ / ✓，均 0 LLM，1.8–1.97s |
+| P5 | 组合门禁 | edge 套件 **153 passed**；AR011 30 场景 **0 LLM** |
+
+**兜底轨迹与归纳模板（真实记录对照）。** LLM 兜底自选「先把数量改回 1
+再移除」的策略，四步动作全部真实执行；记录器在执行前把 eid 解析回
+`role + accessible_name`，归纳器把商品名替换为 `{product}` 占位符：
+
+| 兜底轨迹（语义解析后） | 归纳模板（泛化后） |
 |------|------|
-| P0 能力门控（归纳前） | covered=false（`no_skill_for_level_2`） |
-| P1 真实 LLM 兜底（GPU） | ✓，4 步，1092 prompt tokens，19.8s |
-| P2 归纳注册 | 4 步模板（`{product}` 泛化），门控翻转为 covered |
-| P3 同任务技能复跑 | ✓，**0 LLM / 0 tokens，1.83s（约 11×）** |
-| P4 迁移 p4（v1）/ p3（v2 + ID churn） | ✓ / ✓，均 0 LLM |
-| P5 组合门禁 | edge 套件 153 passed；AR011 30 场景 0 LLM |
+| type（未解析元素）值 "2" | type 值 "2"（原样保留） |
+| type spinbutton「数量 无线充电器」值 "1" | type spinbutton「数量 {product}」值 "1" |
+| click button「更新数量 无线充电器」 | click button「更新数量 {product}」 |
+| click button「移除 无线充电器」 | click button「移除 {product}」 |
 
-- 轨迹记录器包装真实 `BrowserEnv`：执行前把 eid 解析回 role + accessible_name，归纳模板以语义名定位；
-- 归纳器只做两种泛化：商品名 → `{product}`、目标数量 → `{qty}`，模板 JSON 持久化复用；
-- 未注册非 add 操作一律显式返回 None：能力缺口不得静默误路由到加购技能；
-- 遗留技术债：legacy 三文件（locator/progress_estimator/smart_wait）17 个历史失败，git-stash 对照验证与 AR019 无关。
+模板按原样回放即复现成功（保留冗余前缀步，不做启发式裁剪——成功轨迹
+即最小可复现单元），实例化时占位符按目标任务商品替换。
 
-### 5.20 可解释性实验（EX001）
+**效率对照（0-LLM 复用收益）。**
+
+| 执行方式 | LLM 调用 | prompt tokens | 耗时 | 结果 |
+|----------|----------|---------------|------|------|
+| LLM 兜底（首次，沉淀成本） | 1 | 1092 | 19.8s | ✓ 购物车清空 |
+| 技能复用（p3，v1，同任务） | 0 | 0 | 1.83s | ✓ |
+| 技能复用（p4，v1，换商品） | 0 | 0 | 1.97s | ✓ |
+| 技能复用（p3，v2 + ID churn） | 0 | 0 | 1.84s | ✓ |
+
+**安全边界。** 未注册非 add 操作显式返回 `None`（不得静默误路由到加购
+技能）；注册表模块级隔离、测试可重置；模板 JSON 持久化可审计；与既有
+技能同标准接受组合门禁回归——归纳前 30 场景与归纳后完全一致。
+
+**遗留技术债**（与 AR019 无关，git-stash 对照验证：改动前后均 17 failed）：
+legacy 三文件 locator / progress_estimator / smart_wait 的历史失败，
+已按仓库惯例记录、不纳入门禁。
+
+产物：`outputs/ar019/eval/`（results JSON / 报告 / 模板 JSON）；
+spec：`specs/archive/AR019-skill-induction/`；复现：`python scripts/ar019_eval.py`。
+
+### 5.20 多商品批量移除（AR020）
+
+**动机。** AR019 的归纳闭环只覆盖单目标任务；真实指令常是
+「把购物车中的 p3 和 p2 移除」这类**一条指令多个目标**。改动前基线探针
+（旧代码真实执行，`outputs/ar020/baseline_probe.json`）暴露两处真实缺陷：
+规划器把批量指令解析成 `targets={"p3": 0}`——**第二商品被静默丢弃**；
+旧模板实例化对批量任务 `success=false`（购物车剩 p4×3），而单商品对照
+成功——缺陷确在批量链路。批量也不是「单商品 × N」的平凡扩展：真实兜底
+轨迹对 p3 先「更新数量」再「移除」、对 p4 直接「移除」，块之间**前缀
+单调而非严格相等**，归纳必须能从中切出对每件商品都被证明有效的单元。
+
+**机制（三处增量，全部真实执行验证）。**
+
+| 环节 | AR019（单目标） | AR020（批量） |
+|------|------|------|
+| 规划器 | `targets={p3: 0}` | 「和 / 与 / 顿号」多商品解析 → `targets={"p3": 0, "p2": 0}`，seed_cart 多键 |
+| 模板实例化 | 单元直出 | **运行时多目标展开**：前缀 1 次 + 单元 × N + 后缀，模板不随 N 漂移 |
+| 轨迹归纳 | 整条轨迹 → 模板 | **块式切分**（按真实「移除」点击边界）+ 块间最长公共后缀 → unit |
+
+- 块式归纳的诚实约束：块内不一致时显式失败（不做多数投票式臆造）；
+- unit 是「对每件商品都被真实证明有效的最小模式」，冗余前缀步原样保留。
+
+**真实评测（P0–P5，真实 Edge / GPU / 服务端状态）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 改动前基线探针（旧代码） | 规划丢第二商品；批量执行 ✗（cart 剩 p4×3）；单商品对照 ✓ |
+| P0a | 新规划解析「移除 p3 和 p2」 | `targets={"p3":0,"p2":0}`，seed `{p3:2, p2:3}` ✓ |
+| P1 | LLM 兜底真实执行批量移除（GPU，AR004 适配器，seed=42） | ✓，4 步，1267 prompt / 96 response tokens，19.22s |
+| P2 | 块式归纳 → 注册 → 持久化 | 模板 2 步（`移除 {product}` unit），门控翻转 covered |
+| P3 | 批量技能复跑 B1 v1 / B2 v1 带数量 / B3 v2+ID churn | **3/3，0 LLM / 0 tokens，1.80–1.85s**，cart 全空 |
+| P4 | 单商品回归 S1/S2/S3（镜像 AR019，含 v2+churn） | **3/3，0 LLM，1.53–1.54s**，不回退 |
+| P5 | 组合门禁 | edge 套件 **166 passed**（153 基线 + 13 新增）；AR011 30 场景 **0 LLM** |
+
+**效率对照（0-LLM 复用收益）。**
+
+| 执行方式 | LLM 调用 | prompt tokens | 耗时 | 结果 |
+|----------|----------|---------------|------|------|
+| LLM 兜底（双商品，首次沉淀） | 1 | 1267 | 19.22s | ✓ cart 清空 |
+| 批量技能复用（B1/B2/B3） | 0 | 0 | 1.80–1.85s | ✓ 3/3（**≈10.5×**） |
+| 单商品技能回归（S1/S2/S3） | 0 | 0 | 1.53–1.54s | ✓ 3/3 |
+
+**兼容性验证。** `induce_skill` 对 AR019 单商品轨迹输出**逐字段不变**
+（11/11 旧测试全绿）；批量展开是纯运行时行为，模板 JSON 不随商品数
+变化——存量技能零迁移成本。
+
+产物：`outputs/ar020/`（baseline_probe / eval results / 报告 / 模板 JSON）；
+spec：`specs/archive/AR020-batch-remove/`；复现：`python scripts/ar020_eval.py`
+（改动前基线：`python scripts/ar020_baseline_probe.py`）。
+
+### 5.21 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -575,8 +690,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py -v
-# 88 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py -v
+# 166 passed
 ```
 
 ### 产物
@@ -676,7 +791,7 @@ step-rl/
 │   │   ├── order_sequence       # 多订单（AR016）
 │   │   ├── cancel_order         # Saga 补偿（AR017）
 │   │   ├── skill_retries        # 瞬时重试（AR018）
-│   │   ├── skill_induction.py   # 失败驱动技能归纳（AR019）
+│   │   ├── skill_induction.py   # 失败驱动技能归纳 + 批量轨迹块式归纳（AR019/AR020）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -702,6 +817,8 @@ step-rl/
 │   ├── ar017_eval.py
 │   ├── ar018_eval.py
 │   ├── ar019_eval.py
+│   ├── ar020_baseline_probe.py # 改动前基线探针（before 证据）
+│   ├── ar020_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -710,9 +827,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR019 / EX001
+│   └── archive/AR001 … AR020 / EX001
 │
-├── tests/                        # 81 项真实测试
+├── tests/                        # 169 项真实测试（166 过 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -757,7 +874,8 @@ step-rl/
 | AR016 | 多订单序列组合 | 2/2，基线 0/2 | 前最优 |
 | AR017 | Saga 补偿与失败回滚 | 2/2，基线 0/2 | 前最优 |
 | AR018 | 瞬时故障重试 | 3/3，基线 0/3 | 前最优 |
-| **AR019** | **失败驱动技能自动归纳** | **3/3，0 LLM，约 11×** | **最终保留** |
+| AR019 | 失败驱动技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
+| **AR020** | **多商品批量移除（批量解析 + 多目标模板实例化 + 块式归纳）** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -772,6 +890,7 @@ step-rl/
 - `specs/archive/AR017-saga-compensation/`
 - `specs/archive/AR018-transient-retry/`
 - `specs/archive/AR019-skill-induction/`
+- `specs/archive/AR020-batch-remove/`
 
 ---
 
@@ -853,7 +972,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.8 / AR019** | **推荐** | 技能归纳 3/3，0 LLM，约 11× |
+| **v4.9 / AR020** | **推荐** | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
+| v4.8 / AR019 | 保留 | 技能归纳 3/3，0 LLM，约 11× |
 | v4.7 / AR018 | 保留 | 重试 3/3，基线 0/3 |
 | v4.6 / AR017 | 保留 | Saga 2/2，基线 0/2 |
 | v4.4 / AR015 | 保留 | 技能扩展 3/3，基线 2/3 |
