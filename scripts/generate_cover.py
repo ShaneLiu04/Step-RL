@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   TRANSIENT RETRY"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   BATCH REMOVAL"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.7",
+        "v4.9",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "瞬时故障重试与恢复 · 端侧分层强化学习",
+        "多商品批量移除 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -412,9 +412,9 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("瞬时重试", (34, 211, 238)),
-        ("故障恢复", (96, 165, 250)),
-        ("技能编译", (167, 139, 250)),
+        ("批量移除", (34, 211, 238)),
+        ("技能归纳", (96, 165, 250)),
+        ("故障恢复", (167, 139, 250)),
         ("跨布局迁移", (244, 114, 182)),
         ("语义动作", (74, 222, 128)),
     ]
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "重试成功", (125, 211, 252)),
-        ("0/3", "单次基线", (167, 139, 250)),
-        ("2", "重试次数", (244, 114, 182)),
-        ("81", "真实测试", (74, 222, 128)),
+        ("3/3", "批量移除", (125, 211, 252)),
+        ("3/3", "单商品回归", (167, 139, 250)),
+        ("0", "LLM 调用", (244, 114, 182)),
+        ("166", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
@@ -476,7 +476,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 672),
-        "github.com/ShaneLiu04/Step-RL",
+        "gitee.com/liu-xingyan04/step-rl",
         font(F_EN_LIGHT, 19),
         (118, 136, 176, 255),
         anchor="lm",
