@@ -65,29 +65,76 @@ def load_induced_skills(path: str) -> List[str]:
     return sorted(data)
 
 
-def _materialize(entry: Dict[str, Any], task: TaskSpec) -> Skill:
-    """Instantiate a template for ``task`` by resolving placeholders."""
+def _placeholder_product(step: Dict[str, Any]) -> bool:
+    return (
+        "{product}" in str(step.get("name", ""))
+        or "{product}" in str(step.get("value", ""))
+    )
 
-    pid = next(iter(task.targets), None)
+
+def _split_product_unit(steps: List[Dict[str, Any]]):
+    """Split template steps into ``(prefix, unit, suffix)``.
+
+    The *unit* is the maximal run of ``{product}`` steps starting at the
+    first such step; everything before it (page setup such as
+    ``goto /cart``) belongs to the prefix and runs once, everything after
+    the suffix (runs once).  Templates without any ``{product}`` step
+    degenerate to ``(steps, [], [])``.
+    """
+
+    first = next((i for i, item in enumerate(steps) if _placeholder_product(item)), None)
+    if first is None:
+        return list(steps), [], []
+    end = first
+    while end < len(steps) and _placeholder_product(steps[end]):
+        end += 1
+    return steps[:first], steps[first:end], steps[end:]
+
+
+def _instantiate(step: Dict[str, Any], pid: str, qty: int) -> "SkillStep":
+    """Resolve ``{product}``/``{qty}`` in one template step for ``pid``."""
+
     product = PRODUCTS.get(pid) if pid else None
-    qty = task.targets.get(pid, 1) if pid else 1
+    name = str(step.get("name", ""))
+    value = str(step.get("value", ""))
+    if product is not None:
+        name = name.replace("{product}", product.name)
+        value = value.replace("{product}", product.name)
+    value = value.replace("{qty}", str(qty))
+    return SkillStep(
+        kind=str(step.get("kind", "")),
+        name=name,
+        role=str(step.get("role", "")),
+        value=value,
+        url=str(step.get("url", "")),
+    )
+
+
+def _materialize(entry: Dict[str, Any], task: TaskSpec) -> Skill:
+    """Instantiate a template for ``task`` by resolving placeholders.
+
+    AR020 multi-target expansion: the template is ``prefix + unit +
+    suffix`` where the unit references ``{product}``; the unit is
+    instantiated once per target pid (``task.targets`` insertion order),
+    prefix and suffix once.  A single-target task yields exactly the step
+    sequence of the original first-pid-only implementation.
+    """
+
+    pids = list(task.targets)
     steps: List[SkillStep] = []
-    for item in entry.get("steps", []):
-        name = str(item.get("name", ""))
-        value = str(item.get("value", ""))
-        if product is not None:
-            name = name.replace("{product}", product.name)
-            value = value.replace("{product}", product.name)
-        value = value.replace("{qty}", str(qty))
-        steps.append(
-            SkillStep(
-                kind=str(item.get("kind", "")),
-                name=name,
-                role=str(item.get("role", "")),
-                value=value,
-                url=str(item.get("url", "")),
-            )
-        )
+    if not pids:
+        for item in entry.get("steps", []):
+            steps.append(_instantiate(item, "", 1))
+        return Skill(str(entry.get("name", "induced")), steps)
+    first_pid = pids[0]
+    prefix, unit, suffix = _split_product_unit(list(entry.get("steps", [])))
+    for item in prefix:
+        steps.append(_instantiate(item, first_pid, task.targets[first_pid]))
+    for pid in pids:
+        for item in unit:
+            steps.append(_instantiate(item, pid, task.targets[pid]))
+    for item in suffix:
+        steps.append(_instantiate(item, first_pid, task.targets[first_pid]))
     return Skill(str(entry.get("name", "induced")), steps)
 
 
