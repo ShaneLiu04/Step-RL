@@ -114,11 +114,16 @@ flowchart LR
     T --> P2
     V --> O
     V --> E["真实评测"]
+    G -. 未覆盖缺口 .-> I["技能归纳<br/>兜底成功 → 参数化模板"]
+    I --> K["技能库注册<br/>0-LLM 复用"]
+    K --> H
 
     style S fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
     style V fill:#ede9fe,stroke:#7c3aed,stroke-width:2px
     style H fill:#fef3c7,stroke:#d97706,stroke-width:2px
     style E fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    style I fill:#ecfccb,stroke:#65a30d,stroke-width:2px
+    style K fill:#ecfccb,stroke:#65a30d,stroke-width:2px
 ```
 
 ### 1. 可执行验证器（Φ）
@@ -185,6 +190,23 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 
 - Prompt 写入 `进度: 0.75 | 未完成: 填写收货人、提交订单`；
 - selector 模式下，选择器失效时用真实 DOM 做唯一匹配修复；多候选一律放弃。
+
+### 7. 失败驱动的技能自动归纳（AR019）
+
+能力闭环的最后一环：兜底成功一次，永久转为 0-LLM 技能。
+
+```
+能力门控判缺口 (covered=false)
+  → 真实 LLM 兜底执行一次（GPU + 真实浏览器）
+  → TrajectoryRecorder 记录动作 + 语义元素元数据（执行前解析）
+  → induce_skill 泛化为参数化模板（{product} / {qty}）
+  → 注册技能库 + JSON 持久化 → 同类任务 0-LLM 直接执行
+```
+
+- 记录发生在**执行前**：eid 在当时观测中解析回 `role + accessible_name`，
+  页面随后重渲染或 ID 扰动不丢失语义信息；
+- 未注册的非 add 操作显式返回 `None`：能力缺口不得静默误路由到加购技能；
+- 归纳技能与人工技能同标准：注册即过能力门控，30 场景统一套件回归检验。
 
 ---
 
@@ -460,21 +482,59 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 - Runtime 同 TaskSpec 重试一次，真实 reset 会话后成功；
 - 不加载模型/GPU，重试次数与订单状态可审计。
 
-### 5.19 失败驱动技能自动归纳（AR019）
+### 5.19 失败驱动的技能自动归纳（AR019）
 
-| 阶段 | 结果 |
+**动机。** AR012 能力门控发现未覆盖任务后会拒绝执行或回退 LLM，但兜底成功的
+轨迹此前被直接丢弃——同类任务下次仍要重新付出一次 LLM 成本。能力闭环
+缺了最后一环：**把兜底成功经验自动沉淀为可复用技能**。此前所有技能
+（AR010/AR015）都来自真实专家演示的人工参数化；AR019 把
+「成功轨迹 → 参数化技能」这一步自动化：任何能力缺口，只要 LLM 兜底
+成功一次，运行时自行完成沉淀，无需专家在场。
+
+**真实评测（P0–P5，全部真实浏览器 / GPU / 服务端状态）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 能力门控检查「移除」指令（归纳前） | covered=false（`no_skill_for_level_2`）——真实缺口证据 |
+| P1 | LLM 兜底真实执行移除 p3（GPU，seed p3×2） | ✓，4 步，1092 prompt tokens，19.8s |
+| P2 | 轨迹归纳 → 注册 → JSON 持久化 | 4 步模板，门控翻转为 covered（skills=`induced_remove`） |
+| P3 | 同任务技能复跑（新会话，不加载模型） | ✓，**0 LLM / 0 tokens，1.83s（约 11× 提速）** |
+| P4 | 迁移：换商品 p4（v1）/ p3（v2 + 全量 ID churn） | ✓ / ✓，均 0 LLM，1.8–1.97s |
+| P5 | 组合门禁 | edge 套件 **153 passed**；AR011 30 场景 **0 LLM** |
+
+**兜底轨迹与归纳模板（真实记录对照）。** LLM 兜底自选「先把数量改回 1
+再移除」的策略，四步动作全部真实执行；记录器在执行前把 eid 解析回
+`role + accessible_name`，归纳器把商品名替换为 `{product}` 占位符：
+
+| 兜底轨迹（语义解析后） | 归纳模板（泛化后） |
 |------|------|
-| P0 能力门控（归纳前） | covered=false（`no_skill_for_level_2`） |
-| P1 真实 LLM 兜底（GPU） | ✓，4 步，1092 prompt tokens，19.8s |
-| P2 归纳注册 | 4 步模板（`{product}` 泛化），门控翻转为 covered |
-| P3 同任务技能复跑 | ✓，**0 LLM / 0 tokens，1.83s（约 11×）** |
-| P4 迁移 p4（v1）/ p3（v2 + ID churn） | ✓ / ✓，均 0 LLM |
-| P5 组合门禁 | edge 套件 153 passed；AR011 30 场景 0 LLM |
+| type（未解析元素）值 "2" | type 值 "2"（原样保留） |
+| type spinbutton「数量 无线充电器」值 "1" | type spinbutton「数量 {product}」值 "1" |
+| click button「更新数量 无线充电器」 | click button「更新数量 {product}」 |
+| click button「移除 无线充电器」 | click button「移除 {product}」 |
 
-- 轨迹记录器包装真实 `BrowserEnv`：执行前把 eid 解析回 role + accessible_name，归纳模板以语义名定位；
-- 归纳器只做两种泛化：商品名 → `{product}`、目标数量 → `{qty}`，模板 JSON 持久化复用；
-- 未注册非 add 操作一律显式返回 None：能力缺口不得静默误路由到加购技能；
-- 遗留技术债：legacy 三文件（locator/progress_estimator/smart_wait）17 个历史失败，git-stash 对照验证与 AR019 无关。
+模板按原样回放即复现成功（保留冗余前缀步，不做启发式裁剪——成功轨迹
+即最小可复现单元），实例化时占位符按目标任务商品替换。
+
+**效率对照（0-LLM 复用收益）。**
+
+| 执行方式 | LLM 调用 | prompt tokens | 耗时 | 结果 |
+|----------|----------|---------------|------|------|
+| LLM 兜底（首次，沉淀成本） | 1 | 1092 | 19.8s | ✓ 购物车清空 |
+| 技能复用（p3，v1，同任务） | 0 | 0 | 1.83s | ✓ |
+| 技能复用（p4，v1，换商品） | 0 | 0 | 1.97s | ✓ |
+| 技能复用（p3，v2 + ID churn） | 0 | 0 | 1.84s | ✓ |
+
+**安全边界。** 未注册非 add 操作显式返回 `None`（不得静默误路由到加购
+技能）；注册表模块级隔离、测试可重置；模板 JSON 持久化可审计；与既有
+技能同标准接受组合门禁回归——归纳前 30 场景与归纳后完全一致。
+
+**遗留技术债**（与 AR019 无关，git-stash 对照验证：改动前后均 17 failed）：
+legacy 三文件 locator / progress_estimator / smart_wait 的历史失败，
+已按仓库惯例记录、不纳入门禁。
+
+产物：`outputs/ar019/eval/`（results JSON / 报告 / 模板 JSON）；
+spec：`specs/archive/AR019-skill-induction/`；复现：`python scripts/ar019_eval.py`。
 
 ### 5.20 可解释性实验（EX001）
 
