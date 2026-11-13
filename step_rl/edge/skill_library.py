@@ -7,26 +7,49 @@ AR019 adds an induced-skill registry: successful LLM-fallback trajectories
 are generalised into parameterised templates (``{product}`` / ``{qty}``
 placeholders), registered here and persisted as JSON, so later tasks of the
 same operation run with zero LLM calls.
+
+AR021 upgrades the registry to multiple candidates per operation with
+real execution statistics: every skill run records its
+verifier-confirmed outcome into :mod:`skill_stats`; selection prefers the
+higher real success rate, and a skill whose observed rate proves it bad
+is demoted (yields to a better candidate or to the explicit capability
+gap + LLM fallback).
 """
 
 from __future__ import annotations
 
+import itertools
 import json
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from .browser import BrowserEnv
 from .hierarchical import adapter_for_subtask, decompose_task
 from .rollout import Rollout, StepRecord, rollout_task
 from .site import PRODUCTS
+from .skill_stats import (
+    is_demoted,
+    rank_candidates,
+    record_skill_outcome,
+    reset_skill_stats,
+)
 from .tasks import TaskSpec
 from .verifier import compute_progress
 
 NAME_VALUE = "刘星言先生"
 ADDRESS_VALUE = "深圳市龙岗区坂田路1号"
 
-# operation -> {"name": str, "steps": [step template dicts]}
-_INDUCED: Dict[str, Dict[str, Any]] = {}
+
+def _now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+# operation -> [candidate {"name", "steps", "order", "registered_at"}]
+# AR021: multiple candidates may coexist per operation; selection by real
+# success rate (see skill_stats), demoted candidates yield.
+_INDUCED: Dict[str, List[Dict[str, Any]]] = {}
+_ORDER = itertools.count(1)
 
 
 def register_induced_skill(
@@ -34,12 +57,57 @@ def register_induced_skill(
     template: List[Dict[str, Any]],
     name: str = "",
 ) -> None:
-    """Register an induced skill template for ``operation``."""
+    """Register (upsert) an induced skill template for ``operation``.
 
-    _INDUCED[operation] = {
-        "name": name or f"induced_{operation}",
-        "steps": [dict(step) for step in template],
-    }
+    AR021: candidates are keyed by name.  Re-registering an existing name
+    replaces its steps and resets its execution statistics (a fresh
+    trajectory is fresh evidence - the self-healing closed loop); a new
+    name appends a candidate after the existing ones.
+    """
+
+    candidate_name = name or f"induced_{operation}"
+    candidates = _INDUCED.setdefault(operation, [])
+    for candidate in candidates:
+        if candidate["name"] == candidate_name:
+            candidate["steps"] = [dict(step) for step in template]
+            candidate["registered_at"] = _now_iso()
+            reset_skill_stats(candidate_name)
+            return
+    candidates.append(
+        {
+            "name": candidate_name,
+            "steps": [dict(step) for step in template],
+            "order": next(_ORDER),
+            "registered_at": _now_iso(),
+        }
+    )
+
+
+def induced_candidates(operation: str) -> List[Dict[str, Any]]:
+    """Read-only copy of the candidate list for ``operation``."""
+
+    return [dict(candidate) for candidate in _INDUCED.get(operation, [])]
+
+
+def _select_best(operation: str) -> Optional[Dict[str, Any]]:
+    """Pick the candidate to materialise (AR021 selection rule).
+
+    Demoted candidates are skipped entirely; among the rest, higher real
+    success rate wins (untested counts as 0.0), ties keep registration
+    order.  When every candidate is demoted, ``None`` is returned - the
+    explicit capability gap that hands the task back to the LLM fallback
+    (AR019 semantics).
+    """
+
+    candidates = _INDUCED.get(operation, [])
+    if not candidates:
+        return None
+    ordered = sorted(candidates, key=lambda c: c["order"])
+    eligible = [c for c in ordered if not is_demoted(c["name"])]
+    if not eligible:
+        return None
+    by_name = {c["name"]: c for c in eligible}
+    return by_name[rank_candidates([c["name"] for c in eligible])[0]]
 
 
 def clear_induced_skills() -> None:
@@ -51,8 +119,25 @@ def induced_operations() -> List[str]:
 
 
 def save_induced_skills(path: str) -> None:
+    """Persist the selected candidate of each operation.
+
+    File shape stays the AR019/AR020 one (``{"op": {"name", "steps"}}``):
+    with a single candidate it is field-for-field identical to the old
+    output.  Operations whose candidates are all demoted are omitted -
+    the file honestly states that no usable skill exists for them.
+    """
+
+    data: Dict[str, Any] = {}
+    for operation in _INDUCED:
+        best = _select_best(operation)
+        if best is None:
+            continue
+        data[operation] = {
+            "name": best["name"],
+            "steps": [dict(step) for step in best["steps"]],
+        }
     with open(path, "w", encoding="utf-8") as handle:
-        json.dump(_INDUCED, handle, ensure_ascii=False, indent=2)
+        json.dump(data, handle, ensure_ascii=False, indent=2)
 
 
 def load_induced_skills(path: str) -> List[str]:
@@ -228,7 +313,12 @@ def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
             return update_quantity_skill(pid, task.targets[pid])
         return None
     if task.operation in _INDUCED:
-        return _materialize(_INDUCED[task.operation], task)
+        best = _select_best(task.operation)
+        if best is None:
+            # Every candidate is demoted: explicit capability gap, never
+            # silently route to a broken template or to the add-item skill.
+            return None
+        return _materialize(best, task)
     if task.operation not in ("add", ""):
         # Unregistered non-add operations are an explicit capability gap:
         # never silently route them to the add-item skill.
@@ -332,6 +422,14 @@ async def run_skill_hierarchy(
                 )
             obs = await env.observe()
             ok = compute_progress(obs["state"], obs["url"], subtask).success
+            # AR021: record the verifier-confirmed outcome (the only legal
+            # success signal) so the registry learns which skills work.
+            record_skill_outcome(
+                skill.name,
+                subtask.operation,
+                ok,
+                "" if ok else result.error,
+            )
 
         if not ok and fallback:
             rollout = await rollout_task(
