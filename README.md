@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.9 — 多商品批量移除 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.10 — 技能成功率统计与优先级 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.9
+# Step-RL v4.10
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,14 +14,16 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-166%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-179%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
 > 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens；  
-> **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。
+> **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。  
+> **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。
 
 <p align="center">
+  <strong>技能成功率统计与优先级</strong> ·
   <strong>失败驱动技能归纳</strong> ·
   <strong>多商品批量移除</strong> ·
   <strong>瞬时故障重试</strong> ·
@@ -240,6 +242,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR017 Saga 补偿 | 2/2（基线 0/2） | 16 | 1.00 |
 | AR018 瞬时重试 | 3/3（基线 0/3） | 10–20 | 1.00 |
 | **AR019 技能自动归纳（最终）** | **3/3（归纳前未覆盖）** | 4 | **1.00** |
+| **AR021 技能统计与优先级** | **0/1 失败留痕 → 让位；技能复用 4/4，0 LLM** | 4 | **1.00** |
 
 逐任务：
 
@@ -332,6 +335,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR018 瞬时重试 | 3/3，基线 0/3 | 前最优 |
 | AR019 技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
 | **AR020 多商品批量移除** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
+| **AR021 技能成功率统计与优先级** | **0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -588,7 +592,65 @@ spec：`specs/archive/AR019-skill-induction/`；复现：`python scripts/ar019_e
 spec：`specs/archive/AR020-batch-remove/`；复现：`python scripts/ar020_eval.py`
 （改动前基线：`python scripts/ar020_baseline_probe.py`）。
 
-### 5.21 可解释性实验（EX001）
+### 5.21 技能库成功率统计与优先级（AR021）
+
+**动机。** AR019/AR020 的技能库是**无记忆的单槽注册表**：同一操作只保留一个
+模板，技能执行成败不留任何统计。改动前基线探针（旧代码真实执行，
+`outputs/ar021/baseline_probe.json`）暴露两处真实缺陷：同一操作先注册
+模板 A 再注册模板 B 时 **A 被静默覆盖**；注入一个已失效的 remove 技能
+（站点世代漂移，按钮「删除」→「移除」）后，**连续两次真实执行都选中
+同一失效技能**并失败，能力门控仍报 `covered`——失败没有留下任何状态，
+运行时持续押注反复失败的技能，既不让位给更好的候选，也不回退到显式
+缺口（LLM 兜底 + 重新归纳）。
+
+**机制（两处增量，全部真实执行验证）。**
+
+| 环节 | AR019/AR020（单槽无记忆） | AR021（统计 + 优先级） |
+|------|------|------|
+| 注册表 | 每操作单槽（后注册覆盖） | 每操作多候选并存（按名 upsert；同名再注册 = 替换 + 统计重置） |
+| 成败记录 | 无 | `run_skill_hierarchy` 记录**验证器确认**的成败（`skill_stats` 模块） |
+| 选择 | 唯一候选 | 跳过已淘汰 → 真实成功率降序（未测试记 0.0）→ 同率先注册优先 |
+| 淘汰策略 | 无 | attempts≥1 且成功率**严格 <0.5** → demoted（让位）；1/2=0.5 不淘汰 |
+| 持久化 | induced_skills.json | 旧形状不变（写被选中候选）+ `skill_stats.json` 审计文件 |
+
+- 淘汰只移出选择集、**不删注册表**：审计文件全程留痕，可人工复查；
+- 全候选被淘汰 → `skill_for_subtask` 返回 `None` → 门控报
+  `no_skill_for_level_*` 显式缺口 → LLM 兜底 → 成功一次重新归纳
+  （同名注册重置统计），闭环自愈；
+- 记录钩子为纯内存字典计数，不改变执行路径（AR011 30 场景行为不变）。
+
+**真实评测（P0–P5，真实 Edge / GPU / 服务端状态）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 改动后复核：多候选并存 + 选择让位 + 统计 API | 2 候选并存 ✓；候选 A 失败淘汰后选择切换到候选 B ✓ |
+| P1 | 注入失效技能（唯一候选），组合运行时真实执行 | 技能真实 DOM 失败（`element not found: 删除 无线充电器`）；统计 0/1 → demoted；门控翻转 `no_skill_for_level_2`；**真实 LLM 兜底（GPU）完成任务**（4 步，1098 prompt tokens，17.72s，cart 清空） |
+| P2 | 干净重归纳（AR019 链，GPU） | 门控缺口复核 ✓；真实 LLM 轨迹 4 步（1092/89 tokens，16.18s）→ 归纳 4 步模板 → 注册 `induced_remove`，门控翻回 covered |
+| P3 | 让位（技能路径，不加载模型） | 选中 `induced_remove`，✓，**0 LLM**，1.61s；失效技能 attempts **冻结在 1**（未被再次选中） |
+| P4 | 迁移：p4（v1）/ p3（v2 + 全量 ID churn） | ✓ / ✓，均 0 LLM，1.59–1.64s |
+| P5 | 组合门禁 | edge 套件 **179 passed**（166 基线 + 13 新增）；AR011 30 场景 **0 LLM**（policy_steps=0） |
+
+**效率对照（统计闭环的复用收益）。**
+
+| 执行方式 | LLM 调用 | prompt tokens | 耗时 | 结果 |
+|----------|----------|---------------|------|------|
+| 失效技能执行（P1，失败留痕） | 0 | 0 | 记录 1 步（点击未执行） | ✗ 统计 0/1 → demoted |
+| 真实 LLM 兜底（P1 / P2，沉淀成本） | 1 | 1098 / 1092 | 17.72 / 16.18s | ✓ cart 清空 |
+| 让位后技能复用（P3/P4） | 0 | 0 | 1.59–1.64s | ✓ 4/4 |
+
+**兼容性/安全边界。** 单候选路径与旧版逐字段一致：`save_induced_skills`
+JSON 形状不变，AR019/AR020 产物可读可写；AR019/AR020 全部既有测试不回退
+（门禁 166 基线 → 179 全绿）；成功率恰为 0.5（1/2）不淘汰——瞬态故障
+不被一次打死（AR018 重试在执行内先消化）；淘汰为 sticky（后续成功不自动
+撤销），恢复只能经同名再注册（新轨迹 = 新证据）或显式重置，避免统计振荡。
+
+产物：`outputs/ar021/`（baseline_probe / eval results / 报告 /
+induced_skills.json / skill_stats.json 审计）；
+spec：`specs/archive/AR021-skill-stats-priority/`；
+复现：`python scripts/ar021_eval.py`
+（改动前基线：`python scripts/ar021_baseline_probe.py`）。
+
+### 5.22 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -681,6 +743,9 @@ python scripts/ar016_eval.py       # 多订单 合并 vs 序列
 python scripts/ar017_eval.py       # Saga 补偿 vs 无补偿
 python scripts/ar018_eval.py       # 瞬时故障 单次 vs 重试
 python scripts/ar019_eval.py       # 失败驱动技能归纳 全链路（GPU）
+python scripts/ar020_baseline_probe.py # 改动前基线探针（before 证据）
+python scripts/ar020_eval.py       # 多商品批量移除（GPU）
+python scripts/ar021_eval.py       # 技能成功率统计与优先级（GPU）
 ```
 
 ### 测试
@@ -792,6 +857,7 @@ step-rl/
 │   │   ├── cancel_order         # Saga 补偿（AR017）
 │   │   ├── skill_retries        # 瞬时重试（AR018）
 │   │   ├── skill_induction.py   # 失败驱动技能归纳 + 批量轨迹块式归纳（AR019/AR020）
+│   │   ├── skill_stats.py       # 技能成功率统计/优先级/淘汰（AR021）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -819,6 +885,8 @@ step-rl/
 │   ├── ar019_eval.py
 │   ├── ar020_baseline_probe.py # 改动前基线探针（before 证据）
 │   ├── ar020_eval.py
+│   ├── ar021_baseline_probe.py # 改动前基线探针（before 证据）
+│   ├── ar021_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -827,9 +895,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR020 / EX001
+│   └── archive/AR001 … AR021 / EX001
 │
-├── tests/                        # 169 项真实测试（166 过 + 3 skip）
+├── tests/                        # 182 项真实测试（179 过 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -876,6 +944,7 @@ step-rl/
 | AR018 | 瞬时故障重试 | 3/3，基线 0/3 | 前最优 |
 | AR019 | 失败驱动技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
 | **AR020** | **多商品批量移除（批量解析 + 多目标模板实例化 + 块式归纳）** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
+| **AR021** | **技能库成功率统计与优先级（验证器确认成败 + 成功率选择 + 淘汰让位）** | **0/1 失败留痕 → 让位，复用 4/4 0 LLM** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -891,6 +960,7 @@ step-rl/
 - `specs/archive/AR018-transient-retry/`
 - `specs/archive/AR019-skill-induction/`
 - `specs/archive/AR020-batch-remove/`
+- `specs/archive/AR021-skill-stats-priority/`
 
 ---
 
@@ -972,7 +1042,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.9 / AR020** | **推荐** | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
+| **v4.10 / AR021** | **推荐** | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
+| v4.9 / AR020 | 保留 | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
 | v4.8 / AR019 | 保留 | 技能归纳 3/3，0 LLM，约 11× |
 | v4.7 / AR018 | 保留 | 重试 3/3，基线 0/3 |
 | v4.6 / AR017 | 保留 | Saga 2/2，基线 0/2 |

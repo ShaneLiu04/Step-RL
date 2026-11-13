@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.9 README cover banner.
+"""Generate the Step-RL v4.10 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   BATCH REMOVAL"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL PRIORITY"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.9",
+        "v4.10",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Multi-Item Batch Removal",
+        "Skill Outcome Stats & Priority",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "一条指令多商品 · 前缀 + 单元×N · 块式归纳 · 0 LLM",
+        "成败留痕 · 成功率排序 · 失败让位 · 闭环重归纳",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "多商品批量移除",
-            "「移除 p3 和 p2」→ 多目标解析 + 运行时展开",
+            "技能统计与优先级",
+            "每操作多候选，验证器确认成败，成功率排序",
             (34, 211, 238),
         ),
         (
-            "批量 3/3 + 单商品 3/3",
-            "块式归纳单元，模板不随 N 漂移",
+            "0/1 失败 → 让位",
+            "失效技能 demoted，门控显式缺口 → LLM 兜底",
             (167, 139, 250),
         ),
         (
-            "0 LLM · 约 10.5×",
-            "1.80–1.85s vs 19.22s 首次 LLM 兜底",
+            "复用 4/4 · 0 LLM",
+            "让位后 1.59–1.64s，30/30 场景不回退",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "批量移除", (125, 211, 252)),
-        ("0", "批量 LLM 调用", (244, 114, 182)),
-        ("10.5×", "复用加速", (74, 222, 128)),
-        ("166", "真实测试", (167, 139, 250)),
+        ("4/4", "技能复用", (125, 211, 252)),
+        ("0/1", "失败留痕 → 让位", (244, 114, 182)),
+        ("0", "复用 LLM 调用", (74, 222, 128)),
+        ("179", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/cart",
+        "shop.local/skills",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：移除购物车中的 P3 和 P2",
+        "注入失效技能 → 选择让位",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -622,85 +622,124 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1780, 206),
-        "商品    购物车",
+        "技能    购物车",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="rm",
     )
 
-    # Batch banner
+    # Stats banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "BATCH：targets = {p3:0, p2:0}",
-        font(F_CN, 10.5),
+        "STATS  remove_A 0/1  ·  induced_remove 3/3",
+        font(F_MONO, 9.5),
         (182, 236, 250, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "2 TARGETS",
+        "DEMOTION ON",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Cart card
+    # Skill registry card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "购物车",
-        font(F_CN_BOLD, 12.5),
+        "Skill Registry",
+        font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
     )
     text(d, (1416, 278), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
     d.line(
-        [(1106 * S, 296 * S), (1416 * S, 296 * S)],
+        [(1106 * S, 294 * S), (1416 * S, 294 * S)],
         fill=(255, 255, 255, 20),
         width=max(1, int(1 * S)),
     )
 
-    som_badge(d, 1106, 304, "e1", (34, 211, 238), 18)
-    text(d, (1130, 313), "P3 × 2", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
-    check_badge(d, 1362, 313, 5.5, (52, 211, 153))
+    som_badge(d, 1106, 298, "e1", (248, 113, 113), 18)
     text(
-        d, (1374, 313), "selected", font(F_MONO, 8.5), (134, 239, 172, 255), anchor="lm"
+        d,
+        (1130, 307),
+        "remove_A",
+        font(F_MONO_BOLD, 10),
+        (214, 226, 246, 255),
+        anchor="lm",
+    )
+    text(
+        d,
+        (1130, 321),
+        "attempts 1 · success 0%",
+        font(F_MONO, 8),
+        (250, 170, 170, 255),
+        anchor="lm",
+    )
+    pill(d, (1348, 298, 1414, 314), 6, (248, 113, 113, 24), (248, 113, 113, 110), 1)
+    text(
+        d,
+        (1381, 306),
+        "DEMOTED",
+        font(F_MONO_BOLD, 7),
+        (250, 170, 170, 255),
+        anchor="mm",
     )
 
-    som_badge(d, 1106, 330, "e2", (34, 211, 238), 18)
-    text(d, (1130, 339), "P2 × 3", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
-    check_badge(d, 1362, 339, 5.5, (52, 211, 153))
+    som_badge(d, 1106, 324, "e2", (74, 222, 128), 18)
     text(
-        d, (1374, 339), "selected", font(F_MONO, 8.5), (134, 239, 172, 255), anchor="lm"
+        d,
+        (1130, 333),
+        "induced_remove",
+        font(F_MONO_BOLD, 10),
+        (214, 226, 246, 255),
+        anchor="lm",
+    )
+    text(
+        d,
+        (1130, 347),
+        "attempts 3 · success 100%",
+        font(F_MONO, 8),
+        (150, 230, 190, 255),
+        anchor="lm",
+    )
+    pill(d, (1348, 324, 1414, 340), 6, (34, 197, 94, 24), (74, 222, 128, 110), 1)
+    text(
+        d,
+        (1381, 332),
+        "SELECTED",
+        font(F_MONO_BOLD, 7),
+        (134, 239, 172, 255),
+        anchor="mm",
     )
 
     d.line(
-        [(1106 * S, 352 * S), (1416 * S, 352 * S)],
+        [(1106 * S, 354 * S), (1416 * S, 354 * S)],
         fill=(255, 255, 255, 18),
         width=max(1, int(1 * S)),
     )
-    pill(d, (1106, 356, 1418, 378), 9, (74, 222, 128, 28), (74, 222, 128, 125), 1)
+    check_badge(d, 1112, 367, 5.5, (52, 211, 153))
     text(
         d,
-        (1252, 367),
-        "批量移除 · cart → empty",
-        font(F_CN, 9.5),
-        (220, 252, 231, 255),
-        anchor="mm",
+        (1124, 367),
+        "gate: covered → selected",
+        font(F_MONO, 8.5),
+        (150, 230, 190, 255),
+        anchor="lm",
     )
-    som_badge(d, 1394, 358, "e3", (74, 222, 128), 18)
 
-    # Block induction card
+    # Selection policy card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "Block Induction",
+        "Selection Policy",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -710,9 +749,7 @@ def draw_browser_card(canvas: Image.Image):
         d, (1671, 284), "0 LLM", font(F_MONO_BOLD, 7), (134, 239, 172, 255), anchor="mm"
     )
     pill(d, (1706, 276, 1764, 292), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
-    text(
-        d, (1735, 284), "10.5×", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm"
-    )
+    text(d, (1735, 284), "4/4", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm")
     d.line(
         [(1456 * S, 300 * S), (1764 * S, 300 * S)],
         fill=(255, 255, 255, 20),
@@ -720,10 +757,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "parse targets"),
-        ("2", "block cut + LCS"),
-        ("3", "expand unit × N"),
-        ("4", "cart empty"),
+        ("1", "skip demoted"),
+        ("2", "sort by success"),
+        ("3", "select induced_remove"),
+        ("4", "verify success"),
     ]
     sy = 316
     for num, label in steps:
@@ -738,13 +775,13 @@ def draw_browser_card(canvas: Image.Image):
         )
         sy += 17
 
-    # Batch output chip
+    # Selection output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"targets":{"p3":0,"p2":0},"batch":2}',
-        font(F_MONO, 9.5),
+        '{"selected":"induced_remove","demoted":"remove_A"}',
+        font(F_MONO, 9),
         (185, 247, 255, 255),
         anchor="lm",
     )
@@ -753,7 +790,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "batch 3/3 · single 3/3",
+        "reuse 4/4 · 0 LLM",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -849,7 +886,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "multi-target verified",
+        "validator-confirmed stats",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -875,7 +912,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Batch Runtime",
+        "Priority Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -883,17 +920,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "parse → induce → expand → verify",
+        "stats → rank → demote → recover",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Parser", "「和 / 与 / 顿号」多商品", (251, 191, 36)),
-        ("Induction", "块式切分 + LCS 后缀", (34, 211, 238)),
-        ("Expand", "前缀 1× + unit×N + 后缀", (167, 139, 250)),
-        ("Verify", "cart 全空 · 0 LLM", (74, 222, 128)),
+        ("Stats", "验证器确认成败", (251, 191, 36)),
+        ("Rank", "成功率降序 · 未测试 0.0", (34, 211, 238)),
+        ("Demote", "attempts≥1 且 <0.5", (167, 139, 250)),
+        ("Recover", "缺口 → LLM 一次 → 重归纳", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -924,7 +961,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "batch 3/3 · single 3/3 · 0 LLM",
+        "reuse 4/4 · 0 LLM · 30/30",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -949,7 +986,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "BATCH REMOVAL   ·   BLOCK INDUCTION   ·   RUNTIME",
+        "SKILL STATS   ·   PRIORITY   ·   DEMOTION",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -958,7 +995,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR020 · REAL EPISODE",
+        "AR021 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
