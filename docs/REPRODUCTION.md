@@ -93,6 +93,8 @@ python scripts/ar018_eval.py
 python scripts/ar019_eval.py
 # 23) AR020 多商品批量移除（GPU：兜底→归纳→批量/回归→门禁）
 python scripts/ar020_eval.py
+# 24) AR021 技能成功率统计与优先级（GPU：注入失败→让位→重归纳→门禁）
+python scripts/ar021_eval.py
 ```
 
 产物：
@@ -124,6 +126,7 @@ outputs/ar017/              # Saga 补偿 vs 无补偿
 outputs/ar018/              # 瞬时故障 单次 vs 重试
 outputs/ar019/              # 技能归纳 LLM兜底→归纳→复用→迁移
 outputs/ar020/              # 批量移除 基线探针 + 全链路
+outputs/ar021/              # 技能统计 基线探针 + 注入失败/让位/重归纳 + 审计 JSON
 ```
 
 ---
