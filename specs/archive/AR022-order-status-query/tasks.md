@@ -12,7 +12,7 @@
 | T8 | 组合门禁（edge pytest + AR011 30 场景） | passing（189 passed = 179 基线 + 10 新增，零回退；AR011 30/30、policy_steps=0、prompt_tokens=0） |
 | T9 | README 5.22（插 EX001 前，EX001 顺延 5.23）+ 5.1/5.6/演进/版本/快速开始/目录树/徽章 + REPRODUCTION + BACKLOG B04 毕业 + cover 重生成 | passing |
 | T10 | spec 归档（git mv specs/archive/）+ 自查记录 | passing |
-| T11 | gitee 双历史增量同步，收尾校验 diff 为空 | pending |
+| T11 | gitee 双历史增量同步，收尾校验 diff 为空 | passing（7 组增量提交 8200d5b→f39e5d6，每组 <50KB，push 后 `git diff -w --stat gitee/main main` 为空） |
 
 ## 执行记录
 
