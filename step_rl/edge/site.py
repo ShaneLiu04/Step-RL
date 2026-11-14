@@ -133,6 +133,7 @@ def _page(title: str, body: str, layout: str = "v1") -> bytes:
             "<header><strong>ShopLite</strong>"
             "<a id='home-link-2' href='/'>主页</a>"
             "<a id='cart-link-2' href='/cart'>购物袋</a>"
+            "<a id='orders-link-2' href='/orders' aria-label='我的订单'>我的订单</a>"
             "<nav><a href='/api/state'>状态</a></nav></header>"
         )
     else:
@@ -140,6 +141,7 @@ def _page(title: str, body: str, layout: str = "v1") -> bytes:
             "<header><strong>StepShop</strong>"
             "<a id='nav-home' href='/'>首页</a>"
             "<a id='nav-cart' href='/cart'>购物车</a>"
+            "<a id='nav-orders' href='/orders'>我的订单</a>"
             "<nav><a href='/api/state'>状态</a></nav></header>"
         )
     return (
@@ -265,6 +267,42 @@ def render_checkout(state: SessionState, layout: str = "v1") -> bytes:
         "</script>"
     )
     return _page("结算", body)
+
+
+def render_orders(state: SessionState, layout: str = "v1") -> bytes:
+    """Order list page (AR022): real server-side orders, newest first."""
+
+    rows = []
+    for order in reversed(state.orders):
+        items = order.get("items", {})
+        names = ", ".join(
+            f"{PRODUCTS[pid].name}×{qty}"
+            for pid, qty in items.items()
+            if pid in PRODUCTS
+        )
+        status_text = {
+            "active": "有效",
+            "cancelled": "已取消",
+        }.get(str(order.get("status")), str(order.get("status")))
+        if layout == "v2":
+            rows.append(
+                f"<div class='card'><p aria-label='订单 {order.get('id')}'>"
+                f"订单号：{order.get('id')}　"
+                f"状态：<span class='pill'>{status_text}</span></p>"
+                f"<p class='muted'>{names}</p></div>"
+            )
+        else:
+            rows.append(
+                f"<div class='card'><p>订单号："
+                f"<span id='oid-{order.get('id')}'>{order.get('id')}</span>　"
+                f"状态：<span class='pill'>{status_text}</span></p>"
+                f"<p class='muted'>{names}</p></div>"
+            )
+    if not rows:
+        body = "<h2>我的订单</h2><p class='muted'>暂无订单</p>"
+    else:
+        body = "<h2>我的订单</h2>" + "".join(rows)
+    return _page("我的订单", body, layout=layout)
 
 
 def render_order(order: Dict[str, object], layout: str = "v1") -> bytes:
@@ -606,6 +644,8 @@ class _Handler(BaseHTTPRequestHandler):
             return
         elif path == "/cart":
             body = render_cart(state, layout)
+        elif path == "/orders":
+            body = render_orders(state, layout)
         elif path == "/checkout":
             body = render_checkout(state, layout)
         elif path.startswith("/order/"):

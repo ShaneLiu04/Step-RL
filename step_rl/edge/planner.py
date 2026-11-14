@@ -172,6 +172,8 @@ def plan_instruction(
             "更新",
             "移除",
             "删除",
+            "查询",
+            "查看",
         )
     ):
         return None
@@ -226,6 +228,25 @@ def plan_instruction(
             if by_pid[pid].stock >= qty:
                 return _task_from_targets(instruction, catalog, {pid: qty})
         return None
+
+    # Order status query (AR022): "查询/查看 … 订单 …" - a read-only task
+    # judged by real order-page predicates, not by cart state.
+    if any(word in instruction for word in ("查询", "查看")) and "订单" in instruction:
+        predicates = ["orders_viewed"]
+        predicates.append(
+            "latest_order_cancelled" if "取消" in instruction else "latest_order_active"
+        )
+        return TaskSpec(
+            task_id="planned_order_query",
+            level=2,
+            goal=instruction,
+            search_query="",
+            targets={},
+            require_checkout=False,
+            operation="order_query",
+            predicates=predicates,
+            start_path="/",
+        )
 
     if mentions:
         targets: Dict[str, int] = {}

@@ -24,6 +24,9 @@ PREDICATE_HINTS = {
     "address_filled": "填写地址",
     "order_placed": "提交订单",
     "cart_quantity_exact": "修改购物车数量",
+    "orders_viewed": "打开订单列表页",
+    "latest_order_active": "最近订单为有效状态",
+    "latest_order_cancelled": "最近订单为已取消状态",
 }
 
 
