@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.10 — 技能成功率统计与优先级 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.11 — 订单状态查询技能 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.10
+# Step-RL v4.11
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,15 +14,17 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-179%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-189%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
 > 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens；  
 > **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。  
-> **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。
+> **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。  
+> **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。
 
 <p align="center">
+  <strong>订单状态查询技能</strong> ·
   <strong>技能成功率统计与优先级</strong> ·
   <strong>失败驱动技能归纳</strong> ·
   <strong>多商品批量移除</strong> ·
@@ -243,6 +245,7 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR018 瞬时重试 | 3/3（基线 0/3） | 10–20 | 1.00 |
 | **AR019 技能自动归纳（最终）** | **3/3（归纳前未覆盖）** | 4 | **1.00** |
 | **AR021 技能统计与优先级** | **0/1 失败留痕 → 让位；技能复用 4/4，0 LLM** | 4 | **1.00** |
+| **AR022 订单状态查询（最终）** | **真实订单页谓词 + 3/3（0 LLM）** | 1 | **1.00** |
 
 逐任务：
 
@@ -334,8 +337,9 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR017 Saga 补偿 | 2/2，基线 0/2，全部 cancelled | 前最优 |
 | AR018 瞬时重试 | 3/3，基线 0/3 | 前最优 |
 | AR019 技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
-| **AR020 多商品批量移除** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
-| **AR021 技能成功率统计与优先级** | **0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退** | **最终保留** |
+| AR020 多商品批量移除 | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5× | 保留 |
+| AR021 技能成功率统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退 | 保留 |
+| **AR022 订单状态查询** | **3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -650,7 +654,66 @@ spec：`specs/archive/AR021-skill-stats-priority/`；
 复现：`python scripts/ar021_eval.py`
 （改动前基线：`python scripts/ar021_baseline_probe.py`）。
 
-### 5.22 可解释性实验（EX001）
+### 5.22 订单状态查询技能（AR022）
+
+**动机。** AR016/AR017 覆盖了下单、多订单与 Saga 补偿，但用户侧高频的
+**订单状态查询**（「查询我最近的订单状态」）三层都没有支撑——改动前基线
+探针（旧代码真实执行，`outputs/ar022/baseline_probe.json`）：规划器对两条
+查询指令均返回 `None`（门控 `planner_unsupported`，组合运行时显式失败）；
+真实 `GET /orders` → **HTTP 404「页面不存在」**（下单成功页不渲染状态字段）；
+技能注册表无 `order_query` 落点（AR019 归纳闭环接不住一次偶然的 LLM 成功）。
+
+**机制（四处增量 + 技能库零改动）。**
+
+| 环节 | AR021 前（无查询能力） | AR022（订单状态查询） |
+|------|------|------|
+| 规划器 | 「查询/查看 + 订单」→ `None` | 编译为 `order_query` TaskSpec：targets 空、start_path `/`、谓词 `orders_viewed` + `latest_order_active/cancelled`（指令含「取消」走 cancelled） |
+| 站点 | `/orders` 404 | 真实路由 `/orders`：服务端 `orders` 最新在前，状态 pill「有效/已取消」；v1/v2 头部同名「我的订单」入口（跨布局语义迁移前提） |
+| 验证器 | 无订单页谓词 | `orders_viewed`（真实访问日志）+ `latest_order_active`/`latest_order_cancelled`（读服务端 `orders[-1].status`，不信任页面文本） |
+| 技能库/门控/运行时 | — | **零代码改动**：未注册 → 显式缺口 `no_skill_for_level_2`；归纳注册后走既有 `_materialize` 空 targets 分支；AR021 统计/优先级/淘汰自动生效 |
+
+兜底轨迹与归纳模板（真实记录对照）。LLM 兜底从下单成功页**一步**点击
+头部「我的订单」（φ 0→1），归纳器保持轨迹原样：
+
+| 兜底轨迹（语义解析后） | 归纳模板（泛化后） |
+|------|------|
+| click link「我的订单」（/order/414abfa63c 页） | click link「我的订单」（1 步，无占位符） |
+
+模板无 `{product}` 占位符——查询与商品无关；技能成败完全由服务端订单
+状态谓词判定（同一模板在 active/cancelled 两种真实状态下分别通过对应
+谓词，技能与状态解耦）。
+
+**真实评测（P0–P5，全部真实浏览器 / GPU / 服务端状态）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 改动后复核：规划器两条指令（active/cancelled 谓词）、`/orders` 真实 200 渲染真实订单号 +「有效」+ 取消后「已取消」、v1/v2 头部入口、门控 | 注册前 `no_skill_for_level_2`，注册后 covered ✓ |
+| P1 | 编译技能真实下单 p3×2（0 LLM，10 步 1.87s，订单 active）→ 同会话**真实 LLM 兜底**执行查询（GPU，AR004 适配器） | ✓，**1 步，186 prompt / 19 response tokens，3.13s**，visited 含 `/orders` |
+| P2 | 轨迹归纳 → 注册 `induced_order_query` → 持久化 | 1 步模板；门控翻转 covered |
+| P3 | 技能路径 0 LLM 三场景 | **3/3**：R1 active 0.30s；R2 真实 `/cancel/` 后 cancelled 谓词 0.30s；R3 v2 布局 + 全量 ID churn 新真实订单（p4）0.31s |
+| P4 | 效率对照 | 见下表 |
+| P5 | 组合门禁 | edge 套件 **189 passed**（179 基线 + 10 新增）；AR011 30 场景 **0 LLM**（policy_steps=0） |
+
+**效率对照（1-LLM 沉淀收益）。**
+
+| 执行方式 | LLM 调用 | prompt tokens | 耗时 | 结果 |
+|----------|----------|---------------|------|------|
+| LLM 兜底（P1，首次沉淀成本） | 1 | 186 | 3.13s | ✓ 订单状态页 |
+| 技能复用（P3 R1/R2/R3） | 0 | 0 | 0.30–0.31s | ✓ **3/3（≈10×）** |
+
+**兼容性/安全边界。** 站点改动纯增量（新路由 + 头部一个链接，既有路由
+逐字段不变）；结算类指令（「完成结算并提交订单」）不落入 `order_query`
+分支（单测固化）；谓词只读服务端状态，页面文案漂移不影响判定；
+`/orders` 对空列表显式渲染「暂无订单」；AR019–AR021 全部既有测试不回退
+（门禁 179 基线 → 189 全绿）。
+
+产物：`outputs/ar022/`（baseline_probe / eval results / 报告 /
+induced_skills.json / skill_stats.json 审计）；
+spec：`specs/archive/AR022-order-status-query/`；
+复现：`python scripts/ar022_eval.py`
+（改动前基线：`python scripts/ar022_baseline_probe.py`）。
+
+### 5.23 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -746,6 +809,8 @@ python scripts/ar019_eval.py       # 失败驱动技能归纳 全链路（GPU）
 python scripts/ar020_baseline_probe.py # 改动前基线探针（before 证据）
 python scripts/ar020_eval.py       # 多商品批量移除（GPU）
 python scripts/ar021_eval.py       # 技能成功率统计与优先级（GPU）
+python scripts/ar022_baseline_probe.py # 改动前基线探针（before 证据）
+python scripts/ar022_eval.py       # 订单状态查询技能（GPU）
 ```
 
 ### 测试
@@ -859,6 +924,7 @@ step-rl/
 │   │   ├── skill_retries        # 瞬时重试（AR018）
 │   │   ├── skill_induction.py   # 失败驱动技能归纳 + 批量轨迹块式归纳（AR019/AR020）
 │   │   ├── skill_stats.py       # 技能成功率统计/优先级/淘汰（AR021）
+│   │   ├── order_query          # 订单状态查询：站点/规划/谓词（AR022）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -888,6 +954,8 @@ step-rl/
 │   ├── ar020_eval.py
 │   ├── ar021_baseline_probe.py # 改动前基线探针（before 证据）
 │   ├── ar021_eval.py
+│   ├── ar022_baseline_probe.py # 改动前基线探针（before 证据）
+│   ├── ar022_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -896,9 +964,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR021 / EX001
+│   └── archive/AR001 … AR022 / EX001
 │
-├── tests/                        # 182 项真实测试（179 过 + 3 skip）
+├── tests/                        # 192 项真实测试（189 过 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -962,6 +1030,7 @@ step-rl/
 - `specs/archive/AR019-skill-induction/`
 - `specs/archive/AR020-batch-remove/`
 - `specs/archive/AR021-skill-stats-priority/`
+- `specs/archive/AR022-order-status-query/`
 
 ---
 
@@ -1043,7 +1112,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.10 / AR021** | **推荐** | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
+| **v4.11 / AR022** | **推荐** | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |
+| v4.10 / AR021 | 保留 | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
 | v4.9 / AR020 | 保留 | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
 | v4.8 / AR019 | 保留 | 技能归纳 3/3，0 LLM，约 11× |
 | v4.7 / AR018 | 保留 | 重试 3/3，基线 0/3 |
