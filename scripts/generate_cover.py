@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   SKILL PRIORITY"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   ORDER QUERY"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.10",
+        "v4.11",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "技能成功率统计与优先级 · 端侧分层强化学习",
+        "订单状态查询技能 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：失败留痕、统计下降即让位、闭环重归纳",
+        "目标：真实订单页谓词、LLM 兜底归纳、0-LLM 技能复用",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,11 +412,11 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("成功率统计", (34, 211, 238)),
-        ("失败让位", (96, 165, 250)),
-        ("淘汰重归纳", (167, 139, 250)),
-        ("跨布局迁移", (244, 114, 182)),
-        ("语义动作", (74, 222, 128)),
+        ("订单页谓词", (34, 211, 238)),
+        ("归纳技能", (96, 165, 250)),
+        ("0-LLM 复用", (167, 139, 250)),
+        ("取消态迁移", (244, 114, 182)),
+        ("跨布局迁移", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
     cxp = 88
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("0/1", "失效技能淘汰", (125, 211, 252)),
-        ("0", "LLM 让位复用", (167, 139, 250)),
+        ("3/3", "技能复用 0 LLM", (125, 211, 252)),
+        ("1", "LLM 兜底步数", (167, 139, 250)),
         ("30/30", "统一场景", (244, 114, 182)),
-        ("179", "真实测试", (74, 222, 128)),
+        ("189", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
