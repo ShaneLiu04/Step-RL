@@ -273,7 +273,10 @@ def test_real_browser_order_query_skill():
         server = LocalShopServer().start()
         env = BrowserEnv(server, channel="msedge", headless=True, semantic=True)
         try:
-            await env.start()
+            try:
+                await env.start()
+            except Exception as exc:  # pragma: no cover
+                pytest.skip(f"browser unavailable: {exc}")
             page = env._page
             base = server.base_url
             # seed a real order in the browser session
