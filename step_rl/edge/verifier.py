@@ -129,6 +129,17 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
             available.remove(matched)
         return True
 
+    def orders_viewed(state: Dict, url: str) -> bool:
+        return _visited(state, _path_is("/orders"))
+
+    def latest_order_active(state: Dict, url: str) -> bool:
+        history = state.get("orders") or []
+        return bool(history) and history[-1].get("status") == "active"
+
+    def latest_order_cancelled(state: Dict, url: str) -> bool:
+        history = state.get("orders") or []
+        return bool(history) and history[-1].get("status") == "cancelled"
+
     def order_placed(state: Dict, url: str) -> bool:
         order = state.get("order")
         if not order:
@@ -153,6 +164,9 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         "address_filled": address_filled,
         "orders_all_cancelled": orders_all_cancelled,
         "orders_sequence_placed": orders_sequence_placed,
+        "orders_viewed": orders_viewed,
+        "latest_order_active": latest_order_active,
+        "latest_order_cancelled": latest_order_cancelled,
         "order_placed": order_placed,
     }
 
