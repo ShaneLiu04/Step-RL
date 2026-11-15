@@ -45,6 +45,24 @@ PRODUCTS: Dict[str, Product] = {
 }
 
 
+@dataclass(frozen=True)
+class Promo:
+    code: str
+    label: str
+    threshold: int
+    discount: int
+
+
+# Shop-level full-reduction coupons (AR023).  Single source of truth:
+# the checkout page buttons, /api/promos and the planner/skill naming all
+# derive from this constant, so a coupon shown on the page is exactly the
+# coupon a plan can use.
+PROMOS: Dict[str, Promo] = {
+    "man400jian50": Promo("man400jian50", "满400减50", 400, 50),
+    "man2000jian150": Promo("man2000jian150", "满2000减150", 2000, 150),
+}
+
+
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
@@ -60,6 +78,9 @@ class SessionState:
     orders: List[Dict[str, object]] = field(default_factory=list)
     visited: List[str] = field(default_factory=list)
     flags: Dict[str, bool] = field(default_factory=dict)
+    # AR023: a claimed-but-not-yet-consumed coupon, settled authoritatively
+    # at order placement (see do_POST /place-order).
+    promo: Optional[Dict[str, object]] = None
 
     def reset(self) -> None:
         self.query = ""
@@ -69,6 +90,7 @@ class SessionState:
         self.orders = []
         self.visited = []
         self.flags = {}
+        self.promo = None
 
     def snapshot(self) -> Dict[str, object]:
         return {
@@ -79,6 +101,7 @@ class SessionState:
             "order": json.loads(json.dumps(self.order)) if self.order else None,
             "orders": json.loads(json.dumps(self.orders)),
             "visited": list(self.visited),
+            "promo": json.loads(json.dumps(self.promo)) if self.promo else None,
         }
 
 
@@ -245,6 +268,32 @@ def render_cart(state: SessionState, layout: str = "v1") -> bytes:
     return _page("购物车", body)
 
 
+def _promo_card(layout: str = "v1") -> str:
+    """Real coupon-claim cards (AR023), shared by both layouts.
+
+    Claiming is a no-navigation AJAX call (the standard coupon-claim
+    pattern): the checkout page keeps its filled form values while the
+    server records the claim in the session.  Buttons keep the same
+    accessible name on v1/v2 so the semantic skill layer can locate them
+    across layouts (AR005 standard).
+    """
+    suffix = "-2" if layout == "v2" else ""
+    parts = []
+    for promo in PROMOS.values():
+        # Synchronous XHR inside the click handler: the claim is
+        # server-side confirmed before the browser (or an agent driver)
+        # resumes, so the following 提交订单 can never race the claim.
+        parts.append(
+            f"<button id='promo-claim-{promo.code}{suffix}' type='button' "
+            f"aria-label='领取{promo.label}优惠' "
+            f"onclick=\"var x=new XMLHttpRequest();"
+            f"x.open('GET','/promo/claim/{promo.code}',false);"
+            f"x.send();this.textContent='已领取 {promo.label}';"
+            f"return false;\">领取 {promo.label}</button>"
+        )
+    return "<div class='card'><h3>店铺优惠</h3>" + " ".join(parts) + "</div>"
+
+
 def render_checkout(state: SessionState, layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_checkout(state)
@@ -258,7 +307,8 @@ def render_checkout(state: SessionState, layout: str = "v1") -> bytes:
         "<p><label>地址 <input id='address' name='address' placeholder='收货地址'></label></p>"
         "<button id='place-order' type='submit'>提交订单</button>"
         "</form></div>"
-        "<script>"
+        + _promo_card("v1")
+        + "<script>"
         "const sync=()=>fetch('/api/form?name='+encodeURIComponent("
         "document.getElementById('name').value)+'&address='+"
         "encodeURIComponent(document.getElementById('address').value));"
@@ -310,10 +360,18 @@ def render_order(order: Dict[str, object], layout: str = "v1") -> bytes:
     names = ", ".join(
         f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
     )
+    promo = order.get("promo") or {}
+    paid_line = (
+        f"<p>优惠已抵扣 <strong class='price'>¥{promo.get('discount')}</strong>"
+        f"，实付 <strong class='price'>¥{order.get('paid')}</strong></p>"
+        if promo.get("applied")
+        else ""
+    )
     body = (
         "<div class='card'><h2 id='order-title'>下单成功</h2>"
         f"<p>订单号：<span id='order-id'>{order.get('id')}</span></p>"
-        f"<p id='order-items'>{names}</p></div>"
+        f"<p id='order-items'>{names}</p>"
+        f"{paid_line}</div>"
     )
     return _page("订单成功", body)
 
@@ -419,7 +477,8 @@ def _render_v2_checkout(state: SessionState) -> bytes:
         "<button id='submit-btn' type='submit' aria-label='提交订单'>提交订单</button>"
         "<button id='back-btn' type='button' aria-label='返回'>返回</button>"
         "</form></div>"
-        "<script>"
+        + _promo_card("v2")
+        + "<script>"
         "const sync=()=>fetch('/api/form?name='+encodeURIComponent("
         "document.getElementById('buyer-field').value)+'&address='+"
         "encodeURIComponent(document.getElementById('addr-field').value));"
@@ -435,9 +494,16 @@ def _render_v2_order(order: Dict[str, object]) -> bytes:
     names = ", ".join(
         f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
     )
+    promo = order.get("promo") or {}
+    paid_line = (
+        f"<p>优惠已抵扣 ¥{promo.get('discount')}，实付 ¥{order.get('paid')}</p>"
+        if promo.get("applied")
+        else ""
+    )
     body = (
         "<div class='card'><h2 id='done-title'>订单完成</h2>"
-        f"<p>单号：{order.get('id')}</p><p>{names}</p></div>"
+        f"<p>单号：{order.get('id')}</p><p>{names}</p>"
+        f"{paid_line}</div>"
     )
     return _page("订单完成", body, layout="v2")
 
@@ -574,6 +640,47 @@ class _Handler(BaseHTTPRequestHandler):
                 ctype="application/json; charset=utf-8",
             )
             return
+        if path == "/api/promos":
+            # AR023: the live coupon list is the single source of truth for
+            # planner feasibility and for the checkout-page buttons.
+            promo_payload = [
+                {
+                    "code": promo.code,
+                    "label": promo.label,
+                    "threshold": promo.threshold,
+                    "discount": promo.discount,
+                }
+                for promo in PROMOS.values()
+            ]
+            self._send(
+                json.dumps(promo_payload, ensure_ascii=False).encode("utf-8"),
+                sid=sid,
+                ctype="application/json; charset=utf-8",
+            )
+            return
+        if path.startswith("/promo/claim/"):
+            code = path.split("/", 3)[3]
+            promo = PROMOS.get(code)
+            if promo is None:
+                self._send(render_error("优惠码不存在"), 404, sid)
+                return
+            state.promo = {
+                "code": promo.code,
+                "threshold": promo.threshold,
+                "discount": promo.discount,
+            }
+            # The checkout-page button claims via a no-navigation fetch
+            # (see _promo_card), so a plain JSON ack is the right answer
+            # both for the AJAX call and for API-style clients.
+            self._send(
+                json.dumps(
+                    {"ok": True, "promo": dict(state.promo)},
+                    ensure_ascii=False,
+                ).encode("utf-8"),
+                sid=sid,
+                ctype="application/json; charset=utf-8",
+            )
+            return
 
         self._record(state, self.path)
 
@@ -704,15 +811,17 @@ class _Handler(BaseHTTPRequestHandler):
             if over_stock:
                 self._send(render_error("库存不足"), 400, sid)
                 return
+            # AR023: total is always settled at live prices so the coupon
+            # gate (below) and the budget check share one authoritative
+            # number.
+            total = sum(
+                int(prices.get(pid, PRODUCTS[pid].price)) * qty
+                for pid, qty in state.cart.items()
+            )
             budget = getattr(self.server, "checkout_budget", None)
-            if budget is not None:
-                total = sum(
-                    int(prices.get(pid, PRODUCTS[pid].price)) * qty
-                    for pid, qty in state.cart.items()
-                )
-                if total > budget:
-                    self._send(render_error("预算超限"), 400, sid)
-                    return
+            if budget is not None and total > budget:
+                self._send(render_error("预算超限"), 400, sid)
+                return
             if getattr(self.server, "checkout_name_requires_title", False):
                 if "先生" not in name and "女士" not in name:
                     self._send(render_error("收货人需包含称谓（先生/女士）"), 400, sid)
@@ -727,14 +836,39 @@ class _Handler(BaseHTTPRequestHandler):
                 self.server.fault_order_used = True
                 self._send(render_error("临时服务错误"), 500, sid)
                 return
+            # AR023 authoritative discount settlement: a claimed coupon
+            # applies only when the live total reaches its threshold.
+            # Applied coupons are consumed (one use per coupon); a claimed
+            # coupon that misses the threshold is recorded honestly
+            # (applied=False) and stays usable for a later, bigger order.
+            claimed = dict(state.promo) if state.promo else None
+            promo_applied = False
+            discount = 0
+            if claimed is not None and claimed.get("code") in PROMOS:
+                if total >= int(claimed.get("threshold", 0)):
+                    promo_applied = True
+                    discount = int(claimed.get("discount", 0))
             order_id = uuid.uuid4().hex[:10]
             state.order = {
                 "id": order_id,
                 "items": dict(state.cart),
                 "status": "active",
+                "total": total,
+                "paid": total - discount,
+                "promo": (
+                    {
+                        "code": claimed["code"],
+                        "discount": discount,
+                        "applied": promo_applied,
+                    }
+                    if claimed is not None
+                    else None
+                ),
             }
             state.orders.append(json.loads(json.dumps(state.order)))
             state.cart = {}
+            if promo_applied:
+                state.promo = None
             self._redirect(f"/order/{order_id}", sid)
             return
 

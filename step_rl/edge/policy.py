@@ -24,6 +24,7 @@ PREDICATE_HINTS = {
     "orders_viewed": "打开订单列表页",
     "latest_order_active": "最近订单为有效状态",
     "latest_order_cancelled": "最近订单为已取消状态",
+    "order_promo_applied": "领取满减优惠并提交订单",
 }
 
 
