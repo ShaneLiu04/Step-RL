@@ -67,6 +67,10 @@
   specs/archive/`。
 - **T11**：gitee worktree 增量同步（每包 ≤50KB）；收尾
   `git fetch gitee && git diff -w --stat gitee/main main` 为空。
+  实测：5 个增量提交逐个推送——`ed74de7`（核心 9 模块）→
+  `ff4e8c2`（测试+探针+评测）→ `eb15e58`（文档+归档 spec）→
+  `3b7d00c`（封面 76KB 单独小包）→ 本提交（T11 记录）；
+  收尾校验 diff 为空，远端 HEAD 见本行更新后的最后一次推送。
 
 ## devflow-review 独立自查（findings + verdict）
 
