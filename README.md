@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.11 — 订单状态查询技能 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.12 — 优惠券约束规划 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.11
+# Step-RL v4.12
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,16 +14,18 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-189%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-211%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
 > 移除任务：归纳前**未覆盖**，归纳后 **3/3**（跨商品/跨布局 + ID churn），0 prompt tokens；  
 > **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。  
 > **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。  
-> **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。
+> **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。  
+> **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。
 
 <p align="center">
+  <strong>优惠券约束规划</strong> ·
   <strong>订单状态查询技能</strong> ·
   <strong>技能成功率统计与优先级</strong> ·
   <strong>失败驱动技能归纳</strong> ·
@@ -243,9 +245,11 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR016 多订单组合 | 2/2（基线 0/2） | 20 | 1.00 |
 | AR017 Saga 补偿 | 2/2（基线 0/2） | 16 | 1.00 |
 | AR018 瞬时重试 | 3/3（基线 0/3） | 10–20 | 1.00 |
-| **AR019 技能自动归纳（最终）** | **3/3（归纳前未覆盖）** | 4 | **1.00** |
-| **AR021 技能统计与优先级** | **0/1 失败留痕 → 让位；技能复用 4/4，0 LLM** | 4 | **1.00** |
-| **AR022 订单状态查询（最终）** | **真实订单页谓词 + 3/3（0 LLM）** | 1 | **1.00** |
+| AR019 技能自动归纳 | 3/3（归纳前未覆盖） | 4 | 1.00 |
+| AR020 多商品批量移除 | 批量 3/3 + 单商品 3/3，0 LLM | 2–3 | 1.00 |
+| AR021 技能统计与优先级 | 0/1 失败留痕 → 让位；技能复用 4/4，0 LLM | 4 | 1.00 |
+| AR022 订单状态查询 | 真实订单页谓词 + 3/3（0 LLM） | 1 | 1.00 |
+| **AR023 优惠券约束规划（最终）** | **8/8 规划 + 3/3 执行（0 LLM，服务端 applied）** | 11–17 | **1.00** |
 
 逐任务：
 
@@ -339,7 +343,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR019 技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
 | AR020 多商品批量移除 | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5× | 保留 |
 | AR021 技能成功率统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退 | 保留 |
-| **AR022 订单状态查询** | **3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens** | **最终保留** |
+| AR022 订单状态查询 | 3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens | 保留 |
+| **AR023 优惠券约束规划** | **8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150）** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -713,7 +718,77 @@ spec：`specs/archive/AR022-order-status-query/`；
 复现：`python scripts/ar022_eval.py`
 （改动前基线：`python scripts/ar022_baseline_probe.py`）。
 
-### 5.23 可解释性实验（EX001）
+### 5.23 优惠券约束规划（AR023）
+
+**动机。** AR006 把自然语言约束（预算/最便宜/最贵/缺货替代）编译为
+TaskSpec，但约束集合里没有「促销」这一类。改动前基线探针（旧代码真实
+执行，`outputs/ar023/baseline_probe.json`）暴露三层缺口：
+
+1. **规划器静默丢约束**：8 条优惠券指令全部编译出无促销约束的 spec，
+   且 4 条不可行指令（199<400、398 贴线差 1 元、虚构券面 满999减99、
+   无结算动作）也照常编译成看似成功的计划——**约束被丢弃、成功被
+   保留**，正是 AGENTS.md §1 禁止的静默降级；
+2. **站点无促销支撑**：真实 `GET /api/promos` → 404，v1/v2 结算页无
+   领取元素，订单 JSON 无 `total/paid/promo` 字段——服务端无法权威确认
+   「优惠是否真的生效」；
+3. **验证器无促销谓词**：`order_promo_applied` 不存在，即使订单带折扣，
+   成功判定也读不到。
+
+目标（BACKLOG B05）：满减券成为与预算同级的**一等约束**——对照
+**真实券列表**（`/api/promos`）与**实时目录价**做确定性可行性判定
+（可行 → `require_promo` + 真实促销码；不可行 → 显式 `None`，不猜测
+不降级）；站点提供真实**无导航领取**交互；服务端在下单时权威结算
+折扣（`total/paid/promo.applied`）；验证器只读服务端订单字段；编译
+结算技能增量一步「领取…」，全程 **0 LLM**。
+
+**机制（与前序 AR 的对照）。**
+
+| 环节 | AR006（预算约束） | AR023（券约束） |
+|------|------|------|
+| 约束表达 | spec 内 `budget` 数值 | `require_promo` + 促销码（来自真实 `/api/promos`） |
+| 可行性判定 | 超预算 → 删最贵行或 None | 总额<门槛 / 券面不存在 / 无结算 / 无真实列表 / 仅泛称「优惠券」→ **显式 None**（4 组指令回归守卫） |
+| 执行支撑 | 既有技能 | 编译结算技能在「提交订单」前插入一步 `click button「领取{券面}优惠」`（无码路径与旧 4 步逐字段一致，单测固化） |
+| 成功判定 | `order_placed` 等 | `order_promo_applied`：只读服务端 `order.promo.applied ∧ code` |
+| 负例语义 | 预算超限显式失败 | 贴线 398<400 诚实 applied=False 留痕，券**不消耗**（可审计） |
+
+券消费语义：`applied=True` → 消耗（单张一次使用）；`applied=False`
+（贴线未达）→ 不消耗，同一张券可用于下一单——两种语义在 P0 真实
+HTTP 流中分别验证。
+
+**真实评测（P0–P5，真实 Edge / 服务端状态，0 LLM）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 改动后复核：8 指令真实编译（4 spec + 4 None）、`/api/promos` 200 两券、v1/v2 结算页领取按钮、真实全流程（598→548、applied、券消耗）、贴线路径（199→applied=False、券不消耗、同券再凑满 598→548）、门控 | **规划准确率 8/8**；真实订单 `total=598/paid=548/promo.applied=True`（v1 与 v2 各一单）；门控 covered |
+| P1 | T1 真实 Edge 执行 C1（v1：p3+p4） | ✓，**17 步，0 LLM，3.17s**，598→548，applied=True |
+| P2 | T2 真实 Edge 执行 C3（v1：p3×3） | ✓，**11 步，0 LLM，2.08s**，597→547，applied=True |
+| P3 | T3 真实 Edge 执行 C2（v2 布局 + 全量 ID churn、新会话：p1） | ✓，**11 步，0 LLM，2.14s**，6999→6849，applied=True |
+| P4 | 效率/收益对照 | 见下表 |
+| P5 | 组合门禁 | edge 套件 **211 passed**（189 基线 + 22 新增）；AR011 30 场景 **0 LLM**（policy_steps=0、prompt_tokens=0） |
+
+**效率/收益对照（naive = 旧代码真实订单，探针留证）。**
+
+| 口径 | LLM 调用 | 同购物车（p3+p4）实付 | 结算技能步数 |
+|------|----------|------------------------|----------------|
+| 旧代码（naive，无折扣字段） | 0 | ¥598（无折扣） | 4 |
+| 新链路 T1 | 0 | **¥548（省 ¥50）** | 5 |
+| 新链路 T2 / T3 | 0 | **¥547（省 ¥50）/ ¥6849（省 ¥150）** | 5 |
+
+**兼容性/安全边界。** 站点改动纯增量：既有路由行为逐字段不变
+（189 基线测试全绿、AR011 30 场景 0 LLM 不回退）；`checkout_skill()`
+无码输出与旧 4 步逐字段一致（单测固化）；领取是点击处理器内的
+**同步 XHR**——服务端确认先于浏览器/代理继续，其后「提交订单」不会
+与领取竞态（303 重定向方案会重置已填表单，实测否决）；规划器新参数
+可选，AR011/AR013 等两参调用点行为不变；券面为服务端常量，
+`/api/promos` 是唯一事实源（页面按钮、规划器、技能步骤名同源派生，
+无漂移）。
+
+产物：`outputs/ar023/`（baseline_probe / eval results / 报告）；
+spec：`specs/archive/AR023-promo-constraint-planning/`；
+复现：`python scripts/ar023_eval.py`
+（改动前基线：`python scripts/ar023_baseline_probe.py`）。
+
+### 5.24 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -811,6 +886,8 @@ python scripts/ar020_eval.py       # 多商品批量移除（GPU）
 python scripts/ar021_eval.py       # 技能成功率统计与优先级（GPU）
 python scripts/ar022_baseline_probe.py # 改动前基线探针（before 证据）
 python scripts/ar022_eval.py       # 订单状态查询技能（GPU）
+python scripts/ar023_baseline_probe.py # 改动前基线探针（before 证据）
+python scripts/ar023_eval.py      # 优惠券约束规划（真实 Edge：规划 8/8 → 执行 3/3 0 LLM → 门禁）
 ```
 
 ### 测试
@@ -820,8 +897,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py -v
-# 166 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py -v
+# 211 passed
 ```
 
 ### 产物
@@ -909,7 +986,7 @@ step-rl/
 │   │   ├── rollout.py            # 真实 rollout + 步奖励
 │   │   ├── step_grpo.py          # Step-GRPO
 │   │   ├── skill_memory.py       # 技能记忆（AR002 负结果）
-│   │   ├── planner.py            # 自然语言约束 → TaskSpec（AR006）
+│   │   ├── planner.py            # 自然语言约束 → TaskSpec（AR006；满减券约束 AR023）
 │   │   ├── supervisor.py         # 闭环重规划（AR007）
 │   │   ├── observation.py        # 验证器引导观测压缩（AR008）
 │   │   ├── error repair          # 错误可观测闭环修复（AR009）
@@ -925,6 +1002,7 @@ step-rl/
 │   │   ├── skill_induction.py   # 失败驱动技能归纳 + 批量轨迹块式归纳（AR019/AR020）
 │   │   ├── skill_stats.py       # 技能成功率统计/优先级/淘汰（AR021）
 │   │   ├── order_query          # 订单状态查询：站点/规划/谓词（AR022）
+│   │   ├── promo                # 优惠券约束：券 API/权威折扣/结算技能步（AR023）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -956,6 +1034,8 @@ step-rl/
 │   ├── ar021_eval.py
 │   ├── ar022_baseline_probe.py # 改动前基线探针（before 证据）
 │   ├── ar022_eval.py
+│   ├── ar023_baseline_probe.py # 改动前基线探针（before 证据）
+│   ├── ar023_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -964,9 +1044,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR022 / EX001
+│   └── archive/AR001 … AR023 / EX001
 │
-├── tests/                        # 192 项真实测试（189 过 + 3 skip）
+├── tests/                        # 214 项真实测试（211 过 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1012,8 +1092,10 @@ step-rl/
 | AR017 | Saga 补偿与失败回滚 | 2/2，基线 0/2 | 前最优 |
 | AR018 | 瞬时故障重试 | 3/3，基线 0/3 | 前最优 |
 | AR019 | 失败驱动技能自动归纳 | 3/3，0 LLM，约 11× | 保留 |
-| **AR020** | **多商品批量移除（批量解析 + 多目标模板实例化 + 块式归纳）** | **批量 3/3 + 单商品 3/3，0 LLM，约 10.5×** | **最终保留** |
-| **AR021** | **技能库成功率统计与优先级（验证器确认成败 + 成功率选择 + 淘汰让位）** | **0/1 失败留痕 → 让位，复用 4/4 0 LLM** | **最终保留** |
+| AR020 | 多商品批量移除（批量解析 + 多目标模板实例化 + 块式归纳） | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5× | 保留 |
+| AR021 | 技能库成功率统计与优先级（验证器确认成败 + 成功率选择 + 淘汰让位） | 0/1 失败留痕 → 让位，复用 4/4 0 LLM | 保留 |
+| AR022 | 订单状态查询技能（真实订单页 + 服务端状态谓词） | 3/3 0 LLM（含取消态迁移 + v2+churn） | 保留 |
+| **AR023** | **优惠券约束规划（真实券列表 + 可行性判定 + 服务端权威折扣 + 诚实 None 拒绝）** | **8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，省 50/150** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -1031,6 +1113,7 @@ step-rl/
 - `specs/archive/AR020-batch-remove/`
 - `specs/archive/AR021-skill-stats-priority/`
 - `specs/archive/AR022-order-status-query/`
+- `specs/archive/AR023-promo-constraint-planning/`
 
 ---
 
@@ -1112,7 +1195,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.11 / AR022** | **推荐** | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |
+| **v4.12 / AR023** | **推荐** | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
+| v4.11 / AR022 | 保留 | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |
 | v4.10 / AR021 | 保留 | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
 | v4.9 / AR020 | 保留 | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
 | v4.8 / AR019 | 保留 | 技能归纳 3/3，0 LLM，约 11× |
