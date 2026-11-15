@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from .browser import BrowserEnv
 from .hierarchical import run_hierarchy
-from .planner import fetch_catalog, plan_instruction
+from .planner import fetch_catalog, fetch_promos, plan_instruction
 from .skill_library import run_skill_hierarchy
 from .tasks import TaskSpec
 from .verifier import compute_progress
@@ -26,7 +26,8 @@ async def run_task(
     """Execute one natural-language task with the full composed runtime."""
 
     catalog = fetch_catalog(env.server.base_url)
-    spec = plan_instruction(instruction, catalog)
+    promos = fetch_promos(env.server.base_url)
+    spec = plan_instruction(instruction, catalog, promos)
     attempts: List[Dict[str, Any]] = []
     if spec is None:
         return {
@@ -73,7 +74,7 @@ async def run_task(
             continue
 
         refreshed = fetch_catalog(env.server.base_url)
-        new_spec = plan_instruction(instruction, refreshed)
+        new_spec = plan_instruction(instruction, refreshed, promos)
         if new_spec is None or new_spec.targets == spec.targets:
             break
         spec = new_spec

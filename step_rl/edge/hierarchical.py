@@ -49,6 +49,10 @@ def decompose_task(task: TaskSpec) -> List[TaskSpec]:
             targets=dict(task.targets),
             require_checkout=True,
             split="subtask",
+            # AR023: the coupon constraint rides on the checkout subtask so
+            # its verifier chain (order_promo_applied) is checked there.
+            require_promo=task.require_promo,
+            promo=task.promo,
         )
     )
     return subtasks

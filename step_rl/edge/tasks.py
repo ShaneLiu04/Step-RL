@@ -27,6 +27,10 @@ class TaskSpec:
     predicates: List[str] = field(default_factory=list)
     order_sequence: List[Dict[str, int]] = field(default_factory=list)
     compensate_on_failure: bool = False
+    # AR023: full-reduction coupon constraint (appended so positional
+    # constructions stay backward compatible).
+    require_promo: bool = False
+    promo: str = ""
 
     def predicate_names(self) -> List[str]:
         if self.compensate_on_failure:
@@ -49,6 +53,8 @@ class TaskSpec:
                     "order_placed",
                 ]
             )
+            if self.require_promo:
+                names.append("order_promo_applied")
         return names
 
     def product_ids(self) -> List[str]:

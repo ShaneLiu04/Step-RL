@@ -152,6 +152,16 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
             compare(int(items.get(pid, 0)), qty) for pid, qty in task.targets.items()
         )
 
+    def order_promo_applied(state: Dict, url: str) -> bool:
+        """AR023: the server settled an applied discount for THIS coupon.
+
+        Reads only the authoritative order JSON (``/api/state``); page
+        text and model self-reports never participate in the verdict.
+        """
+        order = state.get("order") or {}
+        promo = order.get("promo") or {}
+        return bool(promo.get("applied")) and promo.get("code") == task.promo
+
     return {
         "search_done": search_done,
         "product_viewed": product_viewed,
@@ -168,6 +178,7 @@ def _predicates(task: TaskSpec) -> Dict[str, Callable[[Dict, str], bool]]:
         "latest_order_active": latest_order_active,
         "latest_order_cancelled": latest_order_cancelled,
         "order_placed": order_placed,
+        "order_promo_applied": order_promo_applied,
     }
 
 

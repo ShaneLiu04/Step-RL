@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from .hierarchical import decompose_task
-from .planner import CatalogItem, plan_instruction
+from .planner import CatalogItem, PromoInfo, plan_instruction
 from .skill_library import skill_for_subtask
 
 
@@ -18,8 +18,18 @@ class Capability:
     targets: Optional[Dict[str, int]] = None
 
 
-def check_capability(instruction: str, catalog: List[CatalogItem]) -> Capability:
-    spec = plan_instruction(instruction, catalog)
+def check_capability(
+    instruction: str,
+    catalog: List[CatalogItem],
+    promos: Optional[List[PromoInfo]] = None,
+) -> Capability:
+    """Capability check.
+
+    AR023: coupon instructions need the live promo list to be planned at
+    all; without ``promos`` the planner refuses them explicitly
+    (``planner_unsupported``), consistent with its no-guess rule.
+    """
+    spec = plan_instruction(instruction, catalog, promos)
     if spec is None:
         return Capability(False, "planner_unsupported", [], None)
     skills = []
