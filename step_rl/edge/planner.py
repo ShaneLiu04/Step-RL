@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Dict, List, Optional
 
 from .tasks import TaskSpec
@@ -52,6 +52,30 @@ def fetch_catalog(base_url: str) -> List[CatalogItem]:
             price=int(item["price"]),
             stock=int(item.get("stock", 0)),
             keywords=tuple(item.get("keywords", ())),
+        )
+        for item in data
+    ]
+
+
+@dataclass(frozen=True)
+class PromoInfo:
+    code: str
+    label: str
+    threshold: int
+    discount: int
+
+
+def fetch_promos(base_url: str) -> List[PromoInfo]:
+    """Live coupon list (``/api/promos``) - the single source of truth."""
+
+    with urllib.request.urlopen(base_url.rstrip("/") + "/api/promos") as response:
+        data = json.loads(response.read().decode("utf-8"))
+    return [
+        PromoInfo(
+            code=item["code"],
+            label=item["label"],
+            threshold=int(item["threshold"]),
+            discount=int(item["discount"]),
         )
         for item in data
     ]
@@ -150,10 +174,21 @@ def _task_from_targets(
     )
 
 
-def plan_instruction(
+_PROMO_RE = re.compile(r"满\s*(\d+)\s*减\s*(\d+)")
+
+
+def _coupon_mentioned(instruction: str) -> bool:
+    return (
+        bool(_PROMO_RE.search(instruction))
+        or "优惠券" in instruction
+        or "用券" in instruction
+    )
+
+
+def _compile_base(
     instruction: str, catalog: List[CatalogItem]
 ) -> Optional[TaskSpec]:
-    """Compile a constrained instruction into a TaskSpec."""
+    """Compile a constrained instruction into a TaskSpec (pre-AR023 body)."""
 
     if not any(
         word in instruction
@@ -279,6 +314,55 @@ def plan_instruction(
     else:
         item = candidates[0]
     return _task_from_targets(instruction, catalog, {item.pid: 1})
+
+
+def plan_instruction(
+    instruction: str,
+    catalog: List[CatalogItem],
+    promos: Optional[List[PromoInfo]] = None,
+) -> Optional[TaskSpec]:
+    """Compile a constrained instruction into a TaskSpec.
+
+    AR023 promo post-processing (deterministic, never guesses):
+    a coupon-mentioning instruction that is infeasible - total below the
+    threshold, unknown coupon face, no checkout, no live promo list, or
+    only a generic "优惠券" without a 满X减Y face - returns ``None``
+    (explicit refusal) instead of silently keeping a constraint-free
+    "success" plan.  Instructions without a coupon mention are compiled
+    exactly as before.
+    """
+
+    spec = _compile_base(instruction, catalog)
+    if not _coupon_mentioned(instruction):
+        return spec
+    by_pid = {item.pid: item for item in catalog}
+    if spec is None or not spec.require_checkout or promos is None:
+        # A coupon only takes effect on a placed order, and its face must
+        # be verified against the live shop list - never a static guess.
+        return None
+    match = _PROMO_RE.search(instruction)
+    if match is None:
+        return None
+    threshold = int(match.group(1))
+    discount = int(match.group(2))
+    promo = next(
+        (
+            p
+            for p in promos
+            if p.threshold == threshold and p.discount == discount
+        ),
+        None,
+    )
+    if promo is None:
+        return None
+    total = sum(
+        by_pid[pid].price * qty
+        for pid, qty in spec.targets.items()
+        if pid in by_pid
+    )
+    if total < promo.threshold:
+        return None
+    return replace(spec, require_promo=True, promo=promo.code)
 
 
 def naive_plan(instruction: str, catalog: List[CatalogItem]) -> Optional[TaskSpec]:

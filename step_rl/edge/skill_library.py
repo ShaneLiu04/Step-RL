@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 from .browser import BrowserEnv
 from .hierarchical import adapter_for_subtask, decompose_task
 from .rollout import Rollout, StepRecord, rollout_task
-from .site import PRODUCTS
+from .site import PRODUCTS, PROMOS
 from .skill_stats import (
     is_demoted,
     rank_candidates,
@@ -293,16 +293,29 @@ def update_quantity_skill(pid: str, qty: int) -> Skill:
     )
 
 
-def checkout_skill() -> Skill:
-    return Skill(
-        "checkout",
-        [
-            SkillStep("goto", url="/checkout"),
-            SkillStep("type", name="收货人", role="textbox", value=NAME_VALUE),
-            SkillStep("type", name="地址", role="textbox", value=ADDRESS_VALUE),
-            SkillStep("click", name="提交订单", role="button"),
-        ],
-    )
+def checkout_skill(promo_code: str = "") -> Skill:
+    """Compiled checkout flow.
+
+    AR023: a valid ``promo_code`` inserts one real claim step
+    (``click button 「领取{label}优惠」``) right before 提交订单; with no
+    code the emitted steps are field-for-field the historical four.
+    """
+
+    steps = [
+        SkillStep("goto", url="/checkout"),
+        SkillStep("type", name="收货人", role="textbox", value=NAME_VALUE),
+        SkillStep("type", name="地址", role="textbox", value=ADDRESS_VALUE),
+    ]
+    if promo_code and promo_code in PROMOS:
+        steps.append(
+            SkillStep(
+                "click",
+                name=f"领取{PROMOS[promo_code].label}优惠",
+                role="button",
+            )
+        )
+    steps.append(SkillStep("click", name="提交订单", role="button"))
+    return Skill("checkout", steps)
 
 
 def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
@@ -325,7 +338,7 @@ def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
     if task.level == 1:
         return search_skill(task.search_query)
     if task.require_checkout:
-        return checkout_skill()
+        return checkout_skill(task.promo)
     pid = next(iter(task.targets), None)
     if pid:
         return add_item_skill(pid, task.targets[pid])
