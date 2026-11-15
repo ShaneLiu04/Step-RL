@@ -488,7 +488,10 @@ def test_real_browser_promo_checkout_chain():
     async def runner():
         env = BrowserEnv(server, channel="msedge", headless=True, semantic=True)
         try:
-            await env.start()
+            try:
+                await env.start()
+            except Exception as exc:  # pragma: no cover
+                pytest.skip(f"browser unavailable: {exc}")
             rollout = await run_skill_hierarchy(
                 env, spec, None, None, fallback=False, reset=True
             )
@@ -505,5 +508,7 @@ def test_real_browser_promo_checkout_chain():
         finally:
             await env.close()
 
-    asyncio.run(runner())
-    server.stop()
+    try:
+        asyncio.run(runner())
+    finally:
+        server.stop()
