@@ -335,7 +335,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   ORDER QUERY"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   PROMO CONSTRAINT"
     f_pill = font(F_EN_SEMI, 15)
     pw, _ = measure(f_pill, pill_txt)
     rounded_rect(
@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.11",
+        "v4.12",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "订单状态查询技能 · 端侧分层强化学习",
+        "优惠券约束规划 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
@@ -404,7 +404,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 410),
-        "目标：真实订单页谓词、LLM 兜底归纳、0-LLM 技能复用",
+        "目标：真实券列表、确定性可行判定、服务端权威折扣、0-LLM 执行",
         font(F_CN_REG, 21),
         (148, 168, 204, 255),
         anchor="la",
@@ -412,10 +412,10 @@ def draw_left(canvas: Image.Image):
 
     # Feature chips
     chips = [
-        ("订单页谓词", (34, 211, 238)),
-        ("归纳技能", (96, 165, 250)),
-        ("0-LLM 复用", (167, 139, 250)),
-        ("取消态迁移", (244, 114, 182)),
+        ("规划可行判定", (34, 211, 238)),
+        ("真实券 API", (96, 165, 250)),
+        ("服务端折扣结算", (167, 139, 250)),
+        ("诚实 None 拒绝", (244, 114, 182)),
         ("跨布局迁移", (74, 222, 128)),
     ]
     f_chip = font(F_CN_REG, 17)
@@ -439,10 +439,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "技能复用 0 LLM", (125, 211, 252)),
-        ("1", "LLM 兜底步数", (167, 139, 250)),
+        ("3/3", "真实执行 0 LLM", (125, 211, 252)),
+        ("8/8", "规划准确率", (167, 139, 250)),
         ("30/30", "统一场景", (244, 114, 182)),
-        ("189", "真实测试", (74, 222, 128)),
+        ("211", "真实测试", (74, 222, 128)),
     ]
     mx = 88
     my = 556
