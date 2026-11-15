@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.11 README cover banner.
+"""Generate the Step-RL v4.12 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   ORDER QUERY"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   PROMO CONSTRAINTS"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.11",
+        "v4.12",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Order Status Query Skill",
+        "Coupon Constraint Planning",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "真实订单页 · 服务端状态谓词 · 1 步归纳 · 0 LLM 复用",
+        "满减券 · 实时可行性判定 · 服务端权威折扣 · 0 LLM",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "订单状态查询",
-            "「查询最近的订单状态」→ order_query + 真实 /orders",
+            "优惠券约束规划",
+            "真实 /api/promos + 实时价 → 可行性判定 8/8",
             (34, 211, 238),
         ),
         (
-            "有效 / 已取消谓词",
-            "只读服务端 orders[-1].status，页面文案漂移不影响",
+            "不可行显式 None",
+            "贴线差 1 元也不猜测、不降级",
             (167, 139, 250),
         ),
         (
-            "3/3 · 0 LLM",
-            "1 步技能 0.30s vs LLM 兜底 3.13s（约 10×）",
+            "服务端权威折扣",
+            "598→548 / 6999→6849，3/3 执行 0 LLM",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "查询场景", (125, 211, 252)),
-        ("1", "步归纳模板", (244, 114, 182)),
-        ("0", "复用 LLM 调用", (74, 222, 128)),
-        ("189", "真实测试", (167, 139, 250)),
+        ("8/8", "规划准确率", (125, 211, 252)),
+        ("0/8", "naive 基线", (244, 114, 182)),
+        ("3/3", "执行", (74, 222, 128)),
+        ("211", "真实测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/orders",
+        "shop.local/checkout",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,55 +614,46 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：查询我最近的订单状态",
+        "指令：用「满400减50」券结算",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
     )
-
-    # 我的订单 header entry with semantic id
-    for r, a in ((17, 30), (11, 55), (7, 90)):
-        d.ellipse(
-            ((1669 - r) * S, (207 - r) * S, (1669 + r) * S, (207 + r) * S),
-            outline=(34, 211, 238, a),
-            width=max(1, int(1 * S)),
-        )
-    som_badge(d, 1660, 198, "e1", (34, 211, 238), 18)
     text(
         d,
-        (1686, 207),
-        "我的订单",
-        font(F_CN, 9.5),
-        (182, 236, 250, 255),
-        anchor="lm",
+        (1780, 206),
+        "商品    购物车",
+        font(F_CN, 9),
+        (162, 182, 218, 255),
+        anchor="rm",
     )
 
-    # Query banner
+    # Promo banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "QUERY：order_query · status = active / cancelled",
-        font(F_CN, 10),
+        "PROMO：满400减50 · 598 ≥ 400",
+        font(F_CN, 10.5),
         (182, 236, 250, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "1 STEP",
+        "FEASIBLE",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Order list card
+    # Checkout card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "我的订单",
+        "结算单",
         font(F_CN_BOLD, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -674,53 +665,61 @@ def draw_browser_card(canvas: Image.Image):
         width=max(1, int(1 * S)),
     )
 
-    som_badge(d, 1106, 298, "e2", (34, 211, 238), 18)
+    text(d, (1106, 307), "P3 + P4", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
     text(
-        d,
-        (1130, 307),
-        "#A1  P3 ×2",
-        font(F_MONO, 10),
-        (214, 226, 246, 255),
-        anchor="lm",
+        d, (1416, 307), "¥598", font(F_MONO_BOLD, 10), (214, 226, 246, 255), anchor="rm"
     )
-    pill(d, (1350, 298, 1414, 314), 6, (34, 197, 94, 24), (74, 222, 128, 110), 1)
-    text(d, (1382, 306), "有效", font(F_CN_BOLD, 8), (134, 239, 172, 255), anchor="mm")
 
-    som_badge(d, 1106, 324, "e3", (34, 211, 238), 18)
     text(
         d,
-        (1130, 333),
-        "#A2  P4 ×1",
-        font(F_MONO, 10),
-        (214, 226, 246, 255),
+        (1106, 333),
+        "满400减50",
+        font(F_CN, 9.5),
+        (182, 236, 250, 255),
         anchor="lm",
     )
-    pill(d, (1340, 324, 1414, 340), 6, (251, 191, 36, 24), (251, 191, 36, 110), 1)
-    text(
-        d, (1377, 332), "已取消", font(F_CN_BOLD, 8), (245, 225, 178, 255), anchor="mm"
-    )
+    pill(d, (1278, 322, 1350, 342), 8, (34, 211, 238, 26), (34, 211, 238, 120), 1)
+    text(d, (1304, 332), "领取", font(F_CN_BOLD, 9), (182, 236, 250, 255), anchor="mm")
+    som_badge(d, 1332, 324, "e1", (34, 211, 238), 18)
 
     d.line(
-        [(1106 * S, 354 * S), (1416 * S, 354 * S)],
+        [(1106 * S, 346 * S), (1416 * S, 346 * S)],
         fill=(255, 255, 255, 18),
         width=max(1, int(1 * S)),
     )
-    check_badge(d, 1112, 367, 5.5, (52, 211, 153))
     text(
         d,
-        (1124, 367),
-        "orders_viewed + latest status",
-        font(F_MONO, 8.5),
+        (1106, 368),
+        "实付 ¥548",
+        font(F_CN_BOLD, 11),
+        (134, 239, 172, 255),
+        anchor="lm",
+    )
+    text(
+        d,
+        (1204, 368),
+        "省 ¥50",
+        font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
     )
+    pill(d, (1300, 356, 1414, 378), 9, (74, 222, 128, 28), (74, 222, 128, 125), 1)
+    text(
+        d,
+        (1350, 367),
+        "提交订单",
+        font(F_CN_BOLD, 9),
+        (224, 252, 234, 255),
+        anchor="mm",
+    )
+    som_badge(d, 1392, 358, "e2", (74, 222, 128), 18)
 
-    # Predicate card
+    # Feasibility card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "Order Predicates",
+        "Promo Feasibility",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -731,7 +730,12 @@ def draw_browser_card(canvas: Image.Image):
     )
     pill(d, (1706, 276, 1764, 292), 7, (34, 211, 238, 24), (34, 211, 238, 100), 1)
     text(
-        d, (1735, 284), "0.30s", font(F_MONO_BOLD, 7), (182, 236, 250, 255), anchor="mm"
+        d,
+        (1735, 284),
+        "5 steps",
+        font(F_MONO_BOLD, 7),
+        (182, 236, 250, 255),
+        anchor="mm",
     )
     d.line(
         [(1456 * S, 300 * S), (1764 * S, 300 * S)],
@@ -740,10 +744,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "orders_viewed"),
-        ("2", "latest_order_active"),
-        ("3", "latest_order_cancelled"),
-        ("4", "skill 1 step · 0 LLM"),
+        ("1", "fetch /api/promos"),
+        ("2", "total 598 ≥ 400"),
+        ("3", "claim coupon"),
+        ("4", "server applied = true"),
     ]
     sy = 316
     for num, label in steps:
@@ -758,13 +762,13 @@ def draw_browser_card(canvas: Image.Image):
         )
         sy += 17
 
-    # Query output chip
+    # Promo output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"skill":"order_query","status":"active"}',
-        font(F_MONO, 9),
+        '{"promo":"满400减50","feasible":true,"paid":548}',
+        font(F_MONO, 8.5),
         (185, 247, 255, 255),
         anchor="lm",
     )
@@ -773,7 +777,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "3/3 · 0 LLM · 0.30s",
+        "598→548 · save ¥50",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -869,7 +873,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "server-side order status",
+        "server-side promo applied",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -895,7 +899,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Order Query Runtime",
+        "Promo Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -903,17 +907,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "plan → visit → predicate → reuse",
+        "promos → feasibility → claim → settle",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Planner", "查询 + 订单 → TaskSpec", (251, 191, 36)),
-        ("Site", "真实 /orders · active/cancelled", (34, 211, 238)),
-        ("Predicate", "orders_viewed + latest status", (167, 139, 250)),
-        ("Skill", "1 步归纳 · 0 LLM", (74, 222, 128)),
+        ("Promos", "真实 /api/promos · 两券", (251, 191, 36)),
+        ("Feasibility", "实时价 + 门槛 · 不可行 None", (34, 211, 238)),
+        ("Claim", "结算前领取一步", (167, 139, 250)),
+        ("Settle", "服务端 total/paid/promo", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -944,7 +948,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "query 3/3 · 0 LLM · 189 tests",
+        "plan 8/8 · exec 3/3 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -969,7 +973,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "ORDER QUERY   ·   SERVER PREDICATES   ·   RUNTIME",
+        "PROMO CONSTRAINTS   ·   FEASIBILITY   ·   SETTLEMENT",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -978,7 +982,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR022 · REAL EPISODE",
+        "AR023 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
