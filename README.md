@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.12 — 优惠券约束规划 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.13 — 并发会话隔离 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.12
+# Step-RL v4.13
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Tests-211%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-158%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -22,9 +22,11 @@
 > **批量移除**：单条指令 2–3 商品，技能路径 **3/3**、0 LLM，单商品移除不回退。  
 > **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。  
 > **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。  
-> **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。
+> **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。  
+> **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。
 
 <p align="center">
+  <strong>并发会话隔离</strong> ·
   <strong>优惠券约束规划</strong> ·
   <strong>订单状态查询技能</strong> ·
   <strong>技能成功率统计与优先级</strong> ·
@@ -344,7 +346,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR020 多商品批量移除 | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5× | 保留 |
 | AR021 技能成功率统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退 | 保留 |
 | AR022 订单状态查询 | 3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens | 保留 |
-| **AR023 优惠券约束规划** | **8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150）** | **最终保留** |
+| AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150） | 保留 |
+| **AR024 并发会话隔离** | **4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -788,7 +791,61 @@ spec：`specs/archive/AR023-promo-constraint-planning/`；
 复现：`python scripts/ar023_eval.py`
 （改动前基线：`python scripts/ar023_baseline_probe.py`）。
 
-### 5.24 可解释性实验（EX001）
+### 5.24 并发会话隔离（AR024）
+
+**动机。** AR011–AR023 的评测均是单会话串行：一个进程一个 `BrowserEnv`、
+一个任务。端侧运行时若以多会话方式服务（同进程多个真实 Edge 会话并发），
+进程内共享的**技能运行时组件**就成为串扰面。改动前基线探针（旧代码真实
+执行，`outputs/ar024/baseline_probe.json`）实测四处缺口：
+
+1. **统计读改写非原子**：`skill_stats._STATS` 的 `attempts/successes/failures`
+   并发更新可能互相吞掉；
+2. **跨会话重载擦除**：`from_dict` 的 `clear()` + 逐项插入不是原子替换，
+   并发「记录 + 重载」可抹掉另一会话留痕，并暴露半完成中间态；
+3. **持久化非原子**：并发 `save_skill_stats` 直写同一文件，探针中
+   **10/10 轮出现混合快照**、**10/10 轮工作线程因
+   `dictionary changed size during iteration` 崩溃**；
+4. **注册表 upsert 竞态**：`register_induced_skill` 先查后追加，
+   4 路同名并发注册产生 **2 个重复候选**，干扰 AR021 的成功率选择。
+
+服务端 `SessionStore` 自带锁且按 `sid` 键控：探针 E4 用 2 个真实并发
+Edge 会话验证**服务端层零串扰**，因此改动面严格限定在进程共享的
+技能运行时层。
+
+**机制（标准库 only，不改既有签名与 JSON 形状）。**
+
+| 组件 | 加固 |
+|------|------|
+| `skill_stats.py` | 模块级 `threading.Lock`；`record_skill_outcome` 全临界区；`from_dict` 原子替换；保存取一致快照 |
+| `skill_library.py` | 模块级锁；`register_induced_skill` 的「查重 + 替换/追加」原子化；保存取一致快照 |
+| `concurrency.py` | `atomic_write_json`（同目录临时文件 + `os.replace`，Windows 重试）；`run_concurrent`（每会话一线程一事件循环，异常按槽位隔离，返回墙钟） |
+
+关键决策：锁内只做内存读写/快照构建，**I/O 一律锁外原子写**；
+`load` 语义为「完整解析后原子替换（后到者胜）」，不跨调用方合并；
+保留 `list + 锁内查重` 的多候选语义（AR021 逐字段零漂移）。
+
+**真实评测（P0–P4，真实 Edge / 共享真实服务端 / 0 LLM）。**
+
+| 阶段 | 内容 | 结果 |
+|------|------|------|
+| P0 | 锁/原子写导入断言 + 单会话串行对照 | ✓ 0 LLM，`p3×2`，2.2s |
+| P1 | 4 个真实 Edge 会话并发（不同任务，barrier 起跑） | **4/4 成功，零串扰**；墙钟 3.74s vs 逐会话和 5.80s（**2.75×**）；逐会话服务端快照精确等于自身任务 |
+| P2 | 4 会话并发真实 DOM 失败（注入错误模板） | **失败 4/4、统计 attempts=4 / failures=4**，淘汰门控翻转，审计 JSON 可解析 |
+| P3 | 10 轮 × 12 并发写者（统计 + 技能注册表） | **损坏 0、混合快照 0、死写者 0** |
+| P4 | 串行回归：购买两件 + 数量改为 3 | 均成功，**0 LLM**，1.34s / 0.70s |
+
+**组合门禁。** 新增 12 项并发单测全过；`tests/test_edge_*.py`
+**158 passed**；全量 `pytest tests` 为 **237 passed / 10 failed / 3 skipped**，
+其中 10 项失败仅因本机代理阻断 `gpt2` 下载（父提交对照同为该 10 项，
+AR024 零回退）。串行语义与 AR021 审计形状不变。
+
+产物：`outputs/ar024/`（baseline_probe / eval results / 报告 /
+skill_stats.json / induced_skills.json）；spec：
+`specs/archive/AR024-concurrent-session-isolation/`；
+复现：`python scripts/ar024_eval.py`
+（改动前基线：`python scripts/ar024_baseline_probe.py`）。
+
+### 5.25 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -888,6 +945,8 @@ python scripts/ar022_baseline_probe.py # 改动前基线探针（before 证据�
 python scripts/ar022_eval.py       # 订单状态查询技能（GPU）
 python scripts/ar023_baseline_probe.py # 改动前基线探针（before 证据）
 python scripts/ar023_eval.py      # 优惠券约束规划（真实 Edge：规划 8/8 → 执行 3/3 0 LLM → 门禁）
+python scripts/ar024_baseline_probe.py # 改动前基线探针（并发丢更新/损文件/重复候选）
+python scripts/ar024_eval.py      # 并发会话隔离（真实 Edge：4 并发 0 串扰 → 留痕/持久化/门禁）
 ```
 
 ### 测试
@@ -897,8 +956,9 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_policy.py tests/test_edge_rollout.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
-       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py -v
-# 211 passed
+       tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
+       tests/test_edge_concurrency.py -v
+# 158 passed
 ```
 
 ### 产物
@@ -1002,6 +1062,7 @@ step-rl/
 │   │   ├── skill_stats.py       # 技能成功率统计/优先级/淘汰（AR021）
 │   │   ├── order_query          # 订单状态查询：站点/规划/谓词（AR022）
 │   │   ├── promo                # 优惠券约束：券 API/权威折扣/结算技能步（AR023）
+│   │   ├── concurrency.py       # 原子 JSON 写 + 多会话并发执行器（AR024）
 │   │   ├── hierarchical.py       # 层级分解（AR003+）
 │   │   ├── router.py             # 任务级路由（AR001）
 │   │   └── evaluate.py           # 真实评测
@@ -1035,6 +1096,8 @@ step-rl/
 │   ├── ar022_eval.py
 │   ├── ar023_baseline_probe.py # 改动前基线探针（before 证据）
 │   ├── ar023_eval.py
+│   ├── ar024_baseline_probe.py # 改动前基线探针（并发缺陷留证）
+│   ├── ar024_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1043,9 +1106,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR023 / EX001
+│   └── archive/AR001 … AR024 / EX001
 │
-├── tests/                        # 214 项真实测试（211 过 + 3 skip）
+├── tests/                        # 250 项测试（237 pass + 10 代理环境失败 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1094,7 +1157,8 @@ step-rl/
 | AR020 | 多商品批量移除（批量解析 + 多目标模板实例化 + 块式归纳） | 批量 3/3 + 单商品 3/3，0 LLM，约 10.5× | 保留 |
 | AR021 | 技能库成功率统计与优先级（验证器确认成败 + 成功率选择 + 淘汰让位） | 0/1 失败留痕 → 让位，复用 4/4 0 LLM | 保留 |
 | AR022 | 订单状态查询技能（真实订单页 + 服务端状态谓词） | 3/3 0 LLM（含取消态迁移 + v2+churn） | 保留 |
-| **AR023** | **优惠券约束规划（真实券列表 + 可行性判定 + 服务端权威折扣 + 诚实 None 拒绝）** | **8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，省 50/150** | **最终保留** |
+| AR023 | 优惠券约束规划（真实券列表 + 可行性判定 + 服务端权威折扣 + 诚实 None 拒绝） | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，省 50/150 | 保留 |
+| **AR024** | **并发会话隔离（模块锁 + 原子快照持久化 + 多会话执行器）** | **4 并发真实 Edge 4/4 零串扰（2.75×）；留痕 4/4；10×12 写者 0 损坏** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -1113,6 +1177,7 @@ step-rl/
 - `specs/archive/AR021-skill-stats-priority/`
 - `specs/archive/AR022-order-status-query/`
 - `specs/archive/AR023-promo-constraint-planning/`
+- `specs/archive/AR024-concurrent-session-isolation/`
 
 ---
 
@@ -1180,7 +1245,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ```bibtex
 @software{step_rl_v47,
   title = {Step-RL: Fault-Tolerant Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.7},
+  version = {4.13},
   year = {2026},
   url = {https://github.com/ShaneLiu04/Step-RL}
 }
@@ -1194,7 +1259,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.12 / AR023** | **推荐** | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
+| **v4.13 / AR024** | **推荐** | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
+| v4.12 / AR023 | 保留 | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
 | v4.11 / AR022 | 保留 | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |
 | v4.10 / AR021 | 保留 | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
 | v4.9 / AR020 | 保留 | 批量移除 3/3 + 单商品 3/3，0 LLM，约 10.5× |
