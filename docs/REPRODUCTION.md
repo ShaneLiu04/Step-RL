@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001–AR024：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计与多会话并发隔离**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
+本手册对应 **AR001–AR025：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离与自适应观测缓存**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -107,6 +107,10 @@ python scripts/ar023_eval.py
 python scripts/ar024_baseline_probe.py
 # 30) AR024 并发会话隔离（真实 Edge：4 并发 → 留痕 → 持久化 → 串行回归 → 门禁）
 python scripts/ar024_eval.py
+# 31) AR025 自适应观测缓存（改动前：真实 Edge 旧 4 往返路径）
+python scripts/ar025_baseline_probe.py
+# 32) AR025 自适应观测缓存（30 场景 0 LLM + 观测往返/耗时对照 + 缓存探针）
+python scripts/ar025_eval.py
 ```
 
 产物：
@@ -142,6 +146,7 @@ outputs/ar021/              # 技能统计 基线探针 + 注入失败/让位/�
 outputs/ar022/              # 订单状态查询 基线探针 + 兜底/归纳/复用3/3 + 审计 JSON
 outputs/ar023/              # 优惠券约束 基线探针 + 规划/执行/门禁（真实 Edge，0 LLM）
 outputs/ar024/              # 并发会话隔离 基线探针 + 4 并发/留痕/持久化/串行回归
+outputs/ar025/              # 自适应观测缓存 基线探针 + 30 场景 + 缓存探针
 ```
 
 ---
@@ -250,7 +255,8 @@ r_t = −0.02 + (1.0 if terminal and success else 0)
 | AR021 技能统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM | 4 | 1.00 |
 | AR022 订单状态查询 | 真实订单页谓词 + 复用 3/3（0 LLM） | 1 | 1.00 |
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行（0 LLM，服务端 applied） | 11–17 | 1.00 |
-| **AR024 并发会话隔离（最终）** | **4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏** | **3–4 并发墙钟** | **1.00** |
+| AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏 | 3–4 并发墙钟 | 1.00 |
+| **AR025 自适应观测缓存（最终）** | **30/30、0 LLM；观测往返 −62.7%、耗时 −63.0%；缓存探针 3 命中/1 扫描** | **77s / 30 场景** | **1.00** |
 
 逐任务报告：
 
@@ -438,7 +444,8 @@ L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 | AR021 技能统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM | 保留 |
 | AR022 订单状态查询 | 真实订单页谓词 + 复用 3/3（0 LLM） | 保留 |
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150） | 保留 |
-| **AR024 并发会话隔离** | **4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏；串行零回退** | **最终保留** |
+| AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏；串行零回退 | 保留 |
+| **AR025 自适应观测缓存** | **30/30、0 LLM；往返 −62.7%、观测耗时 −63.0%；cache probe 3/4 命中；零回退** | **最终保留** |
 
 ### 3.3 本机算力说明
 
@@ -526,6 +533,26 @@ python scripts/ar004_train.py --stage all --model "$STEP_RL_MODEL"
 | max_steps | 12（L5 可 16） |
 | 评测 | greedy，3 seeds，Wilson 95% CI |
 | 统计 | 逐任务 paired bootstrap，报告均值±std |
+
+### 4.5.1 AR025 大模型复现配置（观测缓存）
+
+AR025 的观测路径与模型规模无关。服务器复现 7B/8B 时建议同时跑两组：
+
+| 组 | 命令 | 观测路径 |
+|----|------|----------|
+| AOC off（before） | `python scripts/ar025_baseline_probe.py` | 旧版 4 往返 + 技能重复观测 |
+| AOC on（after） | `python scripts/ar025_eval.py` | 单往返快照 + 修订号缓存 + 技能复用 |
+
+需要报告的真实字段（来自 `outputs/ar025/eval/ar025_summary.json`）：
+
+- `summary.observation.calls / hits / misses / dom_scans / roundtrips / seconds`
+- `compare.roundtrip_reduction / observe_time_reduction`
+- `summary.success_rate / policy_steps / prompt_tokens`
+
+服务器验收口径：技能路径 30 场景仍为 0 LLM；往返下降 ≥50%、observe 耗时
+下降 ≥25%；缓存命中只在重复/wait 观测或 LLM 兜底时出现，不得把技能路径
+的 DOM 变化强行算作命中。大模型实验只改变兜底路径的 prompt/generation
+成本，不应改变 AOC 的元素/state 正确性。
 
 ### 4.6 预期资源与时间（参考）
 
