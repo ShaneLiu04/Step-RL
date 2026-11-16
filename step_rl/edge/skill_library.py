@@ -269,6 +269,7 @@ class SkillResult:
     success: bool
     actions: List[Dict[str, Any]] = field(default_factory=list)
     error: str = ""
+    observation: Optional[Dict[str, Any]] = None
 
 
 def search_skill(query: str) -> Skill:
@@ -390,8 +391,12 @@ def _find(elements: List[Dict[str, Any]], step: SkillStep) -> Optional[Dict[str,
     return candidates[0]
 
 
-async def run_skill(env: BrowserEnv, skill: Skill) -> SkillResult:
-    obs = await env.observe()
+async def run_skill(
+    env: BrowserEnv,
+    skill: Skill,
+    initial_obs: Optional[Dict[str, Any]] = None,
+) -> SkillResult:
+    obs = initial_obs if initial_obs is not None else await env.observe()
     actions: List[Dict[str, Any]] = []
     for step in skill.steps:
         if step.kind == "goto":
@@ -408,7 +413,9 @@ async def run_skill(env: BrowserEnv, skill: Skill) -> SkillResult:
                     None,
                 )
             if element is None:
-                return SkillResult(False, actions, f"element not found: {step.name}")
+                return SkillResult(
+                    False, actions, f"element not found: {step.name}", obs
+                )
             params = {"element": element["eid"]}
             if step.kind == "type":
                 params["text"] = step.value
@@ -416,9 +423,9 @@ async def run_skill(env: BrowserEnv, skill: Skill) -> SkillResult:
         result = await env.execute(action)
         actions.append(action)
         if not result.get("ok"):
-            return SkillResult(False, actions, str(result.get("error", "")))
+            return SkillResult(False, actions, str(result.get("error", "")), obs)
         obs = await env.observe()
-    return SkillResult(True, actions)
+    return SkillResult(True, actions, "", obs)
 
 
 async def run_skill_hierarchy(
@@ -441,7 +448,7 @@ async def run_skill_hierarchy(
         skill = skill_for_subtask(subtask)
         ok = False
         if skill is not None:
-            result = await run_skill(env, skill)
+            result = await run_skill(env, skill, initial_obs=obs)
             for action in result.actions:
                 steps.append(
                     StepRecord(
@@ -458,7 +465,7 @@ async def run_skill_hierarchy(
                         source="skill",
                     )
                 )
-            obs = await env.observe()
+            obs = result.observation or await env.observe()
             ok = compute_progress(obs["state"], obs["url"], subtask).success
             # AR021: record the verifier-confirmed outcome (the only legal
             # success signal) so the registry learns which skills work.
