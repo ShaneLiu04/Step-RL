@@ -36,7 +36,10 @@
   大模型实验口径；`docs/REPRODUCTION.md` §4.5.1 大模型 AOC on/off 配置；
   `specs/BACKLOG.md` B08 毕业。
 - T9：归档 `specs/archive/AR025-observation-cache/`。
-- T10：Gitee 增量小包同步并校验 diff 为空；全新 clone 跑缓存测试。
+- T10：Gitee 5 个增量小包推送完成，`gitee/main = 80a64b9`；
+  `git diff -w gitee/main main` 为空；全新 `--depth 1` clone 中
+  `tests/test_edge_observation_cache.py` **6 passed**，README v4.14 / AR025 章节 /
+  −62.7% 均存在。
 
 ## devflow-review 独立自查（findings + verdict）
 
