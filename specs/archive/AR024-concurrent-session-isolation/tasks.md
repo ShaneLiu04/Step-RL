@@ -33,7 +33,9 @@
 - T8：README v4.13 / 5.24 / 5.6 / 演进 / 版本表 / 快速开始 / 目录树 / 徽章 / 头部，
   `docs/REPRODUCTION.md`，`specs/BACKLOG.md` B07 毕业。
 - T9：归档 `specs/archive/AR024-concurrent-session-isolation/`。
-- T10：Gitee 增量同步并校验 `git diff -w gitee/main main` 为空。
+- T10：Gitee 5 个增量小包推送完成，`gitee/main = 91eeb3a`；
+  `git diff -w gitee/main main` 为空；全新 `--depth 1` clone 中
+  `tests/test_edge_concurrency.py` **12 passed**，README v4.13 / AR024 章节 / 2.75× 均存在。
 
 ## devflow-review 独立自查（findings + verdict）
 
