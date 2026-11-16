@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.13 — 并发会话隔离 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.14 — 自适应观测缓存 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.13
+# Step-RL v4.14
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Edge%20Tests-158%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-164%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -23,9 +23,11 @@
 > **技能统计与优先级**：技能成败以验证器口径留痕，成功率下降即淘汰让位（0/1 → 显式缺口 → LLM 兜底 → 闭环重归纳），让位后同类任务 **0 LLM**。  
 > **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。  
 > **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。  
-> **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。
+> **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。  
+> **自适应观测缓存**：单往返快照 + DOM 修订号缓存，30 场景仍 **30/30、0 LLM**，观测往返 **−62.7%**、观测耗时 **−63.0%**。
 
 <p align="center">
+  <strong>自适应观测缓存</strong> ·
   <strong>并发会话隔离</strong> ·
   <strong>优惠券约束规划</strong> ·
   <strong>订单状态查询技能</strong> ·
@@ -347,7 +349,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR021 技能成功率统计与优先级 | 0/1 失败留痕 → 让位，复用 4/4 0 LLM；30/30 不回退 | 保留 |
 | AR022 订单状态查询 | 3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens | 保留 |
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150） | 保留 |
-| **AR024 并发会话隔离** | **4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏** | **最终保留** |
+| AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏 | 保留 |
+| **AR025 自适应观测缓存** | **30/30、0 LLM；往返 −62.7%，观测耗时 −63.0%；缓存探针 3 命中/1 扫描** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -845,7 +848,52 @@ skill_stats.json / induced_skills.json）；spec：
 复现：`python scripts/ar024_eval.py`
 （改动前基线：`python scripts/ar024_baseline_probe.py`）。
 
-### 5.25 可解释性实验（EX001）
+### 5.25 自适应观测缓存（AR025）
+
+**动机。** AR011–AR024 每次动作后都调用 `BrowserEnv.observe()`；旧实现一次
+observe 触发 **4 次浏览器往返**（元素扫描、body 文本、`/api/state`、title），
+技能层还存在“末次已观测、返回后再观测”的冗余。真实基线探针
+（`scripts/ar025_baseline_probe.py`，AR011 30 场景、真实 Edge、0 LLM）：
+
+- observe **440 次**、耗时 **10.96s**、浏览器往返 **1760 次**；
+- 相邻快照完全一致 **166 次（37.7%）**。
+
+目标（BACKLOG B08）：不改变动作/技能/验证器语义，把观测层改为
+**单往返快照 + DOM 修订号缓存**；服务端 state 永不缓存，保证验证器权威性。
+
+**机制。**
+
+| 组件 | 改动 |
+|------|------|
+| `browser.py` | init script 注入 MutationObserver（忽略 `data-eid` 自身写入），维护 `rev/doc`；`_META_JS` 一次返回 rev/doc/url/title + 实时 `/api/state`；`_OBSERVE_JS` 一次返回元素表 + body 文本 |
+| 缓存 | 键 `(doc, url, rev, title)`；命中复用元素/文本、仅刷新 state；`type` 动作主动失效（value property 不触发 mutation）；导航/换页 doc 变化必失效 |
+| `skill_library.py` | `run_skill(initial_obs=...)` 复用调用方观测；返回末次观测；`run_skill_hierarchy` 删除技能后重复 observe，并用其作为 LLM fallback 初始观测 |
+
+**真实评测（30 场景 / 真实 Edge / 0 LLM）。**
+
+| 指标 | 基线 | AR025 | 变化 |
+|------|------|-------|------|
+| 成功率 | 30/30 | **30/30** | 不回退 |
+| LLM 步 / Prompt tokens | 0 / 0 | **0 / 0** | 不回退 |
+| observe 调用 | 440 | **328** | −25.5% |
+| 浏览器往返 | 1760 | **656** | **−62.7%** |
+| observe 耗时 | 10.96s | **4.06s** | **−63.0%** |
+| 总墙钟 | 81.65s | **76.71s** | −6.0% |
+
+独立真实缓存探针（重复 observe + wait）：**4 次调用、3 命中、1 扫描**，
+元素稳定且 state 实时。技能路径每个动作都真实改变 DOM，因此 30 场景
+不依赖缓存收益——缓存收益来自重复/no-op 观测与后续 LLM 兜底。
+
+**组合门禁。** 新增 6 项真实 Edge 测试；edge 套件 **164 passed**；
+全量 `pytest tests` **243 passed / 10 个既有代理环境失败 / 3 skipped**，
+与 AR024 基线同类失败集合，零新增失败。
+
+产物：`outputs/ar025/`（baseline_probe / eval results / cache probe / 报告）；
+spec：`specs/archive/AR025-observation-cache/`；
+复现：`python scripts/ar025_eval.py`
+（改动前：`python scripts/ar025_baseline_probe.py`）。
+
+### 5.26 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -947,6 +995,8 @@ python scripts/ar023_baseline_probe.py # 改动前基线探针（before 证据�
 python scripts/ar023_eval.py      # 优惠券约束规划（真实 Edge：规划 8/8 → 执行 3/3 0 LLM → 门禁）
 python scripts/ar024_baseline_probe.py # 改动前基线探针（并发丢更新/损文件/重复候选）
 python scripts/ar024_eval.py      # 并发会话隔离（真实 Edge：4 并发 0 串扰 → 留痕/持久化/门禁）
+python scripts/ar025_baseline_probe.py # 改动前观测开销（真实 Edge 旧 4 往返路径）
+python scripts/ar025_eval.py      # 自适应观测缓存（30 场景 0 LLM + 往返/耗时对照）
 ```
 
 ### 测试
@@ -957,8 +1007,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
        tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
-       tests/test_edge_concurrency.py -v
-# 158 passed
+       tests/test_edge_concurrency.py tests/test_edge_observation_cache.py -v
+# 164 passed
 ```
 
 ### 产物
@@ -1007,6 +1057,13 @@ python scripts/edge_pipeline.py --stage rl --rl_epochs 10 --group_size 8 \
 
 7B 的 SFT 建议 `max_length=1024, batch_size=4`，详见复现手册 §4.5。
 
+**AR025 观测缓存的大模型复现口径。** 观测优化与模型规模无关，服务器实验需额外
+记录 `outputs/ar025/eval/ar025_summary.json` 中的
+`observation.{calls,hits,misses,dom_scans,roundtrips,seconds}`；技能路径 30 场景
+应保持 0 LLM，大模型只影响兜底路径的 prompt/generation 成本。服务器建议同时跑
+“AOC on/off”两组（用 `scripts/ar025_baseline_probe.py` 复现 off 侧），报告
+往返下降与 observe 耗时下降，不以总墙钟单独归因。
+
 ---
 
 ## 评测协议
@@ -1036,7 +1093,7 @@ step-rl/
 ├── step_rl/
 │   ├── edge/
 │   │   ├── site.py               # 真实 HTTP 商城
-│   │   ├── browser.py            # Playwright + 系统 Edge
+│   │   ├── browser.py            # Playwright + 系统 Edge；单往返观测/修订号缓存（AR025）
 │   │   ├── verifier.py           # 可执行进度 Φ
 │   │   ├── tasks.py              # 任务与训练/留出划分
 │   │   ├── expert.py             # 真实专家轨迹
@@ -1099,6 +1156,8 @@ step-rl/
 │   ├── ar023_eval.py
 │   ├── ar024_baseline_probe.py # 改动前基线探针（并发缺陷留证）
 │   ├── ar024_eval.py
+│   ├── ar025_baseline_probe.py # 改动前观测开销（旧 4 往返路径）
+│   ├── ar025_eval.py
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1107,9 +1166,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR024 / EX001
+│   └── archive/AR001 … AR025 / EX001
 │
-├── tests/                        # 250 项测试（237 pass + 10 代理环境失败 + 3 skip）
+├── tests/                        # 256 项测试（243 pass + 10 代理环境失败 + 3 skip）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1159,7 +1218,8 @@ step-rl/
 | AR021 | 技能库成功率统计与优先级（验证器确认成败 + 成功率选择 + 淘汰让位） | 0/1 失败留痕 → 让位，复用 4/4 0 LLM | 保留 |
 | AR022 | 订单状态查询技能（真实订单页 + 服务端状态谓词） | 3/3 0 LLM（含取消态迁移 + v2+churn） | 保留 |
 | AR023 | 优惠券约束规划（真实券列表 + 可行性判定 + 服务端权威折扣 + 诚实 None 拒绝） | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，省 50/150 | 保留 |
-| **AR024** | **并发会话隔离（模块锁 + 原子快照持久化 + 多会话执行器）** | **4 并发真实 Edge 4/4 零串扰（2.75×）；留痕 4/4；10×12 写者 0 损坏** | **最终保留** |
+| AR024 | 并发会话隔离（模块锁 + 原子快照持久化 + 多会话执行器） | 4 并发真实 Edge 4/4 零串扰（2.75×）；留痕 4/4；10×12 写者 0 损坏 | 保留 |
+| **AR025** | **自适应观测缓存（单往返快照 + DOM 修订号缓存 + 技能层复用）** | **30/30、0 LLM；往返 −62.7%，观测耗时 −63.0%** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -1179,6 +1239,7 @@ step-rl/
 - `specs/archive/AR022-order-status-query/`
 - `specs/archive/AR023-promo-constraint-planning/`
 - `specs/archive/AR024-concurrent-session-isolation/`
+- `specs/archive/AR025-observation-cache/`
 
 ---
 
@@ -1246,7 +1307,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ```bibtex
 @software{step_rl_v47,
   title = {Step-RL: Fault-Tolerant Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.13},
+  version = {4.14},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -1260,7 +1321,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.13 / AR024** | **推荐** | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
+| **v4.14 / AR025** | **推荐** | 自适应观测缓存：30/30、0 LLM，观测往返 −62.7%、耗时 −63.0% |
+| v4.13 / AR024 | 保留 | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
 | v4.12 / AR023 | 保留 | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
 | v4.11 / AR022 | 保留 | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |
 | v4.10 / AR021 | 保留 | 技能统计与优先级：0/1 失败留痕 → 让位，复用 4/4 0 LLM |
