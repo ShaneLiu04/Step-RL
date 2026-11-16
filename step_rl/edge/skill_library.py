@@ -14,17 +14,26 @@ verifier-confirmed outcome into :mod:`skill_stats`; selection prefers the
 higher real success rate, and a skill whose observed rate proves it bad
 is demoted (yields to a better candidate or to the explicit capability
 gap + LLM fallback).
+
+AR024 makes the registry safe for concurrent sessions: the
+check-then-append upsert in :func:`register_induced_skill` runs in a
+single critical section (no duplicate candidates under parallel
+registration), and persistence takes a consistent snapshot under the
+lock and atomically replaces the file (no interleaved writes).  Serial
+semantics, JSON shapes and the selection rule are unchanged.
 """
 
 from __future__ import annotations
 
 import itertools
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from .browser import BrowserEnv
+from .concurrency import atomic_write_json
 from .hierarchical import adapter_for_subtask, decompose_task
 from .rollout import Rollout, StepRecord, rollout_task
 from .site import PRODUCTS, PROMOS
@@ -51,6 +60,11 @@ def _now_iso() -> str:
 _INDUCED: Dict[str, List[Dict[str, Any]]] = {}
 _ORDER = itertools.count(1)
 
+# AR024: guards the registry's check-then-act paths (upsert, clear and
+# the persist snapshot).  Lock order with skill_stats is always
+# registry -> stats (never the reverse), so no deadlock.
+_LOCK = threading.Lock()
+
 
 def register_induced_skill(
     operation: str,
@@ -63,24 +77,30 @@ def register_induced_skill(
     replaces its steps and resets its execution statistics (a fresh
     trajectory is fresh evidence - the self-healing closed loop); a new
     name appends a candidate after the existing ones.
+
+    AR024: the name lookup and the replace/append are one critical
+    section - parallel registrations of the same name can no longer both
+    pass the check and both append (probe E3 produced duplicate
+    candidates on the old code).
     """
 
     candidate_name = name or f"induced_{operation}"
-    candidates = _INDUCED.setdefault(operation, [])
-    for candidate in candidates:
-        if candidate["name"] == candidate_name:
-            candidate["steps"] = [dict(step) for step in template]
-            candidate["registered_at"] = _now_iso()
-            reset_skill_stats(candidate_name)
-            return
-    candidates.append(
-        {
-            "name": candidate_name,
-            "steps": [dict(step) for step in template],
-            "order": next(_ORDER),
-            "registered_at": _now_iso(),
-        }
-    )
+    with _LOCK:
+        candidates = _INDUCED.setdefault(operation, [])
+        for candidate in candidates:
+            if candidate["name"] == candidate_name:
+                candidate["steps"] = [dict(step) for step in template]
+                candidate["registered_at"] = _now_iso()
+                reset_skill_stats(candidate_name)
+                return
+        candidates.append(
+            {
+                "name": candidate_name,
+                "steps": [dict(step) for step in template],
+                "order": next(_ORDER),
+                "registered_at": _now_iso(),
+            }
+        )
 
 
 def induced_candidates(operation: str) -> List[Dict[str, Any]]:
@@ -111,7 +131,8 @@ def _select_best(operation: str) -> Optional[Dict[str, Any]]:
 
 
 def clear_induced_skills() -> None:
-    _INDUCED.clear()
+    with _LOCK:
+        _INDUCED.clear()
 
 
 def induced_operations() -> List[str]:
@@ -125,19 +146,24 @@ def save_induced_skills(path: str) -> None:
     with a single candidate it is field-for-field identical to the old
     output.  Operations whose candidates are all demoted are omitted -
     the file honestly states that no usable skill exists for them.
+
+    AR024: the snapshot (including the ``_select_best`` reads) is taken
+    inside one critical section, then the file is atomically replaced -
+    a saved file is always one consistent registry state, even when
+    several sessions persist at the same time.
     """
 
-    data: Dict[str, Any] = {}
-    for operation in _INDUCED:
-        best = _select_best(operation)
-        if best is None:
-            continue
-        data[operation] = {
-            "name": best["name"],
-            "steps": [dict(step) for step in best["steps"]],
-        }
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(data, handle, ensure_ascii=False, indent=2)
+    with _LOCK:
+        data: Dict[str, Any] = {}
+        for operation in _INDUCED:
+            best = _select_best(operation)
+            if best is None:
+                continue
+            data[operation] = {
+                "name": best["name"],
+                "steps": [dict(step) for step in best["steps"]],
+            }
+    atomic_write_json(path, data)
 
 
 def load_induced_skills(path: str) -> List[str]:
