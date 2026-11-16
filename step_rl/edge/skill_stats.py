@@ -15,16 +15,29 @@ and in the audit file, so the decision stays traceable.  A fresh
 trajectory re-registered under the same name resets its statistics
 (self-healing closed loop, AR019 semantics).
 
-No edge-internal imports: pure data + policy, so it can never create an
-import cycle.
+No edge-internal imports besides :mod:`concurrency` (a leaf module:
+standard library only), so it can never create an import cycle.
+
+AR024: the in-memory registry is process-shared, and concurrent
+sessions record outcomes into it at the same time.  A module-level
+lock makes every read-modify-write and every reload atomic (a reader
+only ever sees a pre-swap or post-swap snapshot), and persistence
+writes a consistent snapshot through an atomic file replace so
+concurrent saves can no longer interleave into one file.  Serial
+semantics are unchanged (the lock is a no-op for single-threaded
+callers; function signatures and JSON shapes stay field-for-field
+identical).
 """
 
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+from .concurrency import atomic_write_json
 
 # Demotion policy (design.md D2): after at least ``DEMOTION_MIN_ATTEMPTS``
 # attempts, a skill is demoted when its success rate is *strictly below*
@@ -78,6 +91,14 @@ def _apply_demotion_policy(stat: SkillStat) -> None:
 
 _STATS: Dict[str, SkillStat] = {}
 
+# AR024: single lock for the whole in-memory registry.  Every
+# read-modify-write (``record_skill_outcome``) and every structural
+# change (``from_dict``/``reset``/``clear``) runs inside it; the
+# snapshot taken for persistence (``to_dict``) is also lock-held so a
+# saved file is always one consistent state.  Callers never hold the
+# lock across I/O.
+_LOCK = threading.Lock()
+
 
 def record_skill_outcome(
     name: str,
@@ -87,23 +108,24 @@ def record_skill_outcome(
 ) -> SkillStat:
     """Record one verifier-confirmed outcome for skill ``name``."""
 
-    stat = _STATS.get(name)
-    if stat is None:
-        stat = SkillStat(name=name, operation=operation)
-        _STATS[name] = stat
-    stat.attempts += 1
-    if success:
-        stat.successes += 1
-        stat.consecutive_failures = 0
-        stat.last_success_at = _now()
-    else:
-        stat.failures += 1
-        stat.consecutive_failures += 1
-        stat.last_failure_at = _now()
-        if note:
-            stat.last_failure_note = note
-    _apply_demotion_policy(stat)
-    return stat
+    with _LOCK:
+        stat = _STATS.get(name)
+        if stat is None:
+            stat = SkillStat(name=name, operation=operation)
+            _STATS[name] = stat
+        stat.attempts += 1
+        if success:
+            stat.successes += 1
+            stat.consecutive_failures = 0
+            stat.last_success_at = _now()
+        else:
+            stat.failures += 1
+            stat.consecutive_failures += 1
+            stat.last_failure_at = _now()
+            if note:
+                stat.last_failure_note = note
+        _apply_demotion_policy(stat)
+        return stat
 
 
 def get_skill_stat(name: str) -> Optional[SkillStat]:
@@ -122,11 +144,13 @@ def is_demoted(name: str) -> bool:
 def reset_skill_stats(name: str) -> None:
     """Drop all statistics for ``name`` (same-name re-registration)."""
 
-    _STATS.pop(name, None)
+    with _LOCK:
+        _STATS.pop(name, None)
 
 
 def clear_skill_stats() -> None:
-    _STATS.clear()
+    with _LOCK:
+        _STATS.clear()
 
 
 def _policy() -> Dict[str, float]:
@@ -137,18 +161,30 @@ def _policy() -> Dict[str, float]:
 
 
 def to_dict() -> Dict[str, Any]:
-    return {
-        "policy": _policy(),
-        "skills": {name: asdict(stat) for name, stat in _STATS.items()},
-    }
+    # AR024: the snapshot is taken under the lock - iterating a dict
+    # while a concurrent ``from_dict`` resizes it raises RuntimeError
+    # and used to kill the persisting thread (probe E2).
+    with _LOCK:
+        return {
+            "policy": _policy(),
+            "skills": {name: asdict(stat) for name, stat in _STATS.items()},
+        }
 
 
 def from_dict(data: Dict[str, Any]) -> None:
-    """Restore statistics from an audit file (replaces current memory)."""
+    """Restore statistics from an audit file (replaces current memory).
 
-    _STATS.clear()
+    AR024: the replacement is atomic - the full new registry is built
+    first, then installed in a single critical section, so a concurrent
+    reader or recorder observes either the pre-swap or the post-swap
+    state (never a half-cleared / half-inserted mix).  Documented
+    semantics: a reload is a *replace* (last reloader wins), not a
+    merge with in-memory history.
+    """
+
+    new: Dict[str, SkillStat] = {}
     for name, raw in (data.get("skills") or {}).items():
-        stat = SkillStat(
+        new[name] = SkillStat(
             name=str(raw.get("name", name)),
             operation=str(raw.get("operation", "")),
             attempts=int(raw.get("attempts", 0)),
@@ -161,12 +197,17 @@ def from_dict(data: Dict[str, Any]) -> None:
             demoted=bool(raw.get("demoted", False)),
             demotion_reason=str(raw.get("demotion_reason", "")),
         )
-        _STATS[name] = stat
+    with _LOCK:
+        _STATS.clear()
+        _STATS.update(new)
 
 
 def save_skill_stats(path: str) -> None:
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(to_dict(), handle, ensure_ascii=False, indent=2)
+    # AR024: consistent snapshot under the lock, I/O outside it; the
+    # file is atomically replaced so concurrent saves cannot interleave
+    # (probe E2: 8 writers used to produce parseable-but-mixed files).
+    data = to_dict()
+    atomic_write_json(path, data)
 
 
 def load_skill_stats(path: str) -> List[str]:
@@ -175,7 +216,8 @@ def load_skill_stats(path: str) -> List[str]:
     with open(path, encoding="utf-8") as handle:
         data = json.load(handle)
     from_dict(data)
-    return sorted(_STATS)
+    with _LOCK:
+        return sorted(_STATS)
 
 
 def rank_candidates(names: List[str]) -> List[str]:
