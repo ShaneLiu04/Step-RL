@@ -15,7 +15,7 @@
 | B04 | 订单查询技能（order status）——claimed by AR022 | 用户侧高频操作：查订单状态/历史 | 真实订单页谓词 + 技能执行 3/3 |
 | B05 | 优惠券/促销约束规划——claimed by AR023 | planner 目前只支持预算；满减券是新约束类型 | 规划准确率 100%（对照 naive 基线） |
 | B06 | v3 布局零样本迁移 | v2 已验证；v3（新 DOM 结构/新交互）检验语义层泛化上限 | v3 布局 + churn 下技能 100% |
-| B07 | 并发会话隔离压测 | 多会话并发下 SessionStore 竞态 | 4 并发会话任务互不串扰 |
+
 | B08 | 观测缓存与增量 DOM diff | observe() 全量采样；增量 diff 可再降端侧开销 | token/耗时下降且 30 场景不回退 |
 
 ## 已完成（从本队列毕业）
@@ -27,3 +27,4 @@
 | 技能库成功率统计与优先级 | AR021 | 0/1 失败留痕 → 淘汰让位，复用 4/4 0 LLM；30/30 不回退；见 specs/archive/AR021-skill-stats-priority/ |
 | 订单查询技能（order status） | AR022 | 真实订单页谓词 + 3/3（0 LLM，含取消态迁移 + v2+churn）；LLM 兜底 1 步 186 tokens；见 specs/archive/AR022-order-status-query/ |
 | 优惠券/促销约束规划 | AR023 | 8/8 规划（naive 0/8，4 组不可行指令诚实 None）+ 3/3 真实 Edge 执行 0 LLM（服务端 applied，省 50/150）；30/30 不回退；见 specs/archive/AR023-promo-constraint-planning/ |
+| 并发会话隔离压测 | AR024 | 4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏；串行零回退；见 specs/archive/AR024-concurrent-session-isolation/ |

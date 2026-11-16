@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.12 README cover banner.
+"""Generate the Step-RL v4.13 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   PROMO CONSTRAINTS"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CONCURRENCY ISOLATION"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.12",
+        "v4.13",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Coupon Constraint Planning",
+        "Concurrent Session Isolation",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "满减券 · 实时可行性判定 · 服务端权威折扣 · 0 LLM",
+        "多会话并发 · 线程安全统计 · 原子持久化 · 零串扰",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "优惠券约束规划",
-            "真实 /api/promos + 实时价 → 可行性判定 8/8",
+            "并发会话隔离",
+            "4 个真实 Edge 会话共享服务端，零串扰",
             (34, 211, 238),
         ),
         (
-            "不可行显式 None",
-            "贴线差 1 元也不猜测、不降级",
+            "2.75× 并行",
+            "3.74s vs 5.80s 逐会话和；失败留痕 4/4",
             (167, 139, 250),
         ),
         (
-            "服务端权威折扣",
-            "598→548 / 6999→6849，3/3 执行 0 LLM",
+            "10×12 写者 0 损坏",
+            "锁 + 原子写 + 快照，审计 JSON 可解析",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("8/8", "规划准确率", (125, 211, 252)),
-        ("0/8", "naive 基线", (244, 114, 182)),
-        ("3/3", "执行", (74, 222, 128)),
-        ("211", "真实测试", (167, 139, 250)),
+        ("4/4", "并发会话", (125, 211, 252)),
+        ("2.75×", "并行加速", (244, 114, 182)),
+        ("0", "串扰/损坏", (74, 222, 128)),
+        ("158", "Edge 测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/checkout",
+        "shop.local/console",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：用「满400减50」券结算",
+        "4 个真实 Edge 会话并发执行",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -622,19 +622,19 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1780, 206),
-        "商品    购物车",
+        "会话    监控",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="rm",
     )
 
-    # Promo banner
+    # Sessions banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "PROMO：满400减50 · 598 ≥ 400",
+        "SESSIONS：4 concurrent · 0 crosstalk",
         font(F_CN, 10.5),
         (182, 236, 250, 255),
         anchor="lm",
@@ -642,84 +642,63 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1766, 243),
-        "FEASIBLE",
-        font(F_MONO_BOLD, 8),
+        "2.75×",
+        font(F_MONO_BOLD, 9),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Checkout card
+    # Session monitor card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "结算单",
-        font(F_CN_BOLD, 12.5),
+        "Session Monitor",
+        font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
     )
-    text(d, (1416, 278), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
+    text(d, (1416, 278), "4", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
     d.line(
         [(1106 * S, 294 * S), (1416 * S, 294 * S)],
         fill=(255, 255, 255, 20),
         width=max(1, int(1 * S)),
     )
 
-    text(d, (1106, 307), "P3 + P4", font(F_MONO, 10), (214, 226, 246, 255), anchor="lm")
-    text(
-        d, (1416, 307), "¥598", font(F_MONO_BOLD, 10), (214, 226, 246, 255), anchor="rm"
-    )
+    sessions = [
+        ("e1", "S1  P3×2"),
+        ("e2", "S2  P4×1"),
+        ("e3", "S3  qty=3"),
+        ("e4", "S4  order"),
+    ]
+    sy = 306
+    for eid, label in sessions:
+        som_badge(d, 1106, sy - 6, eid, (34, 211, 238), 18)
+        text(
+            d,
+            (1130, sy + 3),
+            label,
+            font(F_MONO, 9),
+            (214, 226, 246, 255),
+            anchor="lm",
+        )
+        check_badge(d, 1360, sy + 3, 5, (52, 211, 153))
+        text(
+            d,
+            (1370, sy + 3),
+            "ok",
+            font(F_MONO, 8),
+            (134, 239, 172, 255),
+            anchor="lm",
+        )
+        sy += 18
 
-    text(
-        d,
-        (1106, 333),
-        "满400减50",
-        font(F_CN, 9.5),
-        (182, 236, 250, 255),
-        anchor="lm",
-    )
-    pill(d, (1278, 322, 1350, 342), 8, (34, 211, 238, 26), (34, 211, 238, 120), 1)
-    text(d, (1304, 332), "领取", font(F_CN_BOLD, 9), (182, 236, 250, 255), anchor="mm")
-    som_badge(d, 1332, 324, "e1", (34, 211, 238), 18)
-
-    d.line(
-        [(1106 * S, 346 * S), (1416 * S, 346 * S)],
-        fill=(255, 255, 255, 18),
-        width=max(1, int(1 * S)),
-    )
-    text(
-        d,
-        (1106, 368),
-        "实付 ¥548",
-        font(F_CN_BOLD, 11),
-        (134, 239, 172, 255),
-        anchor="lm",
-    )
-    text(
-        d,
-        (1204, 368),
-        "省 ¥50",
-        font(F_CN, 8.5),
-        (150, 230, 190, 255),
-        anchor="lm",
-    )
-    pill(d, (1300, 356, 1414, 378), 9, (74, 222, 128, 28), (74, 222, 128, 125), 1)
-    text(
-        d,
-        (1350, 367),
-        "提交订单",
-        font(F_CN_BOLD, 9),
-        (224, 252, 234, 255),
-        anchor="mm",
-    )
-    som_badge(d, 1392, 358, "e2", (74, 222, 128), 18)
-
-    # Feasibility card
+    # Shared runtime card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "Promo Feasibility",
+        "Shared Runtime",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -732,8 +711,8 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1735, 284),
-        "5 steps",
-        font(F_MONO_BOLD, 7),
+        "0 corrupt",
+        font(F_MONO_BOLD, 6.5),
         (182, 236, 250, 255),
         anchor="mm",
     )
@@ -744,10 +723,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "fetch /api/promos"),
-        ("2", "total 598 ≥ 400"),
-        ("3", "claim coupon"),
-        ("4", "server applied = true"),
+        ("1", "stats lock"),
+        ("2", "registry lock"),
+        ("3", "atomic JSON"),
+        ("4", "10×12 writers"),
     ]
     sy = 316
     for num, label in steps:
@@ -762,13 +741,13 @@ def draw_browser_card(canvas: Image.Image):
         )
         sy += 17
 
-    # Promo output chip
+    # Concurrency output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"promo":"满400减50","feasible":true,"paid":548}',
-        font(F_MONO, 8.5),
+        '{"sessions":4,"crosstalk":0,"corruption":0}',
+        font(F_MONO, 9),
         (185, 247, 255, 255),
         anchor="lm",
     )
@@ -777,7 +756,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "598→548 · save ¥50",
+        "3.74s vs 5.80s · 2.75×",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -873,7 +852,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "server-side promo applied",
+        "concurrency-safe audit",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -899,7 +878,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Promo Runtime",
+        "Concurrent Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -907,17 +886,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "promos → feasibility → claim → settle",
+        "locks → atomic write → sessions",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Promos", "真实 /api/promos · 两券", (251, 191, 36)),
-        ("Feasibility", "实时价 + 门槛 · 不可行 None", (34, 211, 238)),
-        ("Claim", "结算前领取一步", (167, 139, 250)),
-        ("Settle", "服务端 total/paid/promo", (74, 222, 128)),
+        ("Locks", "统计 / 注册表临界区", (251, 191, 36)),
+        ("Snapshot", "一致读 + 原子替换", (34, 211, 238)),
+        ("Atomic Write", "临时文件 + os.replace", (167, 139, 250)),
+        ("Sessions", "每会话线程 + 事件循环", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -948,7 +927,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "plan 8/8 · exec 3/3 · 0 LLM",
+        "4/4 sessions · 2.75× · 0 corruption",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -973,7 +952,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "PROMO CONSTRAINTS   ·   FEASIBILITY   ·   SETTLEMENT",
+        "CONCURRENCY   ·   SESSION ISOLATION   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -982,7 +961,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR023 · REAL EPISODE",
+        "AR024 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
