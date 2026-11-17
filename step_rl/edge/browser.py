@@ -11,7 +11,9 @@ import asyncio
 import json
 import os
 import random
-from typing import Any, Dict, List, Optional
+import time
+from copy import deepcopy
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlparse
 
 from .site import LocalShopServer
@@ -19,6 +21,63 @@ from .tasks import TaskSpec
 
 ACTION_WHITELIST = {"click", "type", "goto", "scroll", "wait", "finish"}
 
+# AR025: per-document revision counter.  Installed before page scripts so it
+# survives navigation.  Writing data-eid during observation is ignored;
+# every other DOM mutation invalidates the cached element table.
+_OBSERVER_JS = r"""
+(() => {
+  if (window.__steprl_obs_installed) return;
+  window.__steprl_obs_installed = true;
+  window.__steprl_doc =
+    Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  window.__steprl_rev = 0;
+  const install = () => {
+    if (!document.documentElement || window.__steprl_mo) return;
+    try {
+      window.__steprl_mo = new MutationObserver((records) => {
+        for (const record of records) {
+          if (record.type === "attributes" &&
+              record.attributeName === "data-eid") {
+            continue;
+          }
+          window.__steprl_rev += 1;
+          return;
+        }
+      });
+      window.__steprl_mo.observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true
+      });
+    } catch (e) {}
+  };
+  if (document.documentElement) install();
+  else document.addEventListener("DOMContentLoaded", install, {once: true});
+})()
+"""
+
+# AR025: one round-trip returns the cache key, title and authoritative state.
+# State is never cached: every observation re-reads /api/state.
+_META_JS = r"""
+async () => {
+  let state = {};
+  try {
+    const response = await fetch('/api/state');
+    state = await response.json();
+  } catch (e) {}
+  return {
+    rev: window.__steprl_rev || 0,
+    doc: window.__steprl_doc || "",
+    url: location.pathname + (location.search || ""),
+    title: document.title || "",
+    state: state && typeof state === "object" ? state : {}
+  };
+}
+"""
+
+# AR025: DOM extraction only.  Field shape is identical to the pre-AR025
+# observation payload; body text stays capped at 600 chars.
 _OBSERVE_JS = r"""
 () => {
   const out = [];
@@ -96,7 +155,11 @@ _OBSERVE_JS = r"""
       accessible_name: accessible,
     });
   }
-  return out;
+  let text = "";
+  try {
+    text = (document.body ? document.body.innerText : "").slice(0, 600);
+  } catch (e) {}
+  return {elements: out, text};
 }
 """
 
@@ -131,6 +194,16 @@ class BrowserEnv:
         self._page = None
         self.current_url = ""
         self.step_count = 0
+        # AR025: per-environment observation cache and auditable counters.
+        self._obs_cache: Optional[Dict[str, Any]] = None
+        self.observation_metrics: Dict[str, Any] = {
+            "calls": 0,
+            "hits": 0,
+            "misses": 0,
+            "dom_scans": 0,
+            "roundtrips": 0,
+            "seconds": 0.0,
+        }
 
     # -- lifecycle --------------------------------------------------------
     async def start(self) -> None:
@@ -149,6 +222,7 @@ class BrowserEnv:
             viewport=self.viewport,
             storage_state=self.storage_state,
         )
+        await self._context.add_init_script(_OBSERVER_JS)
         self._page = await self._context.new_page()
         self._page.set_default_timeout(self.action_timeout_ms)
 
@@ -189,6 +263,7 @@ class BrowserEnv:
             seed_url = f"/api/cart/set?pid={pid}&qty={qty}"
             await self._page.goto(urljoin(self.server.base_url, seed_url))
         self.step_count = 0
+        self._obs_cache = None
         await self._page.goto(urljoin(self.server.base_url, task.start_path))
         await self._settle()
         self.current_url = self._page.url
@@ -202,28 +277,59 @@ class BrowserEnv:
             pass
         await asyncio.sleep(0.12)
 
-    async def observe(self) -> Dict[str, Any]:
+    async def observe(self, force: bool = False) -> Dict[str, Any]:
         if self._page is None:
             raise RuntimeError("BrowserEnv not started")
+        started = time.perf_counter()
+        metrics = self.observation_metrics
+        metrics["calls"] += 1
         self.current_url = self._page.url
-        elements: List[Dict[str, str]] = await self._page.evaluate(_OBSERVE_JS)
-        # Keep the most actionable elements first, deterministically.
-        priority = {"input": 0, "button": 1, "a": 2, "select": 3, "textarea": 4}
-        elements.sort(key=lambda e: (priority.get(e["tag"], 9), e["selector"]))
-        elements = elements[: self.max_elements]
-        body_text = ""
-        try:
-            body_text = (await self._page.inner_text("body"))[:600]
-        except Exception:
-            pass
-        state = await self.get_state()
+
+        meta = await self._page.evaluate(_META_JS)
+        metrics["roundtrips"] += 1
+        if not isinstance(meta, dict):
+            meta = {}
+        key = (
+            str(meta.get("doc", "")),
+            str(meta.get("url", self.page_url_path)),
+            int(meta.get("rev", -1)),
+            str(meta.get("title", "")),
+        )
+        cached = self._obs_cache
+        if not force and key[0] and cached and cached.get("key") == key:
+            elements = deepcopy(cached["elements"])
+            body_text = str(cached["text"])
+            metrics["hits"] += 1
+        else:
+            dom = await self._page.evaluate(_OBSERVE_JS)
+            metrics["roundtrips"] += 1
+            metrics["dom_scans"] += 1
+            metrics["misses"] += 1
+            raw_elements = dom.get("elements", []) if isinstance(dom, dict) else []
+            # Keep the most actionable elements first, deterministically.
+            priority = {"input": 0, "button": 1, "a": 2, "select": 3, "textarea": 4}
+            elements = sorted(
+                raw_elements,
+                key=lambda e: (priority.get(e["tag"], 9), e["selector"]),
+            )[: self.max_elements]
+            body_text = str(dom.get("text", ""))[:600] if isinstance(dom, dict) else ""
+            self._obs_cache = {
+                "key": key,
+                "elements": deepcopy(elements),
+                "text": body_text,
+            }
+
+        state = meta.get("state", {})
+        if not isinstance(state, dict):
+            state = {}
         observation = {
             "url": self.page_url_path,
-            "title": await self._page.title(),
+            "title": key[3] or await self._page.title(),
             "elements": elements,
             "text": body_text,
             "state": state,
         }
+        metrics["seconds"] += time.perf_counter() - started
         # Stress test: mutate ids *after* the observation snapshot.  Legacy
         # selector actions become stale; semantic data-eid handles remain.
         if self.perturb_ids and random.random() < self.perturb_prob:
@@ -296,6 +402,8 @@ class BrowserEnv:
                 else:
                     text = str(params.get("text", ""))
                     await locator.fill(text, timeout=self.action_timeout_ms)
+                    # AR025: HTML value changes do not emit a DOM mutation.
+                    self._obs_cache = None
                 result["ok"] = True
             elif name == "scroll":
                 amount = _clamp_int(params.get("amount", 400), -2000, 2000)
