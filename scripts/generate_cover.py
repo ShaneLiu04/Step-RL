@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.13 README cover banner.
+"""Generate the Step-RL v4.14 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CONCURRENCY ISOLATION"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   OBSERVATION CACHE"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.13",
+        "v4.14",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Concurrent Session Isolation",
+        "Adaptive Observation Cache",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "多会话并发 · 线程安全统计 · 原子持久化 · 零串扰",
+        "单往返快照 · DOM 修订号缓存 · 服务端 state 不缓存 · 0 LLM",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "并发会话隔离",
-            "4 个真实 Edge 会话共享服务端，零串扰",
+            "自适应观测缓存",
+            "4 次往返 → 1 次快照；key = doc/url/rev/title",
             (34, 211, 238),
         ),
         (
-            "2.75× 并行",
-            "3.74s vs 5.80s 逐会话和；失败留痕 4/4",
+            "往返 −62.7%",
+            "1760 → 656；observe 耗时 10.96s → 4.06s",
             (167, 139, 250),
         ),
         (
-            "10×12 写者 0 损坏",
-            "锁 + 原子写 + 快照，审计 JSON 可解析",
+            "30/30 · 0 LLM",
+            "缓存探针 4 次调用 · 3 命中 · 1 扫描",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("4/4", "并发会话", (125, 211, 252)),
-        ("2.75×", "并行加速", (244, 114, 182)),
-        ("0", "串扰/损坏", (74, 222, 128)),
-        ("158", "Edge 测试", (167, 139, 250)),
+        ("−62.7%", "观测往返", (125, 211, 252)),
+        ("−63.0%", "观测耗时", (244, 114, 182)),
+        ("30/30", "场景不回退", (74, 222, 128)),
+        ("164", "Edge 测试", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "4 个真实 Edge 会话并发执行",
+        "观测缓存：单往返快照 + DOM rev",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -622,19 +622,19 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1780, 206),
-        "会话    监控",
+        "观测    监控",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="rm",
     )
 
-    # Sessions banner
+    # Cache banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "SESSIONS：4 concurrent · 0 crosstalk",
+        "OBSERVE：4 round-trips → 1 snapshot",
         font(F_CN, 10.5),
         (182, 236, 250, 255),
         anchor="lm",
@@ -642,18 +642,18 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1766, 243),
-        "2.75×",
-        font(F_MONO_BOLD, 9),
+        "CACHE ON",
+        font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Session monitor card
+    # Observation cache card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "Session Monitor",
+        "Observation Cache",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -665,40 +665,44 @@ def draw_browser_card(canvas: Image.Image):
         width=max(1, int(1 * S)),
     )
 
-    sessions = [
-        ("e1", "S1  P3×2"),
-        ("e2", "S2  P4×1"),
-        ("e3", "S3  qty=3"),
-        ("e4", "S4  order"),
+    rows = [
+        ("e1", "Observe #1 · rev 1 · scan · 4 RT", (34, 211, 238)),
+        ("e2", "Observe #2 · rev 1 · hit · 1 RT", (74, 222, 128)),
+        ("e3", "type → rev 2 · invalidate", (167, 139, 250)),
     ]
     sy = 306
-    for eid, label in sessions:
-        som_badge(d, 1106, sy - 6, eid, (34, 211, 238), 18)
+    for eid, label, col in rows:
+        som_badge(d, 1106, sy - 6, eid, col, 18)
         text(
             d,
             (1130, sy + 3),
             label,
-            font(F_MONO, 9),
+            font(F_MONO, 8.5),
             (214, 226, 246, 255),
             anchor="lm",
         )
-        check_badge(d, 1360, sy + 3, 5, (52, 211, 153))
-        text(
-            d,
-            (1370, sy + 3),
-            "ok",
-            font(F_MONO, 8),
-            (134, 239, 172, 255),
-            anchor="lm",
-        )
-        sy += 18
+        sy += 20
 
-    # Shared runtime card
+    d.line(
+        [(1106 * S, 356 * S), (1416 * S, 356 * S)],
+        fill=(255, 255, 255, 18),
+        width=max(1, int(1 * S)),
+    )
+    text(
+        d,
+        (1106, 369),
+        "1760→656 · 10.96s→4.06s",
+        font(F_MONO, 8.5),
+        (150, 230, 190, 255),
+        anchor="lm",
+    )
+
+    # Cache key card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "Shared Runtime",
+        "Cache Key",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -711,8 +715,8 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1735, 284),
-        "0 corrupt",
-        font(F_MONO_BOLD, 6.5),
+        "3 hits",
+        font(F_MONO_BOLD, 7),
         (182, 236, 250, 255),
         anchor="mm",
     )
@@ -723,10 +727,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "stats lock"),
-        ("2", "registry lock"),
-        ("3", "atomic JSON"),
-        ("4", "10×12 writers"),
+        ("1", "key = (doc,url,rev,title)"),
+        ("2", "hit → reuse elements/text"),
+        ("3", "state → always fresh"),
+        ("4", "type → invalidate"),
     ]
     sy = 316
     for num, label in steps:
@@ -735,18 +739,18 @@ def draw_browser_card(canvas: Image.Image):
             d,
             (1476, sy),
             f"{num}  {label}",
-            font(F_MONO, 8.5),
+            font(F_MONO, 8),
             (196, 212, 240, 255),
             anchor="lm",
         )
         sy += 17
 
-    # Concurrency output chip
+    # Cache output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"sessions":4,"crosstalk":0,"corruption":0}',
+        '{"rev":1,"cache":"hit","round_trips":1}',
         font(F_MONO, 9),
         (185, 247, 255, 255),
         anchor="lm",
@@ -756,7 +760,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "3.74s vs 5.80s · 2.75×",
+        "1760→656 · −62.7%",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -852,7 +856,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "concurrency-safe audit",
+        "server state never cached",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -878,7 +882,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "Concurrent Runtime",
+        "Observation Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -886,17 +890,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "locks → atomic write → sessions",
+        "snapshot → cache → invalidate → state",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Locks", "统计 / 注册表临界区", (251, 191, 36)),
-        ("Snapshot", "一致读 + 原子替换", (34, 211, 238)),
-        ("Atomic Write", "临时文件 + os.replace", (167, 139, 250)),
-        ("Sessions", "每会话线程 + 事件循环", (74, 222, 128)),
+        ("Snapshot", "单往返 meta + elements", (251, 191, 36)),
+        ("Cache", "(doc, url, rev, title)", (34, 211, 238)),
+        ("Invalidate", "type / 导航 / 换页", (167, 139, 250)),
+        ("State", "服务端 state 永不缓存", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -927,7 +931,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "4/4 sessions · 2.75× · 0 corruption",
+        "30/30 · 0 LLM · −62.7%",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -952,7 +956,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "CONCURRENCY   ·   SESSION ISOLATION   ·   RUNTIME",
+        "OBSERVATION CACHE   ·   DOM REV   ·   RUNTIME",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -961,7 +965,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR024 · REAL EPISODE",
+        "AR025 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
