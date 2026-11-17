@@ -49,6 +49,17 @@ from .verifier import compute_progress
 NAME_VALUE = "刘星言先生"
 ADDRESS_VALUE = "深圳市龙岗区坂田路1号"
 
+# AR026: semantic control aliases.  A step names the *capability*, not a
+# layout-specific role/label; the live observation decides which control exists.
+ROLE_ALIASES = {
+    "textbox": ("textbox", "searchbox"),
+    "spinbutton": ("spinbutton",),
+}
+NAME_ALIASES = {
+    "搜索": ("搜索", "查找"),
+    "搜索商品": ("搜索商品", "输入关键词"),
+}
+
 
 def _now_iso() -> str:
     return datetime.now().isoformat(timespec="seconds")
@@ -283,9 +294,14 @@ def search_skill(query: str) -> Skill:
     )
 
 
-def add_item_skill(pid: str, qty: int) -> Skill:
+def add_item_skill(pid: str, qty: int, adaptive: bool = True) -> Skill:
     product = PRODUCTS[pid]
     query = product.keywords[0] if product.keywords else product.name
+    quantity_step = (
+        SkillStep("set_quantity", name="数量", role="spinbutton", value=str(qty))
+        if adaptive
+        else SkillStep("type", name="数量", role="spinbutton", value=str(qty))
+    )
     return Skill(
         "add_item",
         [
@@ -293,24 +309,24 @@ def add_item_skill(pid: str, qty: int) -> Skill:
             SkillStep("type", name="搜索商品", role="textbox", value=query),
             SkillStep("click", name="搜索", role="button"),
             SkillStep("click", name=product.name, role="link"),
-            SkillStep("type", name="数量", role="spinbutton", value=str(qty)),
+            quantity_step,
             SkillStep("click", name="加入购物车", role="button"),
         ],
     )
 
 
-def update_quantity_skill(pid: str, qty: int) -> Skill:
+def update_quantity_skill(pid: str, qty: int, adaptive: bool = True) -> Skill:
     product = PRODUCTS[pid]
+    quantity_step = (
+        SkillStep("set_quantity", name=product.name, role="spinbutton", value=str(qty))
+        if adaptive
+        else SkillStep("type", name=product.name, role="spinbutton", value=str(qty))
+    )
     return Skill(
         "update_quantity",
         [
             SkillStep("goto", url="/cart"),
-            SkillStep(
-                "type",
-                name=product.name,
-                role="spinbutton",
-                value=str(qty),
-            ),
+            quantity_step,
             SkillStep(
                 "click",
                 name=f"更新数量 {product.name}",
@@ -345,11 +361,11 @@ def checkout_skill(promo_code: str = "") -> Skill:
     return Skill("checkout", steps)
 
 
-def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
+def skill_for_subtask(task: TaskSpec, adaptive: bool = True) -> Optional[Skill]:
     if task.operation == "update":
         pid = next(iter(task.targets), None)
         if pid:
-            return update_quantity_skill(pid, task.targets[pid])
+            return update_quantity_skill(pid, task.targets[pid], adaptive=adaptive)
         return None
     if task.operation in _INDUCED:
         best = _select_best(task.operation)
@@ -368,17 +384,19 @@ def skill_for_subtask(task: TaskSpec) -> Optional[Skill]:
         return checkout_skill(task.promo)
     pid = next(iter(task.targets), None)
     if pid:
-        return add_item_skill(pid, task.targets[pid])
+        return add_item_skill(pid, task.targets[pid], adaptive=adaptive)
     return None
 
 
 def _find(elements: List[Dict[str, Any]], step: SkillStep) -> Optional[Dict[str, Any]]:
     candidates = []
+    roles = ROLE_ALIASES.get(step.role or "", (step.role,)) if step.role else (None,)
+    names = NAME_ALIASES.get(step.name, (step.name,)) if step.name else ("",)
     for element in elements:
-        if step.role and element.get("role") != step.role:
+        if step.role and element.get("role") not in roles:
             continue
         name = element.get("accessible_name", "")
-        if step.name and step.name.lower() not in name.lower():
+        if step.name and not any(alias.lower() in name.lower() for alias in names):
             continue
         if any(word in name for word in ("推荐", "广告", "赞助")):
             continue
@@ -386,9 +404,82 @@ def _find(elements: List[Dict[str, Any]], step: SkillStep) -> Optional[Dict[str,
     if not candidates:
         return None
     for element in candidates:
-        if element.get("accessible_name", "").strip().lower() == step.name.lower():
+        accessible = element.get("accessible_name", "").strip().lower()
+        if any(accessible == alias.lower() for alias in names):
             return element
     return candidates[0]
+
+
+def _int_value(raw: Any) -> Optional[int]:
+    text = str(raw or "").strip()
+    try:
+        return int(text)
+    except ValueError:
+        digits = "".join(ch for ch in text if ch.isdigit())
+        return int(digits) if digits else None
+
+
+def _find_control(
+    elements: List[Dict[str, Any]], verb: str, needle: str
+) -> Optional[Dict[str, Any]]:
+    for element in elements:
+        if element.get("role") != "button":
+            continue
+        name = str(element.get("accessible_name", ""))
+        if verb in name and needle in name:
+            return element
+    return None
+
+
+async def _apply_quantity(
+    env: BrowserEnv,
+    obs: Dict[str, Any],
+    step: SkillStep,
+) -> tuple[List[Dict[str, Any]], Dict[str, Any], str]:
+    """Compile a quantity target against the live control inventory.
+
+    v1/v2 expose an <input type=number>: fill it.  v3 exposes a stepper
+    (spinbutton display + 增加/减少 buttons): click the real delta.
+    """
+
+    element = _find(obs.get("elements", []), SkillStep("type", name=step.name, role="spinbutton"))
+    if element is None:
+        element = next(
+            (
+                candidate
+                for candidate in obs.get("elements", [])
+                if candidate.get("role") == "spinbutton"
+            ),
+            None,
+        )
+    if element is None:
+        return [], obs, f"quantity control not found: {step.name}"
+    target = _int_value(step.value)
+    if target is None:
+        return [], obs, f"invalid quantity target: {step.value}"
+    if element.get("tag") == "input":
+        action = {"action": "type", "params": {"element": element["eid"], "text": str(target)}}
+        result = await env.execute(action)
+        if not result.get("ok"):
+            return [action], obs, str(result.get("error", ""))
+        return [action], await env.observe(), ""
+
+    current = _int_value(element.get("value")) or 1
+    delta = target - current
+    actions: List[Dict[str, Any]] = []
+    while delta != 0:
+        verb = "增加" if delta > 0 else "减少"
+        button = _find_control(obs.get("elements", []), verb, step.name)
+        if button is None:
+            return actions, obs, f"stepper control not found: {verb}{step.name}"
+        action = {"action": "click", "params": {"element": button["eid"]}}
+        result = await env.execute(action)
+        actions.append(action)
+        if not result.get("ok"):
+            return actions, obs, str(result.get("error", ""))
+        obs = await env.observe()
+        delta = -1 if delta < 0 else delta - 1
+    return actions, obs, ""
 
 
 async def run_skill(
@@ -399,6 +490,12 @@ async def run_skill(
     obs = initial_obs if initial_obs is not None else await env.observe()
     actions: List[Dict[str, Any]] = []
     for step in skill.steps:
+        if step.kind == "set_quantity":
+            step_actions, obs, error = await _apply_quantity(env, obs, step)
+            actions.extend(step_actions)
+            if error:
+                return SkillResult(False, actions, error, obs)
+            continue
         if step.kind == "goto":
             action = {"action": "goto", "params": {"url": step.url}}
         else:
@@ -438,6 +535,7 @@ async def run_skill_hierarchy(
     semantic: bool = True,
     max_steps_per_subtask: int = 12,
     reset: bool = True,
+    adaptive: bool = True,
 ) -> Rollout:
     obs = await env.reset(task) if reset else await env.observe()
     steps: List[StepRecord] = []
@@ -445,7 +543,7 @@ async def run_skill_hierarchy(
         adapter = adapter_for_subtask(subtask)
         if hasattr(model, "set_adapter"):
             model.set_adapter(adapter)
-        skill = skill_for_subtask(subtask)
+        skill = skill_for_subtask(subtask, adaptive=adaptive)
         ok = False
         if skill is not None:
             result = await run_skill(env, skill, initial_obs=obs)
