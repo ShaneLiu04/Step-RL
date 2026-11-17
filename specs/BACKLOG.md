@@ -14,7 +14,7 @@
 | B03 | 诱导技能的冲突消解 | 同一操作多条诱导模板（不同来源轨迹）时如何选择 | 双模板同操作，评测选择更短/更成功者。注：「多候选并存 + 真实成功率选择 + 失败淘汰让位」核心机制已由 AR021 交付（见 specs/archive/AR021-skill-stats-priority/）；剩余增量 = 同成功率下的更短模板平局裁决 |
 | B04 | 订单查询技能（order status）——claimed by AR022 | 用户侧高频操作：查订单状态/历史 | 真实订单页谓词 + 技能执行 3/3 |
 | B05 | 优惠券/促销约束规划——claimed by AR023 | planner 目前只支持预算；满减券是新约束类型 | 规划准确率 100%（对照 naive 基线） |
-| B06 | v3 布局零样本迁移 | v2 已验证；v3（新 DOM 结构/新交互）检验语义层泛化上限 | v3 布局 + churn 下技能 100% |
+
 
 
 
@@ -29,3 +29,4 @@
 | 优惠券/促销约束规划 | AR023 | 8/8 规划（naive 0/8，4 组不可行指令诚实 None）+ 3/3 真实 Edge 执行 0 LLM（服务端 applied，省 50/150）；30/30 不回退；见 specs/archive/AR023-promo-constraint-planning/ |
 | 并发会话隔离压测 | AR024 | 4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏；串行零回退；见 specs/archive/AR024-concurrent-session-isolation/ |
 | 观测缓存与增量 DOM diff | AR025 | 30/30、0 LLM；浏览器往返 1760→656（−62.7%）、observe 耗时 10.96s→4.06s（−63.0%）；cache probe 3/4 命中；见 specs/archive/AR025-observation-cache/ |
+| v3 布局零样本迁移 | AR026 | v3 无 id/searchbox/查找/数量步进器；固定技能 baseline 1/3 → LASC 3/3（0 LLM）；AR011 30/30 零回退；见 specs/archive/AR026-layout-adaptive-skill-compilation/ |
