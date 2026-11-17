@@ -33,7 +33,10 @@
   大模型实验口径；REPRODUCTION 新增 AR026 命令、产物与大模型复现说明；
   BACKLOG B06 毕业。
 - T9：归档 `specs/archive/AR026-layout-adaptive-skill-compilation/`。
-- T10：Gitee 小包同步，diff 为空；全新 clone 跑 v3 测试。
+- T10：Gitee 5 个增量小包推送完成，`gitee/main = e51abce`；
+  `git diff -w gitee/main main` 为空；全新 `--depth 1` clone 中
+  `tests/test_edge_layout_v3_adaptive.py` **5 passed**，README v4.15 / AR026 章节 /
+  LASC 3/3 均存在。
 
 ## devflow-review 独立自查（findings + verdict）
 
