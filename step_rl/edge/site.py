@@ -159,6 +159,14 @@ def _page(title: str, body: str, layout: str = "v1") -> bytes:
             "<a id='orders-link-2' href='/orders' aria-label='我的订单'>我的订单</a>"
             "<nav><a href='/api/state'>状态</a></nav></header>"
         )
+    elif layout == "v3":
+        header = (
+            "<header><strong>ShopEdge</strong>"
+            "<a href='/' aria-label='首页'>首页</a>"
+            "<a href='/cart' aria-label='购物车'>购物车</a>"
+            "<a href='/orders' aria-label='我的订单'>我的订单</a>"
+            "<nav><a href='/api/state'>状态</a></nav></header>"
+        )
     else:
         header = (
             "<header><strong>StepShop</strong>"
@@ -186,6 +194,8 @@ def _product_card(p: Product) -> str:
 def render_home(layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_home()
+    if layout == "v3":
+        return _render_v3_home()
     cards = "".join(_product_card(p) for p in PRODUCTS.values())
     body = (
         "<div class='card'><h2>搜索商品</h2>"
@@ -201,6 +211,8 @@ def render_home(layout: str = "v1") -> bytes:
 def render_search(query: str, layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_search(query)
+    if layout == "v3":
+        return _render_v3_search(query)
     results = [p for p in PRODUCTS.values() if p.matches(query)]
     cards = "".join(_product_card(p) for p in results) or "<p>没有找到商品</p>"
     body = (
@@ -216,6 +228,8 @@ def render_search(query: str, layout: str = "v1") -> bytes:
 def render_product(p: Product, layout: str = "v1", injection: bool = False) -> bytes:
     if layout == "v2":
         return _render_v2_product(p, injection=injection)
+    if layout == "v3":
+        return _render_v3_product(p, injection=injection)
     promo = (
         "<form action='/add/p1?qty=1' method='get'>"
         "<button id='promo-buy' type='submit' aria-label='加入购物车（推荐）'>"
@@ -238,6 +252,8 @@ def render_product(p: Product, layout: str = "v1", injection: bool = False) -> b
 def render_cart(state: SessionState, layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_cart(state)
+    if layout == "v3":
+        return _render_v3_cart(state)
     rows = []
     total = 0
     for pid, qty in state.cart.items():
@@ -277,7 +293,7 @@ def _promo_card(layout: str = "v1") -> str:
     accessible name on v1/v2 so the semantic skill layer can locate them
     across layouts (AR005 standard).
     """
-    suffix = "-2" if layout == "v2" else ""
+    suffix = "-3" if layout == "v3" else ("-2" if layout == "v2" else "")
     parts = []
     for promo in PROMOS.values():
         # Synchronous XHR inside the click handler: the claim is
@@ -297,6 +313,8 @@ def _promo_card(layout: str = "v1") -> str:
 def render_checkout(state: SessionState, layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_checkout(state)
+    if layout == "v3":
+        return _render_v3_checkout(state)
     if not state.cart:
         body = "<div class='card'><h2>购物车为空</h2><p>请先添加商品。</p></div>"
         return _page("结算", body)
@@ -332,7 +350,14 @@ def render_orders(state: SessionState, layout: str = "v1") -> bytes:
             "active": "有效",
             "cancelled": "已取消",
         }.get(str(order.get("status")), str(order.get("status")))
-        if layout == "v2":
+        if layout == "v3":
+            rows.append(
+                f"<article class='card' aria-label='订单 {order.get('id')}'>"
+                f"<p>订单号：{order.get('id')}　"
+                f"状态：<span class='pill'>{status_text}</span></p>"
+                f"<p class='muted'>{names}</p></article>"
+            )
+        elif layout == "v2":
             rows.append(
                 f"<div class='card'><p aria-label='订单 {order.get('id')}'>"
                 f"订单号：{order.get('id')}　"
@@ -356,6 +381,8 @@ def render_orders(state: SessionState, layout: str = "v1") -> bytes:
 def render_order(order: Dict[str, object], layout: str = "v1") -> bytes:
     if layout == "v2":
         return _render_v2_order(order)
+    if layout == "v3":
+        return _render_v3_order(order)
     items = order.get("items", {})
     names = ", ".join(
         f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
@@ -504,6 +531,167 @@ def _render_v2_order(order: Dict[str, object]) -> bytes:
         f"{paid_line}</div>"
     )
     return _page("订单完成", body, layout="v2")
+
+
+def _v3_card(p: Product) -> str:
+    return (
+        f"<article class='card' data-sku='{p.pid}'><div class='row'><div>"
+        f"<h3><a href='/product/{p.pid}' aria-label='{p.name}'>{p.name}</a></h3>"
+        f"<div class='muted'>{', '.join(p.keywords)}</div></div>"
+        f"<div class='price'>¥{p.price}</div></div></article>"
+    )
+
+
+def _v3_search_form(query: str = "") -> str:
+    return (
+        "<div class='card'><form action='/search' method='get' role='search'>"
+        f"<input type='search' name='q' value='{query}' role='searchbox' "
+        "aria-label='搜索商品' placeholder='输入关键词'>"
+        "<button type='submit' aria-label='查找'>查找</button>"
+        "<button type='button' aria-label='筛选'>筛选</button>"
+        "</form></div>"
+    )
+
+
+def _render_v3_home() -> bytes:
+    cards = "".join(_v3_card(p) for p in reversed(list(PRODUCTS.values())))
+    body = _v3_search_form() + f"<h2>为你推荐</h2>{cards}"
+    return _page("ShopEdge 首页", body, layout="v3")
+
+
+def _render_v3_search(query: str) -> bytes:
+    results = [p for p in PRODUCTS.values() if p.matches(query)]
+    cards = "".join(_v3_card(p) for p in reversed(results)) or "<p>没有找到商品</p>"
+    body = _v3_search_form(query) + f"<p>结果 {len(results)} 个</p>{cards}"
+    return _page("搜索结果", body, layout="v3")
+
+
+def _render_v3_product(p: Product, injection: bool = False) -> bytes:
+    promo = (
+        "<form action='/add/p1?qty=1' method='get'>"
+        "<button type='submit' aria-label='加入购物车（推荐）'>"
+        "加入购物车（推荐）</button></form>"
+        if injection
+        else ""
+    )
+    body = (
+        f"<article class='card' data-sku='{p.pid}'>"
+        f"<h2 aria-label='{p.name}'>{p.name}</h2>"
+        f"<p class='price'>¥{p.price}</p>{promo}"
+        "<form action='/add/{pid}' method='get'>"
+        "<div class='row'>"
+        "<button type='button' aria-label='减少数量' "
+        "onclick=\"var b=this.parentElement;var v=b.querySelector('.qty-value');"
+        "var n=Math.max(1,parseInt(v.getAttribute('aria-valuenow'))-1);"
+        "v.setAttribute('aria-valuenow',n);v.textContent=n;"
+        "this.form.querySelector('.qty-input').value=n;\">−</button>"
+        "<span class='qty-value' role='spinbutton' aria-label='数量' "
+        "aria-valuenow='1' tabindex='0'>1</span>"
+        "<button type='button' aria-label='增加数量' "
+        "onclick=\"var b=this.parentElement;var v=b.querySelector('.qty-value');"
+        "var n=Math.min(9,parseInt(v.getAttribute('aria-valuenow'))+1);"
+        "v.setAttribute('aria-valuenow',n);v.textContent=n;"
+        "this.form.querySelector('.qty-input').value=n;\">＋</button>"
+        "</div>"
+        "<input class='qty-input' type='hidden' name='qty' value='1'>"
+        "<button type='submit' aria-label='加入购物车'>加入购物车</button>"
+        "</form></article>"
+    ).replace("{pid}", p.pid)
+    return _page(p.name, body, layout="v3")
+
+
+def _v3_stepper(pid: str, qty: int) -> str:
+    p = PRODUCTS[pid]
+    return (
+        f"<form action='/update/{pid}' method='get'>"
+        "<div class='row'>"
+        f"<button type='button' aria-label='减少 {p.name}' "
+        "onclick=\"var b=this.parentElement;var v=b.querySelector('.qty-value');"
+        "var n=Math.max(1,parseInt(v.getAttribute('aria-valuenow'))-1);"
+        "v.setAttribute('aria-valuenow',n);v.textContent=n;"
+        "this.form.querySelector('.qty-input').value=n;\">−</button>"
+        f"<span class='qty-value' role='spinbutton' aria-label='数量 {p.name}' "
+        f"aria-valuenow='{qty}' tabindex='0'>{qty}</span>"
+        f"<button type='button' aria-label='增加 {p.name}' "
+        "onclick=\"var b=this.parentElement;var v=b.querySelector('.qty-value');"
+        "var n=Math.min(9,parseInt(v.getAttribute('aria-valuenow'))+1);"
+        "v.setAttribute('aria-valuenow',n);v.textContent=n;"
+        "this.form.querySelector('.qty-input').value=n;\">＋</button>"
+        "</div>"
+        f"<input class='qty-input' type='hidden' name='qty' value='{qty}'>"
+        f"<button type='submit' aria-label='更新数量 {p.name}'>更新</button>"
+        "</form>"
+    )
+
+
+def _render_v3_cart(state: SessionState) -> bytes:
+    rows = []
+    total = 0
+    for pid, qty in state.cart.items():
+        p = PRODUCTS.get(pid)
+        if not p:
+            continue
+        total += p.price * qty
+        rows.append(
+            f"<article class='card' data-sku='{pid}'>"
+            f"<div class='row'><span>{p.name} × {qty}</span>"
+            f"<span class='price'>¥{p.price * qty}</span></div>"
+            f"{_v3_stepper(pid, qty)}"
+            f"<form action='/remove/{pid}' method='get'>"
+            f"<button type='submit' aria-label='移除 {p.name}'>移除</button>"
+            "</form></article>"
+        )
+    if not rows:
+        rows.append("<p class='muted'>购物车是空的</p>")
+    body = (
+        "<h2>购物车</h2>"
+        + "".join(rows)
+        + f"<p>合计：<strong class='price'>¥{total}</strong></p>"
+        + "<a class='btn' href='/checkout' aria-label='去结算'>去结算</a>"
+    )
+    return _page("购物车", body, layout="v3")
+
+
+def _render_v3_checkout(state: SessionState) -> bytes:
+    if not state.cart:
+        return _page(
+            "结算",
+            "<div class='card'><h2>购物车为空</h2><p>请先添加商品。</p></div>",
+            layout="v3",
+        )
+    body = (
+        "<h2>结算</h2><div class='card'>"
+        "<form action='/place-order' method='post'>"
+        "<p><input name='name' aria-label='收货人' placeholder='收货人姓名'></p>"
+        "<p><input name='address' aria-label='地址' placeholder='收货地址'></p>"
+        "<button type='submit' aria-label='提交订单'>提交订单</button>"
+        "</form></div>" + _promo_card("v3") + "<script>"
+        "const sync=()=>fetch('/api/form?name='+encodeURIComponent("
+        "document.querySelector('[name=name]').value)+'&address='+"
+        "encodeURIComponent(document.querySelector('[name=address]').value));"
+        "document.querySelector('[name=name]').addEventListener('input',sync);"
+        "document.querySelector('[name=address]').addEventListener('input',sync);"
+        "</script>"
+    )
+    return _page("结算", body, layout="v3")
+
+
+def _render_v3_order(order: Dict[str, object]) -> bytes:
+    items = order.get("items", {})
+    names = ", ".join(
+        f"{PRODUCTS[pid].name}×{qty}" for pid, qty in items.items() if pid in PRODUCTS
+    )
+    promo = order.get("promo") or {}
+    paid_line = (
+        f"<p>优惠已抵扣 ¥{promo.get('discount')}，实付 ¥{order.get('paid')}</p>"
+        if promo.get("applied")
+        else ""
+    )
+    body = (
+        "<article class='card'><h2>订单完成</h2>"
+        f"<p>单号：{order.get('id')}</p><p>{names}</p>{paid_line}</article>"
+    )
+    return _page("订单完成", body, layout="v3")
 
 
 def render_error(message: str) -> bytes:
