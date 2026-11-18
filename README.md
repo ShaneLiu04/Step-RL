@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://github.com/ShaneLiu04/Step-RL">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.14 — 自适应观测缓存 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.15 — 布局自适应技能编译 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.14
+# Step-RL v4.15
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Edge%20Tests-164%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-169%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -24,9 +24,11 @@
 > **订单状态查询**：真实订单页 + 服务端状态谓词（有效/已取消），LLM 兜底 **1 步 / 186 tokens** 沉淀为 1 步技能，同类指令 **3/3、0 LLM**（含取消态迁移 + v2 布局 + ID churn）。  
 > **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。  
 > **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。  
-> **自适应观测缓存**：单往返快照 + DOM 修订号缓存，30 场景仍 **30/30、0 LLM**，观测往返 **−62.7%**、观测耗时 **−63.0%**。
+> **自适应观测缓存**：单往返快照 + DOM 修订号缓存，30 场景仍 **30/30、0 LLM**，观测往返 **−62.7%**、观测耗时 **−63.0%**。  
+> **布局自适应技能编译**：v3 全新 DOM/控件（searchbox、查找、无 id、数量步进器）下，固定技能 **1/3** → LASC **3/3、0 LLM**，v1/v2 30/30 零回退。
 
 <p align="center">
+  <strong>布局自适应技能编译</strong> ·
   <strong>自适应观测缓存</strong> ·
   <strong>并发会话隔离</strong> ·
   <strong>优惠券约束规划</strong> ·
@@ -350,7 +352,8 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR022 订单状态查询 | 3/3，0 LLM（含取消态迁移 + v2+churn）；兜底 1 步 186 tokens | 保留 |
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150） | 保留 |
 | AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏 | 保留 |
-| **AR025 自适应观测缓存** | **30/30、0 LLM；往返 −62.7%，观测耗时 −63.0%；缓存探针 3 命中/1 扫描** | **最终保留** |
+| AR025 自适应观测缓存 | 30/30、0 LLM；往返 −62.7%，观测耗时 −63.0%；缓存探针 3 命中/1 扫描 | 保留 |
+| **AR026 布局自适应技能编译** | **v3 baseline 1/3 → LASC 3/3，0 LLM；AR011 30/30 零回退** | **最终保留** |
 
 所有结果来自 `outputs/` 下真实 episode JSON，详见：
 `docs/results/AR001_eval_report.md`、`docs/results/AR003_hierarchical_report.md`、
@@ -893,7 +896,46 @@ spec：`specs/archive/AR025-observation-cache/`；
 复现：`python scripts/ar025_eval.py`
 （改动前：`python scripts/ar025_baseline_probe.py`）。
 
-### 5.26 可解释性实验（EX001）
+### 5.26 布局自适应技能编译（AR026）
+
+**动机。** AR005 的 v2 仍保留 v1 同构控件（`input[type=number]`、搜索按钮）。
+真实 Web 更异构：搜索框可能是 `role=searchbox`、搜索按钮叫“查找”、数量控件
+可能是**无 input 的加减步进器**。固定技能把这些差异当成失败。
+
+真实 v3（`LocalShopServer(layout="v3")`）新增：无 id、`searchbox` + “查找”、
+`article` 卡片、`span[role=spinbutton][aria-valuenow]` + 增加/减少按钮 +
+hidden qty。固定技能在 v3 加购/改量上真实报错：
+`Locator.fill: Element is not an <input>`。
+
+**机制（LASC）。**
+
+| 组件 | 改动 |
+|------|------|
+| `site.py` | 真实 v3 六类页面 + 步进器 inline JS（同步显示、`aria-valuenow`、hidden qty） |
+| `browser.py` | 观测包含 `[role=spinbutton]`；`value` 回退 `aria-valuenow`；AR025 单往返/缓存不变 |
+| `skill_library.py` | `set_quantity` 语义微操作：input → type；步进器 → 读当前值并按差值点击增加/减少；`textbox↔searchbox`、`搜索↔查找` 别名；`adaptive=False` 真实消融 |
+
+**真实评测（v3 / 真实 Edge / 0 LLM）。**
+
+| 模式 | 成功 | LLM 步 | Prompt tokens |
+|------|------|--------|---------------|
+| 固定技能 baseline | **1/3** | 0 | 0 |
+| LASC（AR026） | **3/3** | 0 | 0 |
+
+逐任务：加购 p3×2（baseline 失败 → LASC `{p3:2}`）、改量 2→3
+（baseline 失败 → LASC `{p3:3}`）、v3 结算 p4（两者均真实下单）。
+
+**组合门禁。** 新增 5 项真实测试；edge 套件 **169 passed**；AR011 30 场景
+**30/30、0 LLM、0 prompt tokens、77.38s**（与 AR025 同量级）；全量（排除
+既有 `gpt2` 网络文件）**243 passed / 3 skipped**，已知环境失败仍为同一 10 项。
+中途发现 `set_quantity` 对旧版无 aria-label 数量输入的回归，修复后复跑
+30/30 才保留。
+
+产物：`outputs/ar026/`（baseline/adaptive results + 报告）；
+spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
+复现：`python scripts/ar026_eval.py`。
+
+### 5.27 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -997,6 +1039,7 @@ python scripts/ar024_baseline_probe.py # 改动前基线探针（并发丢更新
 python scripts/ar024_eval.py      # 并发会话隔离（真实 Edge：4 并发 0 串扰 → 留痕/持久化/门禁）
 python scripts/ar025_baseline_probe.py # 改动前观测开销（真实 Edge 旧 4 往返路径）
 python scripts/ar025_eval.py      # 自适应观测缓存（30 场景 0 LLM + 往返/耗时对照）
+python scripts/ar026_eval.py      # v3 布局 + 自适应技能编译（baseline vs LASC，0 LLM）
 ```
 
 ### 测试
@@ -1007,8 +1050,9 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_skill_memory.py tests/test_edge_hierarchical.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
        tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
-       tests/test_edge_concurrency.py tests/test_edge_observation_cache.py -v
-# 164 passed
+       tests/test_edge_concurrency.py tests/test_edge_observation_cache.py \
+       tests/test_edge_layout_v3_adaptive.py -v
+# 169 passed
 ```
 
 ### 产物
@@ -1064,6 +1108,13 @@ python scripts/edge_pipeline.py --stage rl --rl_epochs 10 --group_size 8 \
 “AOC on/off”两组（用 `scripts/ar025_baseline_probe.py` 复现 off 侧），报告
 往返下降与 observe 耗时下降，不以总墙钟单独归因。
 
+**AR026 布局自适应的大模型复现口径。** LASC 在技能路径运行，与模型规模无关；
+服务器复现需同时跑 `scripts/ar026_eval.py` 的 baseline（adaptive=False）与
+LASC（adaptive=True）两组，报告 `summary.baseline/adaptive.success` 与
+`policy_steps/prompt_tokens`。7B/8B 只在 LASC 失败后进入 LLM 兜底，
+因此大模型实验应额外报告兜底触发率（adaptive 成功则不应触发）。v1/v2
+30 场景仍用 `scripts/ar011_eval.py` 作为零回退门禁。
+
 ---
 
 ## 评测协议
@@ -1106,7 +1157,7 @@ step-rl/
 │   │   ├── supervisor.py         # 闭环重规划（AR007）
 │   │   ├── observation.py        # 验证器引导观测压缩（AR008）
 │   │   ├── error repair          # 错误可观测闭环修复（AR009）
-│   │   ├── skill_library.py     # 技能编译免生成（AR010）
+│   │   ├── skill_library.py     # 技能编译免生成（AR010）；布局自适应控件编译（AR026）
 │   │   ├── runtime.py           # 统一 Agent Runtime（AR011）
 │   │   ├── capability.py        # 能力门控（AR012）
 │   │   ├── (site injection)     # 对抗 UI（AR013）
@@ -1157,6 +1208,7 @@ step-rl/
 │   ├── ar024_eval.py
 │   ├── ar025_baseline_probe.py # 改动前观测开销（旧 4 往返路径）
 │   ├── ar025_eval.py
+│   ├── ar026_eval.py           # v3 baseline vs LASC（真实 Edge/0 LLM）
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1165,9 +1217,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR025 / EX001
+│   └── archive/AR001 … AR026 / EX001
 │
-├── tests/                        # 256 项测试（243 pass + 10 代理环境失败 + 3 skip）
+├── tests/                        # 260 项测试；edge 169 passed；已知 gpt2 网络 10 项环境失败
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1218,7 +1270,8 @@ step-rl/
 | AR022 | 订单状态查询技能（真实订单页 + 服务端状态谓词） | 3/3 0 LLM（含取消态迁移 + v2+churn） | 保留 |
 | AR023 | 优惠券约束规划（真实券列表 + 可行性判定 + 服务端权威折扣 + 诚实 None 拒绝） | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，省 50/150 | 保留 |
 | AR024 | 并发会话隔离（模块锁 + 原子快照持久化 + 多会话执行器） | 4 并发真实 Edge 4/4 零串扰（2.75×）；留痕 4/4；10×12 写者 0 损坏 | 保留 |
-| **AR025** | **自适应观测缓存（单往返快照 + DOM 修订号缓存 + 技能层复用）** | **30/30、0 LLM；往返 −62.7%，观测耗时 −63.0%** | **最终保留** |
+| AR025 | 自适应观测缓存（单往返快照 + DOM 修订号缓存 + 技能层复用） | 30/30、0 LLM；往返 −62.7%，观测耗时 −63.0% | 保留 |
+| **AR026** | **布局自适应技能编译（v3 异构控件 + 运行时能力编译）** | **v3 baseline 1/3 → LASC 3/3，0 LLM；AR011 30/30** | **最终保留** |
 
 规格与完整实验记录：
 
@@ -1239,6 +1292,7 @@ step-rl/
 - `specs/archive/AR023-promo-constraint-planning/`
 - `specs/archive/AR024-concurrent-session-isolation/`
 - `specs/archive/AR025-observation-cache/`
+- `specs/archive/AR026-layout-adaptive-skill-compilation/`
 
 ---
 
@@ -1306,7 +1360,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ```bibtex
 @software{step_rl_v47,
   title = {Step-RL: Fault-Tolerant Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.14},
+  version = {4.15},
   year = {2026},
   url = {https://github.com/ShaneLiu04/Step-RL}
 }
@@ -1320,7 +1374,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.14 / AR025** | **推荐** | 自适应观测缓存：30/30、0 LLM，观测往返 −62.7%、耗时 −63.0% |
+| **v4.15 / AR026** | **推荐** | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
+| v4.14 / AR025 | 保留 | 自适应观测缓存：30/30、0 LLM，观测往返 −62.7%、耗时 −63.0% |
 | v4.13 / AR024 | 保留 | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
 | v4.12 / AR023 | 保留 | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
 | v4.11 / AR022 | 保留 | 订单状态查询：3/3 0 LLM（含取消态迁移 + v2+churn），兜底 1 步 186 tokens |

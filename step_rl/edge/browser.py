@@ -83,7 +83,7 @@ _OBSERVE_JS = r"""
   const out = [];
   const seen = new Set();
   const nodes = document.querySelectorAll(
-    "a,button,input,select,textarea,[role=button]"
+    "a,button,input,select,textarea,[role=button],[role=spinbutton]"
   );
   const cssPath = (el) => {
     if (el.id) return "#" + CSS.escape(el.id);
@@ -150,7 +150,9 @@ _OBSERVE_JS = r"""
       text: (el.innerText || el.textContent || "").trim().slice(0, 80),
       placeholder: el.getAttribute("placeholder") || "",
       name: el.getAttribute("name") || "",
-      value: "value" in el ? String(el.value || "").slice(0, 80) : "",
+      value: "value" in el
+        ? String(el.value || "").slice(0, 80)
+        : String(el.getAttribute("aria-valuenow") || "").slice(0, 80),
       role: roleOf(el),
       accessible_name: accessible,
     });
