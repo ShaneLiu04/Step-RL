@@ -5,6 +5,9 @@
 
 **执行状态：已完成 E1/E2/E3/E6/E7/E8；E4/E5 汇总既有真实结果。完整报告见 docs/results/EX001_report.md。**
 
+> EX002 全架构压力实验：见 [EXPERIMENTS_EX002.md](EXPERIMENTS_EX002.md) 与
+> [results/EX002_report.md](results/EX002_report.md)。
+
 ---
 
 ## 1. 研究问题
