@@ -954,6 +954,24 @@ spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
 
 设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
+### 5.28 全架构压力实验（EX002）
+
+实验/归因编号独立于 AR。完整报告与 6 张图：
+**[docs/results/EX002_report.md](docs/results/EX002_report.md)**
+
+| 压力维度 | 证据 | 结果 |
+|----------|------|------|
+| DOM churn × 接口 | E1（2026-11-19 重跑） | selector 0.75/1.0 时 0%，语义 100% |
+| 扁平 vs 层级 | E2（9 任务） | 88.9% vs **100%** |
+| 验证器观测消融 | E3（9 任务） | 100% → **33.3%**，步数 6.33 → 11.00 |
+| 布局/控件异构 | E4（AR026） | v3 固定 1/3 → LASC **3/3**，0 LLM |
+| 观测开销 | E5（AR025） | 往返 **−62.7%**、耗时 **−63.0%** |
+| 并发/注册表 | E6（AR012/021/024） | 4/4 零串扰、失败留痕 4/4、0 损坏 |
+| 故障/长链路 | E7（AR016–18） | 0/2→2/2、0/2→2/2、0/3→3/3 |
+| 组合门禁 | E8 | 30/30、0 LLM、edge 169 passed |
+
+设计文档：[docs/EXPERIMENTS_EX002.md](docs/EXPERIMENTS_EX002.md)。
+
 ---
 
 ## 训练算法
