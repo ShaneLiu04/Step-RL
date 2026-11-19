@@ -10,7 +10,7 @@
 | T6 | `scripts/ex002_figures.py` + 6 图 | passing |
 | T7 | `docs/results/EX002_report.md` + `docs/EXPERIMENTS_EX002.md` | passing |
 | T8 | 全 AR 覆盖矩阵与组合回退决策 | passing |
-| T9 | 归档与 Gitee 同步 | passing |
+| T9 | 归档与 Gitee 同步 | passing（`main=54145e0`；全新 clone：报告/6 图/spec 均存在） |
 
 ## 执行记录
 
