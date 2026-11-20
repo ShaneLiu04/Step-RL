@@ -31,8 +31,12 @@ class TaskSpec:
     # constructions stay backward compatible).
     require_promo: bool = False
     promo: str = ""
+    # AR027: cart-wide transactional transform ("double", "set:3", "add:1").
+    cart_transform: str = ""
 
     def predicate_names(self) -> List[str]:
+        if self.cart_transform:
+            return ["cart_contains"]
         if self.compensate_on_failure:
             return ["orders_all_cancelled"]
         if self.order_sequence:
