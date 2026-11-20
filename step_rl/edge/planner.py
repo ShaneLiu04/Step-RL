@@ -185,6 +185,33 @@ def _coupon_mentioned(instruction: str) -> bool:
     )
 
 
+_CART_GLOBAL = ("所有", "每件", "全部", "都", "各")
+
+
+def _parse_cart_transform(
+    instruction: str, catalog: List[CatalogItem]
+) -> Optional[str]:
+    """AR027: compile a cart-wide transform, never a single-product edit."""
+
+    if not any(word in instruction for word in ("购物车", "购物袋")):
+        return None
+    if not any(word in instruction for word in _CART_GLOBAL):
+        return None
+    # A named product means this is a normal single-item update, not a
+    # cart-wide transaction; leave it to the AR015 skill path.
+    if _mentions(instruction, catalog):
+        return None
+    if "加倍" in instruction or "翻倍" in instruction:
+        return "double"
+    match = re.search(r"(?:改成|改为|设置为|统一为)\s*(\d+)", instruction)
+    if match:
+        return f"set:{match.group(1)}"
+    match = re.search(r"(?:加|增加)\s*(\d+)", instruction)
+    if match:
+        return f"add:{match.group(1)}"
+    return None
+
+
 def _compile_base(instruction: str, catalog: List[CatalogItem]) -> Optional[TaskSpec]:
     """Compile a constrained instruction into a TaskSpec (pre-AR023 body)."""
 
@@ -318,6 +345,7 @@ def plan_instruction(
     instruction: str,
     catalog: List[CatalogItem],
     promos: Optional[List[PromoInfo]] = None,
+    enable_cart_transform: bool = True,
 ) -> Optional[TaskSpec]:
     """Compile a constrained instruction into a TaskSpec.
 
@@ -329,6 +357,23 @@ def plan_instruction(
     "success" plan.  Instructions without a coupon mention are compiled
     exactly as before.
     """
+
+    transform = (
+        _parse_cart_transform(instruction, catalog) if enable_cart_transform else None
+    )
+    if transform:
+        return TaskSpec(
+            task_id="planned",
+            level=3,
+            goal=instruction,
+            search_query="",
+            targets={},
+            operation="transform",
+            start_path="/cart",
+            predicates=["cart_contains"],
+            cart_transform=transform,
+            split="planned",
+        )
 
     spec = _compile_base(instruction, catalog)
     if not _coupon_mentioned(instruction):
