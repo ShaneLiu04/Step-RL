@@ -27,7 +27,10 @@
   P0–P3 全部 true。
 - T8：edge **175 passed**；全量（排除既有 gpt2 网络文件）**249 passed / 3 skipped**；
   AR011 **30/30、0 LLM、0 tokens、78.07s**。
-- T9/T10：待文档与 Gitee 收尾。
+- T9：README v4.16 / 5.27 / 27 次价值账本 / 事务层 / REPRODUCTION §4.5.3 / BACKLOG / 封面；
+  spec 归档 `specs/archive/AR027-cart-transaction-compiler/`。
+- T10：Gitee 增量小包同步完成，`main = 9585787`；diff 为空；
+  全新 clone 中 `tests/test_edge_cart_transform.py` **6 passed**，README v4.16 / AR027 章节存在。
 
 ## devflow-review 自查
 
