@@ -130,8 +130,10 @@ _OBSERVE_JS = r"""
     const style = window.getComputedStyle(el);
     if (style.display === "none" || style.visibility === "hidden") continue;
     const selector = cssPath(el);
-    if (!selector || seen.has(selector)) continue;
-    seen.add(selector);
+    // AR027: two cart rows can share the same CSS path (same field names).
+    // Deduplicate by DOM node, not by selector, or later rows disappear.
+    if (!selector || seen.has(el)) continue;
+    seen.add(el);
     counter += 1;
     const eid = "e" + counter;
     el.setAttribute("data-eid", eid);

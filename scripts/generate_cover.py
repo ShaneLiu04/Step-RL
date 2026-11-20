@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.15 README cover banner.
+"""Generate the Step-RL v4.16 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   LAYOUT-ADAPTIVE"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CART TRANSACTIONS"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.15",
+        "v4.16",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Layout-Adaptive Skill Compilation",
+        "Cart Transaction Compiler",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "v3 异构控件 · 步进器 / searchbox · 技能自适应编译 · 0 LLM",
+        "购物车整体变换 · 逐项服务端复核 · 失败补偿回滚 · 0 LLM",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "布局自适应技能编译",
-            "v3 无 id · searchbox · 数量步进器 → 技能自适应",
+            "购物车事务编译",
+            "所有/每件/都/各 → double / set:N / add:N 一等能力",
             (34, 211, 238),
         ),
         (
-            "1/3 → 3/3",
-            "固定技能 baseline 1/3；LASC 3/3，0 LLM",
+            "0/3 → 3/3",
+            "baseline 0/3；CTC 3/3，0 LLM",
             (167, 139, 250),
         ),
         (
-            "v1/v2 30/30 零回退",
-            "AR011 30 场景 0 LLM，77.38s",
+            "失败补偿回滚",
+            "p4 500 → p3 回滚，cart 恢复 {p3:1,p4:1}",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "LASC 任务", (125, 211, 252)),
-        ("1/3", "固定技能基线", (244, 114, 182)),
-        ("0", "LLM 调用", (74, 222, 128)),
-        ("169", "Edge 测试", (167, 139, 250)),
+        ("3/3", "CTC 任务", (125, 211, 252)),
+        ("0/3", "baseline", (244, 114, 182)),
+        ("175", "Edge 测试", (74, 222, 128)),
+        ("1", "compensated 回滚", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/v3",
+        "shop.local/cart",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：加购 P3×2，然后改量 2→3",
+        "指令：购物车所有商品加倍",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -628,13 +628,13 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # LASC banner
+    # CTC banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "v3：no id · searchbox · spinbutton",
+        "CTC：double · fault p4 → rollback",
         font(F_CN, 10.5),
         (182, 236, 250, 255),
         anchor="lm",
@@ -642,23 +642,23 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1766, 243),
-        "LASC ON",
+        "CTC ON",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # v3 layout card
+    # Cart transform card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "v3 Layout",
+        "Cart Transform",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
     )
-    text(d, (1416, 278), "3", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
+    text(d, (1416, 278), "2", font(F_MONO_BOLD, 9), (134, 239, 172, 255), anchor="ra")
     d.line(
         [(1106 * S, 294 * S), (1416 * S, 294 * S)],
         fill=(255, 255, 255, 20),
@@ -669,26 +669,26 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1130, 309),
-        "role=searchbox · name=查找",
+        "P3 1→2 · verified",
         font(F_MONO, 8.5),
-        (214, 226, 246, 255),
+        (150, 230, 190, 255),
+        anchor="lm",
+    )
+    som_badge(d, 1106, 320, "e2", (251, 191, 36), 18)
+    text(
+        d,
+        (1130, 329),
+        "P4 2→4 · fault 500",
+        font(F_MONO, 8.5),
+        (250, 190, 130, 255),
         anchor="lm",
     )
     text(
         d,
-        (1130, 327),
-        "article · P3 ¥299",
+        (1130, 349),
+        "compensate P3 2→1",
         font(F_MONO, 8.5),
-        (214, 226, 246, 255),
-        anchor="lm",
-    )
-    som_badge(d, 1106, 338, "e2", (167, 139, 250), 18)
-    text(
-        d,
-        (1130, 347),
-        "spinbutton 2→3 · delta +1",
-        font(F_MONO, 8.5),
-        (214, 226, 246, 255),
+        (190, 170, 250, 255),
         anchor="lm",
     )
     d.line(
@@ -699,18 +699,18 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1106, 369),
-        "hidden qty = 3",
-        font(F_MONO, 8.5),
+        "cart {p3:1,p4:1} · compensated=1",
+        font(F_MONO, 8),
         (150, 230, 190, 255),
         anchor="lm",
     )
 
-    # LASC compile card
+    # CTC runtime card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "LASC Compile",
+        "CTC Runtime",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -728,10 +728,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "detect role=searchbox"),
-        ("2", "alias 搜索↔查找"),
-        ("3", "stepper delta +1"),
-        ("4", "verify cart {p3:3}"),
+        ("1", "parse transform"),
+        ("2", "per-item update"),
+        ("3", "verify server state"),
+        ("4", "failure → compensate"),
     ]
     sy = 316
     for num, label in steps:
@@ -740,19 +740,19 @@ def draw_browser_card(canvas: Image.Image):
             d,
             (1476, sy),
             f"{num}  {label}",
-            font(F_CN, 8),
+            font(F_MONO, 8),
             (196, 212, 240, 255),
             anchor="lm",
         )
         sy += 17
 
-    # LASC output chip
+    # CTC output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"layout":"v3","spinbutton":3,"llm":0}',
-        font(F_MONO, 9),
+        '{"transform":"double","compensated":1,"llm":0}',
+        font(F_MONO, 8.5),
         (185, 247, 255, 255),
         anchor="lm",
     )
@@ -761,7 +761,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1470, 403),
-        "1/3→3/3 · 0 LLM",
+        "0/3→3/3 · 0 LLM",
         font(F_CN, 8.5),
         (150, 230, 190, 255),
         anchor="lm",
@@ -857,7 +857,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "cart {p3:3} verified",
+        "per-item server verified",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -883,7 +883,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "LASC Runtime",
+        "CTC Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -891,17 +891,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "observe → alias → set qty → verify",
+        "parse → apply → verify → compensate",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Observe", "searchbox + spinbutton", (251, 191, 36)),
-        ("Alias", "搜索↔查找 · textbox↔searchbox", (34, 211, 238)),
-        ("Set Qty", "input→type；stepper→delta", (167, 139, 250)),
-        ("Verify", "cart qty = 3 · 0 LLM", (74, 222, 128)),
+        ("Plan", "所有/每件/都/各 → transform", (251, 191, 36)),
+        ("Apply", "逐项 update_quantity", (34, 211, 238)),
+        ("Verify", "每步服务端复核", (167, 139, 250)),
+        ("Rollback", "失败按原数量补偿", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -932,7 +932,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "v3 3/3 · v1/v2 30/30 · 0 LLM",
+        "CTC 3/3 · baseline 0/3 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -957,7 +957,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "LAYOUT-ADAPTIVE   ·   SKILL COMPILATION   ·   RUNTIME",
+        "CART TRANSACTIONS   ·   CTC   ·   ROLLBACK",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -966,7 +966,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR026 · REAL EPISODE",
+        "AR027 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
