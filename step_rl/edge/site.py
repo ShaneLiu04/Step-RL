@@ -916,6 +916,14 @@ class _Handler(BaseHTTPRequestHandler):
             return
         elif path.startswith("/update/"):
             pid = path.split("/", 2)[2]
+            if (
+                getattr(self.server, "fault_update_once", False)
+                and not getattr(self.server, "fault_update_used", False)
+                and pid == getattr(self.server, "fault_update_pid", "p4")
+            ):
+                self.server.fault_update_used = True
+                self._send(render_error("更新数量暂时失败"), 500, sid)
+                return
             try:
                 qty = int(qs.get("qty", ["1"])[0])
             except ValueError:
@@ -1082,6 +1090,8 @@ class LocalShopServer:
         injection: bool = False,
         fault_add_once: bool = False,
         fault_order_once: bool = False,
+        fault_update_once: bool = False,
+        fault_update_pid: str = "p4",
     ) -> None:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
@@ -1096,8 +1106,11 @@ class LocalShopServer:
         self._httpd.injection = injection
         self._httpd.fault_add_once = fault_add_once
         self._httpd.fault_order_once = fault_order_once
+        self._httpd.fault_update_once = fault_update_once
+        self._httpd.fault_update_pid = fault_update_pid
         self._httpd.fault_add_used = False
         self._httpd.fault_order_used = False
+        self._httpd.fault_update_used = False
         if stock_overrides:
             self._httpd.stock.update(stock_overrides)  # type: ignore[attr-defined]
         self.layout = layout
