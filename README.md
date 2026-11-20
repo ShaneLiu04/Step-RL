@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.15 — 布局自适应技能编译 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.16 — 购物车事务编译 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.15
+# Step-RL v4.16
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Edge%20Tests-169%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-175%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -25,9 +25,11 @@
 > **优惠券约束规划**：满减券成为与预算同级的一等约束——对照真实券列表 + 实时价做可行性判定（不可行显式 None，不猜测不降级），服务端权威折扣结算，同类指令 **8/8 规划 + 3/3 执行、0 LLM**。  
 > **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。  
 > **自适应观测缓存**：单往返快照 + DOM 修订号缓存，30 场景仍 **30/30、0 LLM**，观测往返 **−62.7%**、观测耗时 **−63.0%**。  
-> **布局自适应技能编译**：v3 全新 DOM/控件（searchbox、查找、无 id、数量步进器）下，固定技能 **1/3** → LASC **3/3、0 LLM**，v1/v2 30/30 零回退。
+> **布局自适应技能编译**：v3 全新 DOM/控件（searchbox、查找、无 id、数量步进器）下，固定技能 **1/3** → LASC **3/3、0 LLM**，v1/v2 30/30 零回退。  
+> **购物车事务编译**：所有商品加倍/统一改量/每件加一，baseline **0/3** → CTC **3/3、0 LLM**；真实更新故障下已改项回滚，**compensated=1**。
 
 <p align="center">
+  <strong>购物车事务编译</strong> ·
   <strong>布局自适应技能编译</strong> ·
   <strong>自适应观测缓存</strong> ·
   <strong>并发会话隔离</strong> ·
@@ -48,7 +50,7 @@
 
 ---
 
-> **先看价值账本**：[26 次 AR 尝试换来了什么](#ar-价值总览26-次尝试25-次进入最优组合) ·
+> **先看价值账本**：[27 次 AR 尝试换来了什么](#ar-价值总览27-次尝试26-次进入最优组合) ·
 > [全 AR 价值矩阵](#ar-价值矩阵全部尝试) · [EX002 压力实验](docs/results/EX002_report.md)
 
 ## 目录索引
@@ -82,13 +84,13 @@
 
 ---
 
-## AR 价值总览：26 次尝试，25 次进入最优组合
+## AR 价值总览：27 次尝试，26 次进入最优组合
 
 我们不是先设计一个“大而全”的架构再寻找证据，而是让每次 AR 只回答一个真实失败：
 
 > **失败发生在哪一层，就把那一层变成可执行、可验证、可回退的机制。**
 
-26 次尝试中 **25 次进入最终组合**，1 次归档为负结果（AR002）；AR008 内部还回退了
+27 次尝试中 **26 次进入最终组合**，1 次归档为负结果（AR002）；AR008 内部还回退了
 “激进观测裁剪”，只保留干扰控件过滤。**负结果不是浪费**：它们排除了错误路线，
 让最终组合没有被“看起来更多”的模块拖累。
 
@@ -102,6 +104,7 @@
 | 用户约束被静默丢弃 | AR006/AR023 | 规划准确率 naive **0/8** → **8/8**；执行 3/3、0 LLM、服务端 applied | 把失败前移到规划层，并让券/预算/最值成为一等约束 |
 | 故障、库存漂移、表单错误不可恢复 | AR007/009/014 | 动态重规划 2/2；表单修复 2/2；检查点恢复 3/3 | 运行时不是“一次执行”，而是可观察、可恢复的闭环 |
 | 多订单/失败补偿不一致 | AR016/017/018 | 0/2 → **2/2**；0/2 → **2/2**；0/3 → **3/3** | 把长事务做成有上界、可审计、可回滚的服务 |
+| 购物车级整体变换无事务 | AR027 | baseline **0/3** → CTC **3/3、0 LLM**；故障补偿 **compensated=1** | 多商品事务 + 逐项服务端复核 + 失败回滚 |
 | 技能不能自进化 | AR019/020/021/022 | 归纳后 3/3、0 LLM；批量移除 3/3；失败留痕后让位；订单查询 3/3 | 失败 → LLM 兜底 → 轨迹归纳 → 统计淘汰 → 0 LLM 复用 |
 | 端侧运行成本高、并发串扰 | AR010/011/012/024/025 | 30/30、0 LLM、0 GPU；4 并发 4/4 零串扰；观测往返 **−62.7%** | 技能编译 + CPU-first + 并发隔离 + 单往返观测 |
 | 异构布局/控件不可迁移 | AR005/AR026 | v3 固定技能 **1/3** → LASC **3/3**；v1/v2 30/30 零回退 | 从“记住布局”升级为“按实时控件能力编译动作” |
@@ -120,7 +123,7 @@
 5. **端侧成本优势**：AR012 30/30、0 GPU、4 路并发约 2.73×；AR025 保持 30/30、
    0 LLM 的同时把观测往返降低 62.7%、观测耗时降低 63.0%。
 
-**当前组合（v4.15）**：AR011 30 场景 **30/30、0 LLM、0 prompt tokens、77.38s**；
+**当前组合（v4.16）**：AR011 30 场景 **30/30、0 LLM、0 prompt tokens、77.38s**；
 edge 套件 **169 passed**；EX002 全 AR 覆盖矩阵无缺项。完整证据：
 [docs/results/EX002_report.md](docs/results/EX002_report.md)。
 
@@ -193,6 +196,7 @@ flowchart LR
 | 接地层 | 语义 `data-eid` + 可访问名 + 布局自适应 | AR004/005/026 | E1 churn 下语义 100%；v3 LASC 1/3→3/3 |
 | 策略层 | 层级分解 + 适配器路由 + Step-GRPO | AR001/003/004 | 扁平 88.9% vs 层级 100% |
 | 技能层 | 技能编译、归纳、统计淘汰、订单/券/批量扩展 | AR010/019–023 | 同类任务 0 LLM；失败留痕后让位 |
+| 事务层 | 购物车级多商品变换 + 逐项复核 + 失败回滚 | AR027 | baseline 0/3 → CTC 3/3；compensated=1 |
 | 恢复层 | 闭环重规划、错误修复、检查点、重试、Saga | AR007/009/014/016–018 | 0/2→2/2、0/3→3/3；失败可审计 |
 | 服务层 | CPU-first、并发隔离、单往返观测 | AR012/024/025 | 4 并发零串扰；往返 −62.7%、耗时 −63.0% |
 
@@ -406,8 +410,9 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR024 并发隔离 | 4/4 零串扰 | 保留 | 失败留痕 4/4、写者 0 损坏 |
 | AR025 观测缓存 | 30/30、−62.7% 往返 | 保留 | 权威 state 不缓存，避免“省成本换错状态” |
 | AR026 LASC | v3 1/3 → 3/3 | 保留 | 中途旧版数量输入回归，修复后 AR011 恢复 30/30 |
+| AR027 CTC | 0/3 → 3/3；故障补偿成功 | 保留 | 多商品事务；真实 500 下已改项回滚 |
 
-**最终账本：25 保留 / 1 归档负结果（AR002）；AR008 的激进部分单独回退。**
+**最终账本：26 保留 / 1 归档负结果（AR002）；AR008 的激进部分单独回退。**
 被回退的尝试不是“失败项目”，而是排除了错误路线，让最终组合没有噪声模块。
 
 所有结果来自 `outputs/` 下真实 episode JSON；完整归因见
@@ -988,7 +993,43 @@ hidden qty。固定技能在 v3 加购/改量上真实报错：
 spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
 复现：`python scripts/ar026_eval.py`。
 
-### 5.27 可解释性实验（EX001）
+### 5.27 购物车事务编译器（AR027）
+
+**动机（来自 EX002）。** E2 显示长链路瓶颈集中在多商品组合；E7 显示失败必须
+可补偿。但“购物车级整体变换”（所有商品加倍/统一改量/每件加一）仍没有一等
+能力：旧 planner 对 `double` 返回显式缺口，对 `set:N` 甚至可能误解释成买 p1；
+技能层也没有跨多商品的事务语义。
+
+**机制（CTC）。**
+
+| 组件 | 改动 |
+|------|------|
+| `planner.py` | 仅对“购物车/购物袋 + 所有/每件/都/各”解析 `double/set:N/add:N`；提及具体商品则走 AR015 单商品路径 |
+| `runtime.py` | 从真实 `/api/state` 计算目标；逐项 `update_quantity`；**每步用服务端状态复核**；失败按原数量补偿并复核 |
+| `site.py` | 真实 HTTP 故障注入 `fault_update_once/fault_update_pid`（500），用于验证回滚 |
+| `browser.py` | 多行 cart 的 `input[name=qty]` 共享 CSS path；观测从“按 selector 去重”改为“按 DOM 节点去重”，否则第二行会消失 |
+
+**真实评测（真实 Edge / 0 LLM）。**
+
+| 模式 | 成功 | LLM 步 | Prompt tokens |
+|------|------|--------|---------------|
+| baseline（关闭 CTC） | **0/3** | 0 | 0 |
+| CTC（AR027） | **3/3** | 0 | 0 |
+
+逐任务：`double` `{p3:1,p4:2}→{p3:2,p4:4}`；`set:3` `{p3:2,p2:1}→{p3:3,p2:3}`；
+`add:1` `{p3:1,p4:1}→{p3:2,p4:2}`。真实故障：p4 更新返回 500，p3 已改项回滚，
+最终 cart 恢复 `{p3:1,p4:1}`，**compensated=1**，显式失败不伪装成功。
+
+**组合门禁。** 新增 6 项真实测试；edge 套件 **175 passed**；全量（排除既有
+`gpt2` 网络文件）**249 passed / 3 skipped**；AR011 仍 **30/30、0 LLM、0 tokens、
+78.07s**。AR027 由 EX002 的“多商品长链路 + 故障补偿”直接推动，并在实现中发现
+真实观测去重缺陷，修复后才保留。
+
+产物：`outputs/ar027/`（results / report）；
+spec：`specs/archive/AR027-cart-transaction-compiler/`；
+复现：`python scripts/ar027_eval.py`。
+
+### 5.28 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -996,9 +1037,9 @@ spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
 
 | 归因问题 | 实验 | 结果 |
 |----------|------|------|
-| 语义接口是否必要 | E1 扰动概率曲线 | selector 25% 扰动即 25%；语义全程 100% |
-| 层级分解是否必要 | E2 扁平 vs 层级 | 66.7% vs **100%** |
-| 验证器观测贡献 | E3 移除 Φ/missing | 100% → **22.2%** |
+| 语义接口是否必要 | E1 扰动概率曲线 | selector 0.25 扰动 50%；语义全程 100% |
+| 层级分解是否必要 | E2 扁平 vs 层级 | 88.9% vs **100%** |
+| 验证器观测贡献 | E3 移除 Φ/missing | 100% → **33.3%** |
 | 跨布局是否记忆 | E4 v2 + churn | selector 0%；语义 **100%** |
 | 约束规划贡献 | E5 基线 vs 规划器 | 规划准确率 0% → **100%** |
 | 失败发生在哪 | E6 分类学 | selector 全在搜索层；旧 RL 在商品/结算层；基线在规划层 |
@@ -1007,7 +1048,7 @@ spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
 
 设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
-### 5.28 全架构压力实验（EX002）
+### 5.29 全架构压力实验（EX002）
 
 实验/归因编号独立于 AR。完整报告与 6 张图：
 **[docs/results/EX002_report.md](docs/results/EX002_report.md)**
@@ -1111,6 +1152,7 @@ python scripts/ar024_eval.py      # 并发会话隔离（真实 Edge：4 并发 
 python scripts/ar025_baseline_probe.py # 改动前观测开销（真实 Edge 旧 4 往返路径）
 python scripts/ar025_eval.py      # 自适应观测缓存（30 场景 0 LLM + 往返/耗时对照）
 python scripts/ar026_eval.py      # v3 布局 + 自适应技能编译（baseline vs LASC，0 LLM）
+python scripts/ar027_eval.py      # 购物车事务编译（baseline vs CTC + 故障回滚，0 LLM）
 ```
 
 ### 测试
@@ -1122,8 +1164,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
        tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
        tests/test_edge_concurrency.py tests/test_edge_observation_cache.py \
-       tests/test_edge_layout_v3_adaptive.py -v
-# 169 passed
+       tests/test_edge_layout_v3_adaptive.py tests/test_edge_cart_transform.py -v
+# 175 passed
 ```
 
 ### 产物
@@ -1281,6 +1323,7 @@ step-rl/
 │   ├── ar025_baseline_probe.py # 改动前观测开销（旧 4 往返路径）
 │   ├── ar025_eval.py
 │   ├── ar026_eval.py           # v3 baseline vs LASC（真实 Edge/0 LLM）
+│   ├── ar027_eval.py           # 购物车事务 baseline vs CTC + 回滚
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1289,9 +1332,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR026 / EX001
+│   └── archive/AR001 … AR027 / EX001
 │
-├── tests/                        # 260 项测试；edge 169 passed；已知 gpt2 网络 10 项环境失败
+├── tests/                        # 266 项测试；edge 175 passed；已知 gpt2 网络 10 项环境失败
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1342,6 +1385,7 @@ step-rl/
 | AR017 | Saga 补偿 | 0/2 → 2/2；失败订单全部 cancelled | 长事务失败不留半成功 |
 | AR018 | 瞬时故障重试 | 0/3 → 3/3 | 重试有上界、可审计 |
 | AR024 | 并发会话隔离 | 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏 | 从“单会话 demo”变成可服务运行时 |
+| AR027 | 购物车事务编译器 | baseline 0/3 → CTC 3/3，0 LLM；故障回滚 compensated=1 | 多商品整体变换可事务化、可回滚 |
 
 ### 自进化：从 LLM 兜底到 0 LLM 复用
 
@@ -1373,7 +1417,7 @@ step-rl/
 | 历史行压缩 | 0% | 后段状态丢失 | 改为 AR025 观测传输优化 |
 | AR008 激进观测裁剪 | 60% | 裁掉可执行元素 | 只保留干扰控件过滤，确立“正确性优先” |
 
-**26 次尝试的账本：25 次进入最终组合，1 次归档负结果；AR008 的激进部分单独回退。**
+**27 次尝试的账本：26 次进入最终组合，1 次归档负结果；AR008 的激进部分单独回退。**
 这比“只展示成功”更能说明架构的可靠性：每个模块都经过了保留/回退的真实决策。
 
 规格与完整实验记录：
@@ -1396,6 +1440,7 @@ step-rl/
 - `specs/archive/AR024-concurrent-session-isolation/`
 - `specs/archive/AR025-observation-cache/`
 - `specs/archive/AR026-layout-adaptive-skill-compilation/`
+- `specs/archive/AR027-cart-transaction-compiler/`
 
 ---
 
@@ -1463,7 +1508,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ```bibtex
 @software{step_rl_v47,
   title = {Step-RL: Fault-Tolerant Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.15},
+  version = {4.16},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -1477,7 +1522,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.15 / AR026** | **推荐** | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
+| **v4.16 / AR027** | **推荐** | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
+| v4.15 / AR026 | 保留 | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
 | v4.14 / AR025 | 保留 | 自适应观测缓存：30/30、0 LLM，观测往返 −62.7%、耗时 −63.0% |
 | v4.13 / AR024 | 保留 | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
 | v4.12 / AR023 | 保留 | 优惠券约束规划：8/8 规划（naive 0/8）+ 3/3 执行 0 LLM，服务端权威折扣（省 50/150） |
