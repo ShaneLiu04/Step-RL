@@ -30,3 +30,4 @@
 | 并发会话隔离压测 | AR024 | 4 并发真实 Edge 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏；串行零回退；见 specs/archive/AR024-concurrent-session-isolation/ |
 | 观测缓存与增量 DOM diff | AR025 | 30/30、0 LLM；浏览器往返 1760→656（−62.7%）、observe 耗时 10.96s→4.06s（−63.0%）；cache probe 3/4 命中；见 specs/archive/AR025-observation-cache/ |
 | v3 布局零样本迁移 | AR026 | v3 无 id/searchbox/查找/数量步进器；固定技能 baseline 1/3 → LASC 3/3（0 LLM）；AR011 30/30 零回退；见 specs/archive/AR026-layout-adaptive-skill-compilation/ |
+| 购物车事务编译（多商品整体变换 + 回滚） | AR027 | baseline 0/3 → CTC 3/3（0 LLM）；真实 500 故障下 compensated=1、cart 恢复；AR011 30/30；见 specs/archive/AR027-cart-transaction-compiler/ |

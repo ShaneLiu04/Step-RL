@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001–AR026：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存与布局自适应技能编译**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
+本手册对应 **AR001–AR027：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存、布局自适应技能编译与购物车事务编译**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -113,6 +113,8 @@ python scripts/ar025_baseline_probe.py
 python scripts/ar025_eval.py
 # 33) AR026 v3 布局 + 自适应技能编译（真实 Edge：baseline vs LASC，0 LLM）
 python scripts/ar026_eval.py
+# 34) AR027 购物车事务编译（baseline vs CTC + 真实故障回滚，0 LLM）
+python scripts/ar027_eval.py
 ```
 
 产物：
@@ -150,6 +152,7 @@ outputs/ar023/              # 优惠券约束 基线探针 + 规划/执行/门�
 outputs/ar024/              # 并发会话隔离 基线探针 + 4 并发/留痕/持久化/串行回归
 outputs/ar025/              # 自适应观测缓存 基线探针 + 30 场景 + 缓存探针
 outputs/ar026/              # v3 布局 baseline vs LASC（真实 Edge/0 LLM）
+outputs/ar027/              # 购物车事务 baseline vs CTC + 真实故障回滚
 ```
 
 ---
@@ -260,7 +263,8 @@ r_t = −0.02 + (1.0 if terminal and success else 0)
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行（0 LLM，服务端 applied） | 11–17 | 1.00 |
 | AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏 | 3–4 并发墙钟 | 1.00 |
 | AR025 自适应观测缓存 | 30/30、0 LLM；观测往返 −62.7%、耗时 −63.0%；缓存探针 3 命中/1 扫描 | 77s / 30 场景 | 1.00 |
-| **AR026 布局自适应技能编译（最终）** | **v3 baseline 1/3 → LASC 3/3，0 LLM；AR011 30/30 零回退** | **1.3–2.2s / v3 任务** | **1.00** |
+| AR026 布局自适应技能编译 | v3 baseline 1/3 → LASC 3/3，0 LLM；AR011 30/30 零回退 | 1.3–2.2s / v3 任务 | 1.00 |
+| **AR027 购物车事务编译（最终）** | **baseline 0/3 → CTC 3/3，0 LLM；故障回滚 compensated=1** | **2.0–2.5s / 事务** | **1.00** |
 
 逐任务报告：
 
@@ -450,7 +454,8 @@ L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 | AR023 优惠券约束规划 | 8/8 规划（naive 0/8）+ 3/3 执行 0 LLM（服务端 applied，省 50/150） | 保留 |
 | AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏；串行零回退 | 保留 |
 | AR025 自适应观测缓存 | 30/30、0 LLM；往返 −62.7%、观测耗时 −63.0%；cache probe 3/4 命中；零回退 | 保留 |
-| **AR026 布局自适应技能编译** | **v3 baseline 1/3 → LASC 3/3（searchbox/查找/步进器真实适配）；AR011 30/30 零回退** | **最终保留** |
+| AR026 布局自适应技能编译 | v3 baseline 1/3 → LASC 3/3（searchbox/查找/步进器真实适配）；AR011 30/30 零回退 | 保留 |
+| **AR027 购物车事务编译** | **baseline 0/3 → CTC 3/3，0 LLM；真实 500 故障下已改项回滚，compensated=1** | **最终保留** |
 
 ### 3.3 本机算力说明
 
@@ -573,6 +578,18 @@ LASC 在技能路径执行，7B/8B 只影响其后的 LLM 兜底。服务器复�
 v3 站点由 `LocalShopServer(layout="v3")` 提供，无 id、searchbox/查找、
 数量步进器均为真实 DOM/JS，不是 mock。大模型实验不应通过放宽
 `adaptive` 校验或伪造 `aria-valuenow` 来提升成功率。
+
+### 4.5.3 AR027 大模型复现配置（购物车事务）
+
+CTC 是确定性事务层，不依赖 LLM；大模型实验只影响“未支持指令”的兜底路径。
+服务器复现要求：
+
+1. 跑 `python scripts/ar027_eval.py`，报告 baseline（`enable_cart_transform=False`）
+   与 CTC 的成功数、`compensated`、最终 `cart`；
+2. 跑 `python scripts/ar011_eval.py` 作为 30 场景零回退门禁；
+3. 真实故障注入 `fault_update_once=True, fault_update_pid="p4"` 必须得到
+   `success=false`、`compensated=1`、cart 恢复原值；
+4. 不要把 CTC 的成功归因于模型：该路径 0 LLM、0 prompt tokens。
 
 ### 4.6 预期资源与时间（参考）
 

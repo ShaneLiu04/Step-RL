@@ -374,7 +374,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 61, by + 28),
-        "v4.15",
+        "v4.16",
         font(F_EN_SEMI, 26),
         (224, 231, 255, 255),
         anchor="mm",
@@ -384,7 +384,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (88, 316),
-        "布局自适应技能编译 · 端侧分层强化学习",
+        "购物车事务编译 · 端侧分层强化学习",
         font(F_CN, 35),
         (226, 234, 252, 255),
         anchor="la",
