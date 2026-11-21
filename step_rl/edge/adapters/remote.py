@@ -34,6 +34,9 @@ BLOCK_WORDS = (
     "异常流量",
     "安全验证",
     "访问过于频繁",
+    "访问频繁",
+    "无法搜索",
+    "稍后再试",
 )
 LOGIN_TITLES = ("sign in", "sign-in", "登录", "log in", "login")
 

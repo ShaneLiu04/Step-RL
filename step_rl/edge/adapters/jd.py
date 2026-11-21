@@ -193,6 +193,10 @@ class JDAdapter:
             raise RuntimeError(
                 "JD login/captcha required: rerun with --manual-login and complete it manually"
             )
+        if obs.signals.get("risk_control"):
+            raise RuntimeError(
+                "JD risk control: 访问频繁/无法搜索; pause and retry later with low frequency"
+            )
         return obs
 
     async def open_product(self, url: str) -> Observation:
@@ -235,8 +239,12 @@ class JDAdapter:
             page_type = "orders"
         else:
             page_type = "page"
+        risk_control = any(
+            word in text for word in ("访问频繁", "无法搜索", "稍后再试", "安全验证", "验证码")
+        )
         signals = {
             "login_required": page_type == "login" or "请登录" in text,
+            "risk_control": risk_control,
             "amount": extract_amount(text),
             "has_submit": any(word in text for word in DANGEROUS),
             "item_ids": ITEM_RE.findall(text),

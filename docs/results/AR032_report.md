@@ -7,7 +7,7 @@
 | 站点 | 状态 | 证据 |
 |------|------|------|
 | Local | **3/3 成功**，0 LLM，steps 6/10/10 | `outputs/ar032/eval/ar032_results.json` |
-| JD | 搜索页可打开，但 `item_links=0` → **失败** | `outputs/ar032/jd/20261121_184434_bb57d6/` |
+| JD | 搜索页可打开，但真实返回“访问频繁导致无法搜索”，`item_links=0` → **失败（风控）** | `outputs/ar032/jd/20261121_184434_bb57d6/` |
 | Taobao | 空标题/反爬 → **失败** | `outputs/ar032/taobao/20261121_184451_202212/` |
 | Amazon | 搜索页真实加载（只读成功） | `outputs/ar032/amazon/20261121_184503_f11087/` |
 
