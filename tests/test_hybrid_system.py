@@ -13,7 +13,15 @@ from step_rl.edge.system import HybridSystem
 def test_hybrid_local_deterministic():
     async def run():
         system = HybridSystem()
-        result = await system.run_local("买两件无线充电器")
+        try:
+            result = await system.run_local("买两件无线充电器")
+        except Exception as exc:  # pragma: no cover
+            if any(
+                key in str(exc).lower()
+                for key in ("msedge", "browser", "playwright", "executable")
+            ):
+                pytest.skip(f"browser unavailable: {exc}")
+            raise
         assert result["success"]
         assert result["policy_steps"] == 0
         assert result["prompt_tokens"] == 0
