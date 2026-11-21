@@ -1115,7 +1115,7 @@ spec：`specs/archive/AR028-cart-to-order-transaction/`；
 命令：
 
 ```powershell
-python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login --save-storage-state
 python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
   --storage-state "$env:LOCALAPPDATA\StepRL\credentials\jd.json" --to-checkout
 ```
@@ -1250,7 +1250,7 @@ python scripts/ar026_eval.py      # v3 布局 + 自适应技能编译（baseline
 python scripts/ar027_eval.py      # 购物车事务编译（baseline vs CTC + 故障回滚，0 LLM）
 python scripts/ar028_eval.py      # 购物车→订单事务（baseline vs COT + 券预检/回滚）
 python scripts/ar028_demo_gif.py  # 真实 Edge 录制 AR028 GIF demo
-python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login  # AR029 JD dry-run
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login --save-storage-state  # AR029 JD dry-run
 ```
 
 ### 测试
