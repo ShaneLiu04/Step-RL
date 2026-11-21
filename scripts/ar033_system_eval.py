@@ -18,7 +18,7 @@ from step_rl.edge.modeling import (  # noqa: E402
     resolve_model_path,
     set_seed,
 )
-from step_rl.system import HybridSystem  # noqa: E402
+from step_rl.edge.system import HybridSystem  # noqa: E402
 
 OUT = ROOT / "outputs" / "ar033" / "eval"
 ADAPTERS = {
@@ -67,7 +67,9 @@ async def main():
         results["remote"].append(await system.run_remote(site, query))
 
     set_seed(42)
-    model, tokenizer = load_multi_adapter(resolve_model_path(), ADAPTERS)
+    model_path = resolve_model_path()
+    model, tokenizer = load_multi_adapter(model_path, ADAPTERS)
+    gpu_writer = EvidenceWriter(OUT, run_id, "gpu")
     gpu_started = time.time()
     results["gpu_fallback"] = await system.run_local(
         "把购物车中的无线充电器移除",
@@ -75,9 +77,27 @@ async def main():
         seed_cart={"p3": 1},
         model=model,
         tokenizer=tokenizer,
+        model_name=str(model_path),
+        evidence=gpu_writer,
     )
     results["gpu_fallback"]["mode"] = "gpu_llm_fallback"
     results["gpu_fallback"]["wall_seconds"] = round(time.time() - gpu_started, 2)
+    results["phases"] = {
+        "P0_local_cpu": results["local_cpu"],
+        "P1_console": results["console"],
+        "P2_remote_readonly": results["remote"],
+        "P3_gpu_fallback": results["gpu_fallback"],
+    }
+    critical_ok = (
+        all(row.get("success") for row in results["local_cpu"])
+        and bool(results["console"].get("success"))
+        and bool(results["gpu_fallback"].get("success"))
+    )
+    results["verdict"] = {"critical_layers_ok": critical_ok}
+    results["phases"]["P4_evidence_verdict"] = {
+        "critical_layers_ok": critical_ok,
+        "report": str(OUT / "ar033_report.md"),
+    }
 
     (OUT / "ar033_results.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -119,6 +139,8 @@ async def main():
         )
     (OUT / "ar033_report.md").write_text("\n".join(lines), encoding="utf-8")
     print(json.dumps(results, ensure_ascii=False), flush=True)
+    if not critical_ok:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

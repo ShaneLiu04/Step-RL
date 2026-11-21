@@ -20,7 +20,8 @@
 | 结果 | **成功** |
 | 路径 | skill 缺失 → LLM fallback |
 | policy steps / prompt tokens | 4 / 1142 |
-| 耗时 | 28.17s（含模型生成） |
+| 耗时 | 28.58s（含模型生成） |
+| 模型 | `C:\\Users\\...\\models--Qwen--Qwen3-0.6B-Base\\snapshots\\main`（真实路径入证据） |
 | 最终 cart | `{}` |
 
 说明：该任务不是硬编码成功；确定性技能没有 remove 模板，真实调用端侧 Qwen 兜底，
@@ -39,8 +40,9 @@
 
 | 站点 | 结果 |
 |------|------|
-| JD | 搜索页打开，`item_links=0` → 失败 |
+| JD | 搜索页打开但触发“访问频繁/无法搜索”风控 → 失败 |
 | Taobao | 空标题/反爬 → 失败 |
+| 单站异常 | `HybridSystem` 捕获并返回 `ok=false`，不中断 CPU/GPU/Console |
 | Amazon | 搜索页真实加载 → 只读成功 |
 
 单站失败被 `HybridSystem` 捕获，不会中断 CPU/GPU/Console 其他层。
