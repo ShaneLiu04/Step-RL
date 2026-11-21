@@ -12,7 +12,7 @@ import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from ..browser import _OBSERVE_JS
 from .base import (
@@ -149,7 +149,28 @@ class JDAdapter:
             await self.page.wait_for_load_state("domcontentloaded", timeout=8000)
         except Exception:
             pass
-        await asyncio.sleep(0.8)
+        # JD often redirects/refreshes after DOMContentLoaded (login/risk-control
+        # interstitials).  Give navigation a moment, then observe with retries.
+        await asyncio.sleep(1.8)
+
+    async def _evaluate_observe(self):
+        last_error = None
+        for _ in range(4):
+            try:
+                return await self.page.evaluate(_OBSERVE_JS)
+            except Exception as exc:
+                last_error = exc
+                message = str(exc).lower()
+                if "execution context was destroyed" not in message and "navigation" not in message:
+                    raise
+                try:
+                    await self.page.wait_for_load_state(
+                        "domcontentloaded", timeout=8000
+                    )
+                except Exception:
+                    pass
+                await asyncio.sleep(1.5)
+        raise RuntimeError(f"JD observation failed after navigation retries: {last_error}")
 
     async def goto(self, url: str) -> None:
         self._require()
@@ -160,7 +181,12 @@ class JDAdapter:
 
     async def search(self, query: str) -> Observation:
         await self.goto(jd_search_url(query))
-        return await self.observe()
+        obs = await self.observe()
+        if obs.page_type == "login" or obs.signals.get("login_required"):
+            raise RuntimeError(
+                "JD login/captcha required: rerun with --manual-login and complete it manually"
+            )
+        return obs
 
     async def open_product(self, url: str) -> Observation:
         await self.goto(url)
@@ -168,7 +194,7 @@ class JDAdapter:
 
     async def observe(self) -> Observation:
         page = self._require()
-        raw = await page.evaluate(_OBSERVE_JS)
+        raw = await self._evaluate_observe()
         elements = [
             Element(
                 role=str(item.get("role", "")),
@@ -187,21 +213,21 @@ class JDAdapter:
             text = ""
         self.current_text = text
         url = page.url
-        page_type = (
-            "search"
-            if "search.jd.com" in url
-            else "product"
-            if "item.jd.com" in url
-            else "cart"
-            if "cart.jd.com" in url
-            else "checkout"
-            if is_checkout_url(url)
-            else "orders"
-            if "order.jd.com" in url
-            else "login"
-            if "passport" in url or "login" in url.lower()
-            else "page"
-        )
+        host = urlparse(url).netloc.lower()
+        if "passport" in host or "login" in host:
+            page_type = "login"
+        elif host.startswith("search."):
+            page_type = "search"
+        elif host.startswith("item."):
+            page_type = "product"
+        elif host.startswith("cart."):
+            page_type = "cart"
+        elif is_checkout_url(url):
+            page_type = "checkout"
+        elif host.startswith("order."):
+            page_type = "orders"
+        else:
+            page_type = "page"
         signals = {
             "login_required": page_type == "login" or "请登录" in text,
             "amount": extract_amount(text),
@@ -210,7 +236,7 @@ class JDAdapter:
         }
         return Observation(
             url=url,
-            title=await page.title(),
+            title=(await page.title()) if page else "",
             page_type=page_type,
             elements=elements,
             signals=signals,
