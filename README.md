@@ -1108,6 +1108,12 @@ spec：`specs/archive/AR028-cart-to-order-transaction/`；
 `ok=false: JD login/captcha required`。这是**真实失败/拒绝证据**，不是成功；
 搜索/加购/结算成功证据仍需用户 `--manual-login` 后补跑。
 
+**工程闭环（2026-11-21）：** 当前环境无法完成 JD 登录核验，因此只闭环可验证部分：
+adapter 编译、local golden、证据脱敏、安全闸门、edge 186、全量 260/3 skip、AR011 30/30。
+ST 用例见 `specs/changes/AR029-real-multisite-adaptation/st-cases.md`：
+ST-01–06/09 PASS，ST-07/08（JD 真实业务）BLOCKED。AR030（淘宝/Amazon）、AR031（Console）、
+AR032（跨站评测）仅规划、未开始，已在 BACKLOG 记录。
+
 **待补跑（不伪造）：** JD 真实任务需用户现场接管登录，按每类 5 run 落
 `outputs/ar029/jd/<run_id>/`；当前不填写 JD 成功率。真实证据补齐前 AR029 不标记
 最终验收 PASS。
