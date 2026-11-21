@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://gitee.com/liu-xingyan04/step-rl">
-  <img src="docs/images/cover.jpg" alt="Step-RL v4.16 — 购物车事务编译 · 端侧分层强化学习" width="100%">
+  <img src="docs/images/cover.jpg" alt="Step-RL v4.17 — 购物车到订单事务 · 端侧分层强化学习" width="100%">
 </a>
 
 <br/>
 
-# Step-RL v4.16
+# Step-RL v4.17
 
 **验证器驱动的端侧 Web Agent 分层强化学习**
 
@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Edge%20Tests-175%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-181%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -26,9 +26,11 @@
 > **并发会话隔离**：4 个真实 Edge 会话共享真实服务端并发执行，**4/4 成功且零串扰**（2.75× 并行），4 次真实 DOM 失败留痕 **4/4 精确**，10×12 并发写者 **0 损坏**。  
 > **自适应观测缓存**：单往返快照 + DOM 修订号缓存，30 场景仍 **30/30、0 LLM**，观测往返 **−62.7%**、观测耗时 **−63.0%**。  
 > **布局自适应技能编译**：v3 全新 DOM/控件（searchbox、查找、无 id、数量步进器）下，固定技能 **1/3** → LASC **3/3、0 LLM**，v1/v2 30/30 零回退。  
-> **购物车事务编译**：所有商品加倍/统一改量/每件加一，baseline **0/3** → CTC **3/3、0 LLM**；真实更新故障下已改项回滚，**compensated=1**。
+> **购物车事务编译**：所有商品加倍/统一改量/每件加一，baseline **0/3** → CTC **3/3、0 LLM**；真实更新故障下已改项回滚，**compensated=1**。  
+> **购物车→订单事务**：加倍+满400减50+结算，baseline **0/3** → COT **3/3、0 LLM**；`total=1196/paid=1146`，券门槛不足时 0 动作，订单失败回滚 **compensated=2**。
 
 <p align="center">
+  <strong>购物车→订单事务</strong> ·
   <strong>购物车事务编译</strong> ·
   <strong>布局自适应技能编译</strong> ·
   <strong>自适应观测缓存</strong> ·
@@ -46,11 +48,17 @@
   <strong>统一 Agent Runtime</strong>
 </p>
 
+<p align="center">
+  <img src="docs/images/ar028_demo.gif" alt="AR028 real Edge demo: cart transform -> checkout -> promo" width="520">
+  <br/>
+  <sub>真实 Edge 演示：购物车整体加倍 → 满400减50 → 服务端订单 total ¥1196 / paid ¥1146（AR028）</sub>
+</p>
+
 </div>
 
 ---
 
-> **先看价值账本**：[27 次 AR 尝试换来了什么](#ar-价值总览27-次尝试26-次进入最优组合) ·
+> **先看价值账本**：[28 次 AR 尝试换来了什么](#ar-价值总览28-次尝试27-次进入最优组合) ·
 > [全 AR 价值矩阵](#ar-价值矩阵全部尝试) · [EX002 压力实验](docs/results/EX002_report.md)
 
 ## 目录索引
@@ -84,13 +92,13 @@
 
 ---
 
-## AR 价值总览：27 次尝试，26 次进入最优组合
+## AR 价值总览：28 次尝试，27 次进入最优组合
 
 我们不是先设计一个“大而全”的架构再寻找证据，而是让每次 AR 只回答一个真实失败：
 
 > **失败发生在哪一层，就把那一层变成可执行、可验证、可回退的机制。**
 
-27 次尝试中 **26 次进入最终组合**，1 次归档为负结果（AR002）；AR008 内部还回退了
+28 次尝试中 **27 次进入最终组合**，1 次归档为负结果（AR002）；AR008 内部还回退了
 “激进观测裁剪”，只保留干扰控件过滤。**负结果不是浪费**：它们排除了错误路线，
 让最终组合没有被“看起来更多”的模块拖累。
 
@@ -105,6 +113,7 @@
 | 故障、库存漂移、表单错误不可恢复 | AR007/009/014 | 动态重规划 2/2；表单修复 2/2；检查点恢复 3/3 | 运行时不是“一次执行”，而是可观察、可恢复的闭环 |
 | 多订单/失败补偿不一致 | AR016/017/018 | 0/2 → **2/2**；0/2 → **2/2**；0/3 → **3/3** | 把长事务做成有上界、可审计、可回滚的服务 |
 | 购物车级整体变换无事务 | AR027 | baseline **0/3** → CTC **3/3、0 LLM**；故障补偿 **compensated=1** | 多商品事务 + 逐项服务端复核 + 失败回滚 |
+| 变换与结算/券割裂 | AR028 | baseline **0/3** → COT **3/3、0 LLM**；`total=1196/paid=1146`；故障回滚 **compensated=2** | 变换→券预检→结算→订单，失败取消/回滚 |
 | 技能不能自进化 | AR019/020/021/022 | 归纳后 3/3、0 LLM；批量移除 3/3；失败留痕后让位；订单查询 3/3 | 失败 → LLM 兜底 → 轨迹归纳 → 统计淘汰 → 0 LLM 复用 |
 | 端侧运行成本高、并发串扰 | AR010/011/012/024/025 | 30/30、0 LLM、0 GPU；4 并发 4/4 零串扰；观测往返 **−62.7%** | 技能编译 + CPU-first + 并发隔离 + 单往返观测 |
 | 异构布局/控件不可迁移 | AR005/AR026 | v3 固定技能 **1/3** → LASC **3/3**；v1/v2 30/30 零回退 | 从“记住布局”升级为“按实时控件能力编译动作” |
@@ -123,7 +132,7 @@
 5. **端侧成本优势**：AR012 30/30、0 GPU、4 路并发约 2.73×；AR025 保持 30/30、
    0 LLM 的同时把观测往返降低 62.7%、观测耗时降低 63.0%。
 
-**当前组合（v4.16）**：AR011 30 场景 **30/30、0 LLM、0 prompt tokens、77.38s**；
+**当前组合（v4.17）**：AR011 30 场景 **30/30、0 LLM、0 prompt tokens、77.38s**；
 edge 套件 **169 passed**；EX002 全 AR 覆盖矩阵无缺项。完整证据：
 [docs/results/EX002_report.md](docs/results/EX002_report.md)。
 
@@ -196,7 +205,7 @@ flowchart LR
 | 接地层 | 语义 `data-eid` + 可访问名 + 布局自适应 | AR004/005/026 | E1 churn 下语义 100%；v3 LASC 1/3→3/3 |
 | 策略层 | 层级分解 + 适配器路由 + Step-GRPO | AR001/003/004 | 扁平 88.9% vs 层级 100% |
 | 技能层 | 技能编译、归纳、统计淘汰、订单/券/批量扩展 | AR010/019–023 | 同类任务 0 LLM；失败留痕后让位 |
-| 事务层 | 购物车级多商品变换 + 逐项复核 + 失败回滚 | AR027 | baseline 0/3 → CTC 3/3；compensated=1 |
+| 事务层 | 多商品变换 + 券预检 + 结算/订单 + 失败回滚 | AR027/028 | CTC 0/3→3/3；COT 0/3→3/3；compensated=1/2 |
 | 恢复层 | 闭环重规划、错误修复、检查点、重试、Saga | AR007/009/014/016–018 | 0/2→2/2、0/3→3/3；失败可审计 |
 | 服务层 | CPU-first、并发隔离、单往返观测 | AR012/024/025 | 4 并发零串扰；往返 −62.7%、耗时 −63.0% |
 
@@ -411,8 +420,9 @@ r_t = 2.0·(Φ(s_{t+1}) − Φ(s_t))
 | AR025 观测缓存 | 30/30、−62.7% 往返 | 保留 | 权威 state 不缓存，避免“省成本换错状态” |
 | AR026 LASC | v3 1/3 → 3/3 | 保留 | 中途旧版数量输入回归，修复后 AR011 恢复 30/30 |
 | AR027 CTC | 0/3 → 3/3；故障补偿成功 | 保留 | 多商品事务；真实 500 下已改项回滚 |
+| AR028 COT | 0/3 → 3/3；券预检/订单回滚 | 保留 | 变换+结算+券；预检失败零动作，订单故障回滚 |
 
-**最终账本：26 保留 / 1 归档负结果（AR002）；AR008 的激进部分单独回退。**
+**最终账本：27 保留 / 1 归档负结果（AR002）；AR008 的激进部分单独回退。**
 被回退的尝试不是“失败项目”，而是排除了错误路线，让最终组合没有噪声模块。
 
 所有结果来自 `outputs/` 下真实 episode JSON；完整归因见
@@ -1029,7 +1039,47 @@ spec：`specs/archive/AR026-layout-adaptive-skill-compilation/`；
 spec：`specs/archive/AR027-cart-transaction-compiler/`；
 复现：`python scripts/ar027_eval.py`。
 
-### 5.28 可解释性实验（EX001）
+### 5.28 购物车→订单事务（AR028）
+
+**动机（来自 EX002 E7）。** AR027 已把购物车整体变换事务化，但真实用户会说
+“所有商品加倍，并用满400减50结算”。AR027 只改变购物车、忽略结算与券，用户
+期望失败；变换、券门槛、订单必须是一条事务，且任何一步失败都不能留下半状态。
+
+**机制（COT）。**
+
+| 阶段 | 行为 |
+|------|------|
+| 规划 | transform + `结算/下单` → `require_checkout`；`满X减Y` 对照真实 promo 列表，未知/泛称显式 None |
+| 预检 | 按真实目录价 × 目标数量计算总额；低于券门槛 → **0 动作**失败 |
+| 变换 | AR027 CTC：逐项 update + 服务端复核 |
+| 结算 | 真实 checkout 技能（含领券/表单/提交） |
+| 验证/回滚 | 验证 `order_placed` + `order_promo_applied`；失败先 cancel 订单，再恢复原购物车并复核 |
+
+**真实评测（真实 Edge / 0 LLM）。**
+
+| 模式 | 成功 | LLM | Prompt tokens |
+|------|------|-----|---------------|
+| baseline（AR027 仅变换） | **0/3** | 0 | 0 |
+| COT（AR028） | **3/3** | 0 | 0 |
+
+逐任务：
+- 加倍+结算：订单 `{p3:2,p4:2}`，`total=1196/paid=1196`；
+- 加倍+满400减50+结算：`promo.applied=true`，`total=1196/paid=1146`；
+- 每件加1+结算：`{p3:2,p4:3}`，`total=1595`。
+- 券门槛预检：p3×1 加倍 total=398 < 2000，`steps=0`、cart 不变、order=None；
+- 订单故障：真实 `fault_order_once`，取消订单 + 回滚购物车，`compensated=2`。
+
+**GIF demo。** 顶部 GIF 来自真实 Edge：
+`docs/images/ar028_demo.gif`（5 帧，约 40KB），对应真实订单 `total=1196/paid=1146`。
+
+**组合门禁。** 新增 6 项真实测试；edge **181 passed**；全量（排除既有 gpt2
+网络文件）**255 passed / 3 skipped**；AR011 仍 **30/30、0 LLM、0 tokens、79.28s**。
+
+产物：`outputs/ar028/`（eval + demo）；
+spec：`specs/archive/AR028-cart-to-order-transaction/`；
+复现：`python scripts/ar028_eval.py`、`python scripts/ar028_demo_gif.py`。
+
+### 5.29 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -1048,7 +1098,7 @@ spec：`specs/archive/AR027-cart-transaction-compiler/`；
 
 设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
-### 5.29 全架构压力实验（EX002）
+### 5.30 全架构压力实验（EX002）
 
 实验/归因编号独立于 AR。完整报告与 6 张图：
 **[docs/results/EX002_report.md](docs/results/EX002_report.md)**
@@ -1153,6 +1203,8 @@ python scripts/ar025_baseline_probe.py # 改动前观测开销（真实 Edge 旧
 python scripts/ar025_eval.py      # 自适应观测缓存（30 场景 0 LLM + 往返/耗时对照）
 python scripts/ar026_eval.py      # v3 布局 + 自适应技能编译（baseline vs LASC，0 LLM）
 python scripts/ar027_eval.py      # 购物车事务编译（baseline vs CTC + 故障回滚，0 LLM）
+python scripts/ar028_eval.py      # 购物车→订单事务（baseline vs COT + 券预检/回滚）
+python scripts/ar028_demo_gif.py  # 真实 Edge 录制 AR028 GIF demo
 ```
 
 ### 测试
@@ -1164,8 +1216,9 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_semantic.py tests/test_edge_layout_v2.py \
        tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
        tests/test_edge_concurrency.py tests/test_edge_observation_cache.py \
-       tests/test_edge_layout_v3_adaptive.py tests/test_edge_cart_transform.py -v
-# 175 passed
+       tests/test_edge_layout_v3_adaptive.py tests/test_edge_cart_transform.py \
+       tests/test_edge_cart_to_order.py -v
+# 181 passed
 ```
 
 ### 产物
@@ -1324,6 +1377,8 @@ step-rl/
 │   ├── ar025_eval.py
 │   ├── ar026_eval.py           # v3 baseline vs LASC（真实 Edge/0 LLM）
 │   ├── ar027_eval.py           # 购物车事务 baseline vs CTC + 回滚
+│   ├── ar028_eval.py           # 购物车→订单 baseline vs COT + 券预检/回滚
+│   ├── ar028_demo_gif.py       # 真实 Edge GIF demo
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1332,9 +1387,9 @@ step-rl/
 │   ├── component-detail-design/Step-RL_spec.md
 │   ├── BACKLOG.md               # 夜间自动化取材队列
 │   ├── changes/（进行中 AR）
-│   └── archive/AR001 … AR027 / EX001
+│   └── archive/AR001 … AR028 / EX001
 │
-├── tests/                        # 266 项测试；edge 175 passed；已知 gpt2 网络 10 项环境失败
+├── tests/                        # 272 项测试；edge 181 passed；已知 gpt2 网络 10 项环境失败
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1386,6 +1441,7 @@ step-rl/
 | AR018 | 瞬时故障重试 | 0/3 → 3/3 | 重试有上界、可审计 |
 | AR024 | 并发会话隔离 | 4/4 零串扰（2.75×）；失败留痕 4/4；10×12 写者 0 损坏 | 从“单会话 demo”变成可服务运行时 |
 | AR027 | 购物车事务编译器 | baseline 0/3 → CTC 3/3，0 LLM；故障回滚 compensated=1 | 多商品整体变换可事务化、可回滚 |
+| AR028 | 购物车→订单事务 | baseline 0/3 → COT 3/3，0 LLM；券 total/paid=1196/1146；故障回滚 compensated=2 | 变换、券预检、结算、订单失败取消形成一条事务 |
 
 ### 自进化：从 LLM 兜底到 0 LLM 复用
 
@@ -1417,7 +1473,7 @@ step-rl/
 | 历史行压缩 | 0% | 后段状态丢失 | 改为 AR025 观测传输优化 |
 | AR008 激进观测裁剪 | 60% | 裁掉可执行元素 | 只保留干扰控件过滤，确立“正确性优先” |
 
-**27 次尝试的账本：26 次进入最终组合，1 次归档负结果；AR008 的激进部分单独回退。**
+**28 次尝试的账本：27 次进入最终组合，1 次归档负结果；AR008 的激进部分单独回退。**
 这比“只展示成功”更能说明架构的可靠性：每个模块都经过了保留/回退的真实决策。
 
 规格与完整实验记录：
@@ -1441,6 +1497,7 @@ step-rl/
 - `specs/archive/AR025-observation-cache/`
 - `specs/archive/AR026-layout-adaptive-skill-compilation/`
 - `specs/archive/AR027-cart-transaction-compiler/`
+- `specs/archive/AR028-cart-to-order-transaction/`
 
 ---
 
@@ -1508,7 +1565,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 ```bibtex
 @software{step_rl_v47,
   title = {Step-RL: Fault-Tolerant Saga-Compensated Multi-Order Extensible Checkpointed Adversarially-Grounded CPU-First Capability-Gated Unified Skill-Compiled Error-Aware Efficient Closed-Loop Constraint-Aware Cross-Layout Verifier-Grounded Agent Runtime},
-  version = {4.16},
+  version = {4.17},
   year = {2026},
   url = {https://gitee.com/liu-xingyan04/step-rl}
 }
@@ -1522,7 +1579,8 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| **v4.16 / AR027** | **推荐** | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
+| **v4.17 / AR028** | **推荐** | 购物车→订单事务：baseline 0/3 → COT 3/3、0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚 |
+| v4.16 / AR027 | 保留 | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
 | v4.15 / AR026 | 保留 | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
 | v4.14 / AR025 | 保留 | 自适应观测缓存：30/30、0 LLM，观测往返 −62.7%、耗时 −63.0% |
 | v4.13 / AR024 | 保留 | 并发会话隔离：4 并发真实 Edge 4/4 零串扰（2.75×），失败留痕 4/4，10×12 写者 0 损坏 |
