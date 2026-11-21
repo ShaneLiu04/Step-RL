@@ -162,6 +162,7 @@ outputs/ar028/              # 购物车→订单 baseline vs COT + 预检/回滚
 outputs/ar029/              # JD dry-run 证据（JSONL/截图/HTML）
 outputs/ar031/              # Console 会话/审计
 outputs/ar032/              # 跨站只读评测 + MP4 帧
+outputs/ar033/              # 混合系统级验证（CPU/GPU/Console/远程）
 ```
 
 ---

@@ -1216,6 +1216,20 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 
 完整报告：[docs/results/EX003_report.md](docs/results/EX003_report.md)。
 
+### 5.36 混合系统级验证（AR033）
+
+**真实 CPU/GPU 闭环：**
+
+| 层 | 结果 |
+|----|------|
+| CPU 确定性 AR011 | **30/30、0 LLM、0 tokens、82.86s** |
+| GPU 端侧 LLM 兜底 | remove 成功、4 policy steps、1142 tokens、28.17s、cart `{}` |
+| Console | success、真实截图、6 事件、审计落盘 |
+| 远程只读 | JD 无商品链接/淘宝空标题失败；Amazon 只读加载；单站失败被隔离 |
+
+结论：**确定性层 + 端侧 LLM + 人工/证据层已系统级闭环**；真实多站业务仍需账号/人工登录/
+adapter，不由模型单独解决。完整报告：[docs/results/AR033_report.md](docs/results/AR033_report.md)。
+
 ---
 
 ## 训练算法
@@ -1681,7 +1695,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| v4.18-dev / AR029–AR032 | 部分验证 | SiteAdapter/local/JD/淘宝/Amazon + Console + 跨站评测；真实多站成功率/CI 待账号与样本 |
+| v4.18-dev / AR029–AR033 | 部分验证 | 混合系统级闭环：CPU 30/30、GPU 兜底成功、Console/远程隔离；真实多站成功率待账号/样本 |
 | **v4.17 / AR028** | **推荐** | 购物车→订单事务：baseline 0/3 → COT 3/3、0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚 |
 | v4.16 / AR027 | 保留 | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
 | v4.15 / AR026 | 保留 | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
