@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT))
 from step_rl.edge import skill_library  # noqa: E402
 from step_rl.edge.browser import BrowserEnv  # noqa: E402
 from step_rl.edge.capability import check_capability  # noqa: E402
-from step_rl.edge.planner import fetch_catalog, plan_instruction  # noqa: E402
+from step_rl.edge.planner import fetch_catalog  # noqa: E402
 from step_rl.edge.site import LocalShopServer  # noqa: E402
 from step_rl.edge.skill_library import (  # noqa: E402
     clear_induced_skills,
@@ -130,8 +130,6 @@ async def main() -> None:
         catalog = fetch_catalog(server.base_url)
     finally:
         server.stop()
-    _ = plan_instruction(INSTRUCTION, catalog)
-
     runs = []
     for index in (1, 2):
         register_induced_skill("remove", STALE_STEPS, "induced_remove_stale")

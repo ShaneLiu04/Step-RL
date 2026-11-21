@@ -1,4 +1,4 @@
-"""Generate the Step-RL v4.16 README cover banner.
+"""Generate the Step-RL v4.17 README cover banner.
 
 The banner is rendered at 2x and downsampled to 1920x960.  It is a pure
 Pillow + NumPy composition: no external assets, only system fonts.
@@ -383,7 +383,7 @@ def draw_left(canvas: Image.Image):
     d = ImageDraw.Draw(layer, "RGBA")
 
     # Top pill
-    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CART TRANSACTIONS"
+    pill_txt = "REAL HTTP SHOP   ·   REAL EDGE   ·   CART → ORDER"
     f_pill = font(F_SEMI, 14)
     pw, _ = measure(f_pill, pill_txt)
     pill(
@@ -429,7 +429,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (bx + 66, by + 28),
-        "v4.16",
+        "v4.17",
         font(F_BOLD, 26),
         (232, 238, 255, 255),
         anchor="mm",
@@ -439,7 +439,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 386),
-        "Cart Transaction Compiler",
+        "Cart-to-Order Transaction",
         font(F_SEMI, 39),
         (232, 240, 255, 255),
         shadow=(0, 0, 0, 130),
@@ -450,7 +450,7 @@ def draw_left(canvas: Image.Image):
     text(
         d,
         (96, 438),
-        "购物车整体变换 · 逐项服务端复核 · 失败补偿回滚 · 0 LLM",
+        "变换 + 券预检 + 结算 + 订单 · 一条事务 · 失败回滚",
         font(F_CN, 26),
         (170, 190, 224, 255),
     )
@@ -484,18 +484,18 @@ def draw_left(canvas: Image.Image):
     # Result bars
     bars = [
         (
-            "购物车事务编译",
-            "所有/每件/都/各 → double / set:N / add:N 一等能力",
+            "购物车→订单事务",
+            "所有商品加倍 + 满400减50 + 结算，一条事务",
             (34, 211, 238),
         ),
         (
             "0/3 → 3/3",
-            "baseline 0/3；CTC 3/3，0 LLM",
+            "baseline 0/3；COT 3/3，0 LLM",
             (167, 139, 250),
         ),
         (
-            "失败补偿回滚",
-            "p4 500 → p3 回滚，cart 恢复 {p3:1,p4:1}",
+            "券门槛预检 + 失败回滚",
+            "total=1196/paid=1146；订单故障 compensated=2",
             (74, 222, 128),
         ),
     ]
@@ -522,10 +522,10 @@ def draw_left(canvas: Image.Image):
 
     # Metrics
     metrics = [
-        ("3/3", "CTC 任务", (125, 211, 252)),
+        ("3/3", "COT 任务", (125, 211, 252)),
         ("0/3", "baseline", (244, 114, 182)),
-        ("175", "Edge 测试", (74, 222, 128)),
-        ("1", "compensated 回滚", (167, 139, 250)),
+        ("1196/1146", "total/paid", (74, 222, 128)),
+        ("2", "compensated 回滚", (167, 139, 250)),
     ]
     f_val = font(F_SEMI, 38)
     f_lab = font(F_CN, 16)
@@ -592,7 +592,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1161, 167),
-        "shop.local/cart",
+        "shop.local/checkout",
         font(F_MONO, 10),
         (186, 204, 234, 255),
         anchor="lm",
@@ -614,7 +614,7 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1094, 218),
-        "指令：购物车所有商品加倍",
+        "指令：所有商品加倍，并用满400减50结算",
         font(F_CN, 9),
         (162, 182, 218, 255),
         anchor="la",
@@ -628,32 +628,32 @@ def draw_browser_card(canvas: Image.Image):
         anchor="rm",
     )
 
-    # CTC banner
+    # COT banner
     pill(d, (1094, 226, 1780, 260), 10, (34, 211, 238, 16), (34, 211, 238, 90), 1)
     d.ellipse((1108 * S, 239 * S, 1116 * S, 247 * S), fill=(34, 211, 238, 245))
     text(
         d,
         (1124, 243),
-        "CTC：double · fault p4 → rollback",
-        font(F_CN, 10.5),
+        "COT：double + 满400减50 → total 1196 / paid 1146",
+        font(F_CN, 9.5),
         (182, 236, 250, 255),
         anchor="lm",
     )
     text(
         d,
         (1766, 243),
-        "CTC ON",
+        "COT ON",
         font(F_MONO_BOLD, 8),
         (134, 239, 172, 255),
         anchor="rm",
     )
 
-    # Cart transform card
+    # Order transaction card
     pill(d, (1094, 268, 1430, 380), 12, (255, 255, 255, 9), (34, 211, 238, 95), 1)
     text(
         d,
         (1106, 278),
-        "Cart Transform",
+        "Order Transaction",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -674,21 +674,21 @@ def draw_browser_card(canvas: Image.Image):
         (150, 230, 190, 255),
         anchor="lm",
     )
-    som_badge(d, 1106, 320, "e2", (251, 191, 36), 18)
+    som_badge(d, 1106, 320, "e2", (34, 211, 238), 18)
     text(
         d,
         (1130, 329),
-        "P4 2→4 · fault 500",
+        "P4 2→4 · verified",
         font(F_MONO, 8.5),
-        (250, 190, 130, 255),
+        (150, 230, 190, 255),
         anchor="lm",
     )
     text(
         d,
         (1130, 349),
-        "compensate P3 2→1",
-        font(F_MONO, 8.5),
-        (190, 170, 250, 255),
+        "满400减50 · applied",
+        font(F_CN, 8.5),
+        (182, 236, 250, 255),
         anchor="lm",
     )
     d.line(
@@ -699,18 +699,18 @@ def draw_browser_card(canvas: Image.Image):
     text(
         d,
         (1106, 369),
-        "cart {p3:1,p4:1} · compensated=1",
-        font(F_MONO, 8),
-        (150, 230, 190, 255),
+        "fault → cancel + restore · compensated=2",
+        font(F_MONO, 7.5),
+        (245, 200, 150, 255),
         anchor="lm",
     )
 
-    # CTC runtime card
+    # COT pipeline card
     pill(d, (1444, 268, 1780, 380), 12, (255, 255, 255, 9), (167, 139, 250, 100), 1)
     text(
         d,
         (1456, 278),
-        "CTC Runtime",
+        "COT Pipeline",
         font(F_SEMI, 12.5),
         (236, 243, 255, 255),
         anchor="la",
@@ -728,10 +728,10 @@ def draw_browser_card(canvas: Image.Image):
     )
 
     steps = [
-        ("1", "parse transform"),
-        ("2", "per-item update"),
-        ("3", "verify server state"),
-        ("4", "failure → compensate"),
+        ("1", "plan transform + promo"),
+        ("2", "precheck threshold"),
+        ("3", "checkout + claim"),
+        ("4", "failure → cancel/restore"),
     ]
     sy = 316
     for num, label in steps:
@@ -746,12 +746,12 @@ def draw_browser_card(canvas: Image.Image):
         )
         sy += 17
 
-    # CTC output chip
+    # COT output chip
     pill(d, (1094, 390, 1442, 416), 10, (0, 0, 0, 130), (34, 211, 238, 85), 1)
     text(
         d,
         (1108, 403),
-        '{"transform":"double","compensated":1,"llm":0}',
+        '{"cot":"double+promo","paid":1146,"compensated":2}',
         font(F_MONO, 8.5),
         (185, 247, 255, 255),
         anchor="lm",
@@ -857,7 +857,7 @@ def draw_verifier_card(canvas: Image.Image):
     text(
         d,
         (1094, 792),
-        "per-item server verified",
+        "order + promo verified",
         font(F_MONO, 8.5),
         (150, 170, 206, 255),
         anchor="la",
@@ -883,7 +883,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 468),
-        "CTC Runtime",
+        "COT Runtime",
         font(F_SEMI, 20),
         (240, 245, 255, 255),
         anchor="la",
@@ -891,17 +891,17 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1460, 494),
-        "parse → apply → verify → compensate",
+        "plan → precheck → checkout → rollback",
         font(F_MONO, 8.5),
         (162, 182, 218, 255),
         anchor="la",
     )
 
     rows = [
-        ("Plan", "所有/每件/都/各 → transform", (251, 191, 36)),
-        ("Apply", "逐项 update_quantity", (34, 211, 238)),
-        ("Verify", "每步服务端复核", (167, 139, 250)),
-        ("Rollback", "失败按原数量补偿", (74, 222, 128)),
+        ("Plan", "变换 + 结算 + 券", (251, 191, 36)),
+        ("Precheck", "总额 < 门槛 → 0 动作", (34, 211, 238)),
+        ("Checkout", "领券 / 表单 / 提交", (167, 139, 250)),
+        ("Rollback", "cancel + 恢复 cart", (74, 222, 128)),
     ]
     ry = 512
     for name, role, col in rows:
@@ -932,7 +932,7 @@ def draw_hierarchy_card(canvas: Image.Image):
     text(
         d,
         (1468, 786),
-        "CTC 3/3 · baseline 0/3 · 0 LLM",
+        "COT 3/3 · baseline 0/3 · 0 LLM",
         font(F_MONO, 8.5),
         (134, 239, 172, 255),
         anchor="lm",
@@ -957,7 +957,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1072, 120),
-        "CART TRANSACTIONS   ·   CTC   ·   ROLLBACK",
+        "CART→ORDER   ·   PROMO PRECHECK   ·   ROLLBACK",
         font(F_MONO_BOLD, 10),
         (160, 182, 222, 245),
         anchor="lm",
@@ -966,7 +966,7 @@ def draw_right(canvas: Image.Image):
     text(
         d,
         (1714, 120),
-        "AR027 · REAL EPISODE",
+        "AR028 · REAL EPISODE",
         font(F_MONO_BOLD, 9),
         (134, 239, 172, 235),
         anchor="lm",
