@@ -75,7 +75,7 @@ async def run_case(task, server_kwargs, retry):
             success = result["success"]
             attempts = len(result["attempts"])
         else:
-            rollout = await run_skill_hierarchy(env, task, None, None, fallback=False)
+            await run_skill_hierarchy(env, task, None, None, fallback=False)
             state = await env.get_state()
             success = compute_progress(state, env.page_url_path, task).success
             attempts = 1
