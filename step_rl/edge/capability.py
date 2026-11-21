@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from .hierarchical import decompose_task
 from .planner import CatalogItem, PromoInfo, plan_instruction
