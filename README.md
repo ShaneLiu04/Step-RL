@@ -1105,7 +1105,9 @@ spec：`specs/archive/AR028-cart-to-order-transaction/`；
 **真实 JD 只读尝试（2026-11-21）：** 初跑遇到 JD 导航导致
 `Execution context destroyed`，已修复观测重试；再跑被重定向到
 `passport.jd.com`，旧 host 判定误报 `search`，已修复；最终显式返回
-`ok=false: JD login/captcha required`。这是**真实失败/拒绝证据**，不是成功；
+`ok=false: JD login/captcha required`。补登录态后，JD 搜索真实成功
+（run `20261121_183738_68360e`），但加购仍因搜索页无商品链接失败
+（run `20261121_183850_883f76`）。这些是**真实成功/失败证据**，不是跨站业务闭环；
 搜索/加购/结算成功证据仍需用户 `--manual-login` 后补跑。
 
 **工程闭环（2026-11-21）：** 当前环境无法完成 JD 登录核验，因此只闭环可验证部分：
