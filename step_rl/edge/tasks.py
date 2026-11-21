@@ -36,7 +36,20 @@ class TaskSpec:
 
     def predicate_names(self) -> List[str]:
         if self.cart_transform:
-            return ["cart_contains"]
+            names = ["cart_contains"]
+            if self.require_checkout:
+                names.extend(
+                    [
+                        "cart_viewed",
+                        "checkout_viewed",
+                        "name_filled",
+                        "address_filled",
+                        "order_placed",
+                    ]
+                )
+                if self.require_promo:
+                    names.append("order_promo_applied")
+            return names
         if self.compensate_on_failure:
             return ["orders_all_cancelled"]
         if self.order_sequence:

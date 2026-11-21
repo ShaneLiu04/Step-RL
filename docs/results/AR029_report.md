@@ -1,0 +1,77 @@
+# AR029 真实多站点适配（第一阶段）状态报告
+
+> 本报告只记录真实执行证据；JD 真实任务需用户现场接管登录，当前尚未补跑，
+> 因此不填写任何 JD 成功率。
+
+## 1. 已完成
+
+| 项 | 证据 |
+|----|------|
+| SiteAdapter 契约 | `step_rl/edge/adapters/base.py` |
+| Local reference adapter | `step_rl/edge/adapters/local.py`，真实 LocalShopServer/BrowserEnv |
+| JD adapter（dry-run） | `step_rl/edge/adapters/jd.py`，系统 Edge，禁止提交/支付 |
+| 证据协议 | `step_rl/edge/adapters/evidence.py`，JSONL/截图/HTML/脱敏 |
+| 本地回归 | edge **186 passed**（原 181 + 5 adapter 测试） |
+| 组合回归 | AR011 **30/30、0 LLM、0 tokens** |
+| 安全闸门 | 1 会话、5s 间隔、20 页面/run、≤200 元、dry-run |
+
+## 2. 已验证的本地 adapter 行为
+
+- `LocalAdapter.reset/observe/execute/catalog/promos/verify` 对真实本地站；
+- `goto /cart` 后 page_type=cart；
+- 验证器谓词来自真实服务端状态；
+- JD helper：搜索 URL、结算 URL、金额解析；
+- JD `submit_order` 在 dry-run 下显式 `PermissionError`；
+- EvidenceWriter 对 password/token/cookie 脱敏。
+
+
+## 3.1 真实 JD 只读尝试（2026-11-21）
+
+| run_id | 结果 | 说明 |
+|--------|------|------|
+| 20261121_174124_458290 | 失败 | JD 导航导致 `Execution context was destroyed`；已修复观测重试 |
+| 20261121_174238_e0cad2 | 登录闸门 | 被重定向到 `passport.jd.com`；旧判定误报 search，已修复 |
+| 20261121_174346_82e811 | **显式拒绝** | `ok=false`，`JD login/captcha required: rerun with --manual-login` |
+| 20261121_183738_68360e | **搜索成功** | 登录态生效，标题“无线充电器 - 商品搜索 - 京东”，ok=true |
+| 20261121_183850_883f76 | **加购失败** | 搜索结果无可提取商品链接，`add-to-cart control not found`；显式失败 |
+| 20261121_184434_bb57d6 | **风控/频率限制** | 真实 JD 截图显示“访问频繁导致无法搜索，请稍后再试”；不是选择器问题 |
+
+证据目录：`outputs/ar029/jd/<run_id>/`。以上是真实失败/拒绝案例，不是成功；
+搜索结果本身仍需用户现场登录后补跑。
+
+## 3.2 待补跑（用户接管后）
+
+按用户确认：每类 JD 任务 5 个真实 run，证据落
+`outputs/ar029/jd/<run_id>/`：
+
+1. 搜索（无结果搜索也要留证）；
+2. 详情（价格/库存）；
+3. 加购；
+4. 购物车改量/移除；
+5. 券可行性（至少 1 个不可行券）；
+6. 结算页 dry-run（金额/商品/券信号，不提交）；
+7. 订单查询（只读）；
+8. 真实失败/拒绝案例（无结果/库存不足/不可行券）。
+
+命令：
+
+```powershell
+$env:PYTHONPATH="D:\agentRL\Step-RL"
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login
+python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
+  --storage-state "$env:LOCALAPPDATA\StepRL\credentials\jd.json" --to-checkout
+```
+
+## 4. 未做（明确边界）
+
+- 真实提交订单/支付/取消；
+- 淘宝/天猫、Amazon（AR030）；
+- Console（AR031）；
+- 跨站 baseline/CI（AR032）。
+
+## 5. 真实性声明
+
+- 本地 adapter 测试是真实 HTTP/Edge；
+- JD helper/安全测试不联网，不代表 JD 站点成功；
+- 未使用 mock 站点或伪造 JD 结果；
+- JD 真实证据缺失时，AR029 不能标记为最终验收 PASS。
