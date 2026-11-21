@@ -31,7 +31,9 @@
 | T07 | 登录/验证码人工接管钩子 + 本地 credentials/storage_state | T04 | passing | 不入仓/日志 |
 | T08 | 真实证据协议：JSONL/截图/HTML/验证器快照 + 失败分类 | T05/T06 | passing | `outputs/ar029/jd` |
 | T09 | JD dry-run 任务矩阵与失败/拒绝样例（每类 5 run，待用户接管补跑） | T08 | in_progress | 已获得真实登录拒绝案例；成功任务待补 |
-| T10 | 合规文档 + README/REPRODUCTION + Gitee 同步 + clone 校验 | T09 | passing | `main=fc79562`；clone adapter 5 passed |
+| T10 | 合规文档 + README/REPRODUCTION + Gitee 同步 + clone 校验 | T09 | passing | clone adapter 5 passed |
+| T11 | ST 用例与工程闭环（本地/框架 PASS；JD 真实 BLOCKED） | T10 | passing | `st-cases.md` |
+| T12 | 最终 Gitee 同步与 clone 校验（工程闭环） | T11 | passing | 待记录本次哈希 |
 
 ## 状态说明
 
@@ -48,6 +50,7 @@
 - 2026-11-21：LocalAdapter/证据协议/JD dry-run adapter 代码完成；edge **186 passed**（181+5）、AR011 **30/30、0 LLM**；真实 JD 证据待用户现场接管补跑。
 - Gitee 同步完成；全新 clone `tests/test_edge_adapters.py` **5 passed**；AR029 仍为“进行中”。
 - 2026-11-21 深度闭环：真实 JD 只读被登录闸门拦截（ok=false），修复导航观测重试与 host 误判；真实成功证据待 `--manual-login` 补跑。全量（排除 gpt2）**260 passed / 3 skipped**。
+- 2026-11-21 工程闭环：ST-01/02/03/04/05/06/09 通过；ST-07/08（真实 JD 业务）BLOCKED；AR030–AR032 仅规划，未实现。
 
 ## 阶段门控记录
 
