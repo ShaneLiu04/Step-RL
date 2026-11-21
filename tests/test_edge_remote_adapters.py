@@ -21,6 +21,7 @@ def test_remote_amount_and_blocks():
     assert parse_amount("price $19.99") == 19.99
     assert blocked_reason("https://login.taobao.com/x", "登录", "") == "login_required"
     assert blocked_reason("https://x", "安全验证", "请完成验证码") == "captcha_or_risk_control"
+    assert blocked_reason("https://x", "京东", "访问频繁，无法搜索") == "captcha_or_risk_control"
     assert blocked_reason("https://s.taobao.com/search", "淘宝", "商品") == ""
 
 
