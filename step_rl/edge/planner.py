@@ -348,6 +348,7 @@ def plan_instruction(
     catalog: List[CatalogItem],
     promos: Optional[List[PromoInfo]] = None,
     enable_cart_transform: bool = True,
+    enable_compound: bool = True,
 ) -> Optional[TaskSpec]:
     """Compile a constrained instruction into a TaskSpec.
 
@@ -366,15 +367,42 @@ def plan_instruction(
         else None
     )
     if transform:
+        checkout = enable_compound and any(
+            word in instruction for word in ("结算", "下单", "提交订单")
+        )
+        require_promo = False
+        promo_code = ""
+        if enable_compound and _coupon_mentioned(instruction):
+            if not checkout or promos is None:
+                return None
+            match = _PROMO_RE.search(instruction)
+            if match is None:
+                return None
+            threshold = int(match.group(1))
+            discount = int(match.group(2))
+            promo = next(
+                (
+                    p
+                    for p in promos
+                    if p.threshold == threshold and p.discount == discount
+                ),
+                None,
+            )
+            if promo is None:
+                return None
+            require_promo = True
+            promo_code = promo.code
         return TaskSpec(
             task_id="planned",
-            level=3,
+            level=5 if checkout else 3,
             goal=instruction,
             search_query="",
             targets={},
             operation="transform",
             start_path="/cart",
-            predicates=["cart_contains"],
+            require_checkout=checkout,
+            require_promo=require_promo,
+            promo=promo_code,
             cart_transform=transform,
             split="planned",
         )

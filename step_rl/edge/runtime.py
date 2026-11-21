@@ -9,7 +9,12 @@ from .browser import BrowserEnv
 from .hierarchical import run_hierarchy
 from .planner import fetch_catalog, fetch_promos, plan_instruction
 from .rollout import StepRecord
-from .skill_library import run_skill, run_skill_hierarchy, update_quantity_skill
+from .skill_library import (
+    checkout_skill,
+    run_skill,
+    run_skill_hierarchy,
+    update_quantity_skill,
+)
 from .tasks import TaskSpec
 from .verifier import compute_progress
 
@@ -41,6 +46,24 @@ def _transform_targets(
     return targets, ""
 
 
+async def _rollback_cart(env, changed, original, obs):
+    compensated = 0
+    for done_pid, original_qty in changed:
+        compensation = await run_skill(
+            env,
+            update_quantity_skill(done_pid, original_qty, adaptive=True),
+            initial_obs=obs,
+        )
+        obs = compensation.observation or await env.observe()
+        restored = await env.get_state()
+        compensated += int(
+            compensation.success
+            and int((restored.get("cart") or {}).get(done_pid, 0))
+            == original_qty
+        )
+    return compensated, obs
+
+
 async def run_cart_transform(env: BrowserEnv, spec: TaskSpec) -> Dict[str, Any]:
     """AR027: execute a cart-wide update as a real compensating transaction."""
 
@@ -69,20 +92,9 @@ async def run_cart_transform(env: BrowserEnv, spec: TaskSpec) -> Dict[str, Any]:
             error = result.error or (
                 f"verifier-confirmed mismatch: {pid} target={target}"
             )
-            compensated = 0
-            for done_pid, original_qty in changed:
-                compensation = await run_skill(
-                    env,
-                    update_quantity_skill(done_pid, original_qty, adaptive=True),
-                    initial_obs=obs,
-                )
-                obs = compensation.observation or await env.observe()
-                restored = await env.get_state()
-                compensated += int(
-                    compensation.success
-                    and int((restored.get("cart") or {}).get(done_pid, 0))
-                    == original_qty
-                )
+            compensated, obs = await _rollback_cart(
+                env, changed, original, obs
+            )
             return {
                 "success": False,
                 "spec": targets,
@@ -104,6 +116,44 @@ async def run_cart_transform(env: BrowserEnv, spec: TaskSpec) -> Dict[str, Any]:
                 "compensated": compensated,
             }
         changed.append((pid, original.get(pid, 0)))
+
+    if spec.require_checkout:
+        checkout = await run_skill(
+            env,
+            checkout_skill(spec.promo),
+            initial_obs=obs,
+        )
+        actions.extend(checkout.actions)
+        obs = checkout.observation or await env.observe()
+        state = await env.get_state()
+        progress = compute_progress(state, env.page_url_path, spec)
+        if not checkout.success or not progress.success:
+            if state.get("order"):
+                await env.cancel_order(state["order"]["id"])
+            compensated, obs = await _rollback_cart(
+                env, changed, original, obs
+            )
+            return {
+                "success": False,
+                "spec": targets,
+                "attempts": [
+                    {
+                        "attempt": 1,
+                        "mode": "cart_to_order",
+                        "transform": spec.cart_transform,
+                        "success": False,
+                        "steps": len(actions),
+                        "error": checkout.error or "order verification failed",
+                        "compensated": compensated,
+                    }
+                ],
+                "steps": _skill_records(actions),
+                "fallback": False,
+                "transform": spec.cart_transform,
+                "promo": spec.promo,
+                "error": checkout.error or "order verification failed",
+                "compensated": compensated,
+            }
 
     state = await env.get_state()
     progress = compute_progress(state, env.page_url_path, spec)
@@ -156,6 +206,7 @@ async def run_task(
     max_steps_per_subtask: int = 12,
     skill_retries: int = 0,
     enable_cart_transform: bool = True,
+    enable_compound: bool = True,
 ) -> Dict[str, Any]:
     """Execute one natural-language task with the full composed runtime."""
 
@@ -166,6 +217,7 @@ async def run_task(
         catalog,
         promos,
         enable_cart_transform=enable_cart_transform,
+        enable_compound=enable_compound,
     )
     attempts: List[Dict[str, Any]] = []
     if spec is None:
@@ -193,7 +245,28 @@ async def run_task(
                 "error": error,
                 "transform": spec.cart_transform,
             }
-        spec = replace(spec, targets=targets, predicates=["cart_contains"])
+        if spec.require_promo:
+            prices = {item.pid: item.price for item in catalog}
+            total = sum(prices.get(pid, 0) * qty for pid, qty in targets.items())
+            promo = next(
+                (item for item in promos if item.code == spec.promo), None
+            )
+            if promo is None or total < promo.threshold:
+                return {
+                    "success": False,
+                    "spec": targets,
+                    "attempts": [],
+                    "steps": [],
+                    "fallback": False,
+                    "error": (
+                        f"promo preflight failed: total={total}, "
+                        f"threshold={getattr(promo, 'threshold', None)}"
+                    ),
+                    "transform": spec.cart_transform,
+                    "promo": spec.promo,
+                    "preflight": True,
+                }
+        spec = replace(spec, targets=targets)
         return await run_cart_transform(env, spec)
 
     retries_used = 0
