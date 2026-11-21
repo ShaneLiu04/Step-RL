@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import http.cookiejar
-import json
 import urllib.error
 import urllib.parse
 import urllib.request
