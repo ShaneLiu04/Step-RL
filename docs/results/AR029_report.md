@@ -24,7 +24,19 @@
 - JD `submit_order` 在 dry-run 下显式 `PermissionError`；
 - EvidenceWriter 对 password/token/cookie 脱敏。
 
-## 3. 待补跑（用户接管后）
+
+## 3.1 真实 JD 只读尝试（2026-11-21）
+
+| run_id | 结果 | 说明 |
+|--------|------|------|
+| 20261121_174124_458290 | 失败 | JD 导航导致 `Execution context was destroyed`；已修复观测重试 |
+| 20261121_174238_e0cad2 | 登录闸门 | 被重定向到 `passport.jd.com`；旧判定误报 search，已修复 |
+| 20261121_174346_82e811 | **显式拒绝** | `ok=false`，`JD login/captcha required: rerun with --manual-login` |
+
+证据目录：`outputs/ar029/jd/<run_id>/`。以上是真实失败/拒绝案例，不是成功；
+搜索结果本身仍需用户现场登录后补跑。
+
+## 3.2 待补跑（用户接管后）
 
 按用户确认：每类 JD 任务 5 个真实 run，证据落
 `outputs/ar029/jd/<run_id>/`：

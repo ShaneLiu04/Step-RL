@@ -30,7 +30,7 @@
 | T06 | JD 券可行性 + 结算页 dry-run（金额/商品信号） | T04/T05 | in_progress | 不提交订单 |
 | T07 | 登录/验证码人工接管钩子 + 本地 credentials/storage_state | T04 | passing | 不入仓/日志 |
 | T08 | 真实证据协议：JSONL/截图/HTML/验证器快照 + 失败分类 | T05/T06 | passing | `outputs/ar029/jd` |
-| T09 | JD dry-run 任务矩阵与失败/拒绝样例（每类 5 run，待用户接管补跑） | T08 | pending | 不可行券/无结果/库存 |
+| T09 | JD dry-run 任务矩阵与失败/拒绝样例（每类 5 run，待用户接管补跑） | T08 | in_progress | 已获得真实登录拒绝案例；成功任务待补 |
 | T10 | 合规文档 + README/REPRODUCTION + Gitee 同步 + clone 校验 | T09 | passing | `main=fc79562`；clone adapter 5 passed |
 
 ## 状态说明
@@ -46,7 +46,8 @@
   Console 延后、1 会话/5s/20 页面/≤200 元、每类 5 run、证据 JSONL+截图+HTML。
 - srs/design 已确认，按自动闭环推进。
 - 2026-11-21：LocalAdapter/证据协议/JD dry-run adapter 代码完成；edge **186 passed**（181+5）、AR011 **30/30、0 LLM**；真实 JD 证据待用户现场接管补跑。
-- Gitee 同步完成 `main=fc79562`，全新 clone `tests/test_edge_adapters.py` **5 passed**；AR029 仍为“进行中”，T09 真实 JD 证据 pending。
+- Gitee 同步完成；全新 clone `tests/test_edge_adapters.py` **5 passed**；AR029 仍为“进行中”。
+- 2026-11-21 深度闭环：真实 JD 只读被登录闸门拦截（ok=false），修复导航观测重试与 host 误判；真实成功证据待 `--manual-login` 补跑。全量（排除 gpt2）**260 passed / 3 skipped**。
 
 ## 阶段门控记录
 

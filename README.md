@@ -1102,6 +1102,12 @@ spec：`specs/archive/AR028-cart-to-order-transaction/`；
 全部走真实 HTTP/Edge；新增 5 项 adapter 测试；edge **186 passed**、AR011
 **30/30、0 LLM** 零回退。
 
+**真实 JD 只读尝试（2026-11-21）：** 初跑遇到 JD 导航导致
+`Execution context destroyed`，已修复观测重试；再跑被重定向到
+`passport.jd.com`，旧 host 判定误报 `search`，已修复；最终显式返回
+`ok=false: JD login/captcha required`。这是**真实失败/拒绝证据**，不是成功；
+搜索/加购/结算成功证据仍需用户 `--manual-login` 后补跑。
+
 **待补跑（不伪造）：** JD 真实任务需用户现场接管登录，按每类 5 run 落
 `outputs/ar029/jd/<run_id>/`；当前不填写 JD 成功率。真实证据补齐前 AR029 不标记
 最终验收 PASS。
