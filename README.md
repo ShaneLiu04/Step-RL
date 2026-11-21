@@ -1197,6 +1197,25 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 
 设计文档：[docs/EXPERIMENTS_EX002.md](docs/EXPERIMENTS_EX002.md)。
 
+### 5.35 端侧 LLM 能力边界（EX003）
+
+问题：**只靠端侧 LLM 能否实现项目目标？** 结论：**不能**；LLM 是决策/兜底层，
+不是 adapter/登录/验证器/账号的替代。
+
+| 证据 | 真实结果 |
+|------|----------|
+| 本地纯 LLM 扁平（9 任务） | 8/9（88.9%） |
+| 移除验证器观测 | 100% → 33.3% |
+| 技能路径 | 30/30、0 LLM、0 tokens |
+| 端侧 0.6B 成本 | 8.31s/步、1.28GB、5.77 tok/s |
+| 真实 JD | 搜索页打开但 `item_links=0`；加购控件不存在 |
+| 淘宝/Amazon | 淘宝空标题/反爬；Amazon 只读加载，无订单证据 |
+
+判断：本地/受控站点可闭环；真实多站全链路必须补齐 adapter、人工登录/合规、
+权威验证器与账号样本。**端侧 LLM + 确定性 adapter/verifier + 人工接管**才是正确路线。
+
+完整报告：[docs/results/EX003_report.md](docs/results/EX003_report.md)。
+
 ---
 
 ## 训练算法
