@@ -67,3 +67,25 @@ python -m ruff check <上述目录/文件> --select F,E9
 - 不把未验证的远程业务写成成功；
 - 下一阶段优先：抽公共 BrowserSessionBase、补真实账号任务矩阵、Console
   动作级审批钩子。
+
+
+## 7. 第二轮全仓静态优化（2026-11-21）
+
+对 `step_rl/ scripts/ tests/` 执行：
+
+```powershell
+python -m ruff check step_rl scripts tests --select F,E9
+# All checks passed!
+```
+
+修复内容：
+
+- **真实 bug**：`scripts/ar005_eval.py` 循环解包缺少 `perturb`，且使用未定义变量；
+  已改为 5 元组解包并传入 `perturb`；
+- `scripts/ar018_eval.py` / `ar019_eval.py` / `ar021_baseline_probe.py` 未使用变量；
+- 25 个未使用导入 / 无占位 f-string 自动清理；
+- 全仓 F/E9 由 31 条降为 **0**；
+- 全量回归 **268 passed / 3 skipped**（排除既有 gpt2 网络文件）。
+
+> 仍保留历史 `Dict/List` 注解、宽异常清理等风格债务；本轮不盲目批量改风格，
+> 以避免改变已验证行为。后续可单独做“类型注解现代化”与“结构化日志”专项。
