@@ -32,6 +32,8 @@
 | 20261121_174124_458290 | 失败 | JD 导航导致 `Execution context was destroyed`；已修复观测重试 |
 | 20261121_174238_e0cad2 | 登录闸门 | 被重定向到 `passport.jd.com`；旧判定误报 search，已修复 |
 | 20261121_174346_82e811 | **显式拒绝** | `ok=false`，`JD login/captcha required: rerun with --manual-login` |
+| 20261121_183738_68360e | **搜索成功** | 登录态生效，标题“无线充电器 - 商品搜索 - 京东”，ok=true |
+| 20261121_183850_883f76 | **加购失败** | 搜索结果无可提取商品链接，`add-to-cart control not found`；显式失败 |
 
 证据目录：`outputs/ar029/jd/<run_id>/`。以上是真实失败/拒绝案例，不是成功；
 搜索结果本身仍需用户现场登录后补跑。
