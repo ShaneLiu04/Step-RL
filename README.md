@@ -1130,7 +1130,35 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 `docs/results/AR029_report.md`；需求/设计：
 `specs/changes/AR029-real-multisite-adaptation/`。
 
-### 5.30 可解释性实验（EX001）
+### 5.30 第二/第三站只读适配（AR030）
+
+- 新增 `RemoteReadOnlyAdapter` + `TaobaoAdapter` + `AmazonAdapter`；
+- 只读搜索/详情；CAPTCHA/登录/空标题显式失败；`execute` 直接拒绝；
+- 真实结果：Amazon 搜索页真实加载；JD 搜索页 `item_links=0` 失败；
+  淘宝空标题/反爬失败；不填成功率、不 mock。
+- 单测：3 passed。spec：`specs/changes/AR030-second-third-site-readonly/`。
+
+### 5.31 Agent Console（AR031）
+
+- FastAPI + WebSocket 实时截图流、事件/验证器面板、暂停/恢复/审批/取消、审计 JSONL；
+- 真实 local 会话：`买两件无线充电器` 成功，截图非空、`finish` 事件；
+- 启动：`uvicorn step_rl.console.app:app --host 127.0.0.1 --port 8765`；
+- 测试：3 passed。spec：`specs/changes/AR031-agent-console/`。
+
+### 5.32 跨站评测（AR032，部分验证）
+
+| 站点 | 结果 |
+|------|------|
+| Local | **3/3、0 LLM** |
+| JD | 搜索页打开但 `item_links=0` → 失败 |
+| Taobao | 空标题/反爬 → 失败 |
+| Amazon | 搜索页真实加载 → 只读成功 |
+
+- 不填写跨站成功率/CI（账号与样本受限）；
+- MP4：`docs/images/ar032_demo.mp4`（37KB，真实帧）；
+- 报告：`docs/results/AR032_report.md`；spec：`specs/changes/AR032-cross-site-evaluation/`。
+
+### 5.33 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -1149,7 +1177,7 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 
 设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
-### 5.31 全架构压力实验（EX002）
+### 5.34 全架构压力实验（EX002）
 
 实验/归因编号独立于 AR。完整报告与 6 张图：
 **[docs/results/EX002_report.md](docs/results/EX002_report.md)**
@@ -1442,7 +1470,7 @@ step-rl/
 │   ├── changes/（进行中 AR）
 │   └── archive/AR001 … AR028 / EX001
 │
-├── tests/                        # 277 项测试；edge 186 passed；已知 gpt2 网络 10 项环境失败
+├── tests/                        # 283 项测试；edge 186 passed；full 266 passed；已知 gpt2 网络 10 项环境失败
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1632,7 +1660,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
-| v4.18-dev / AR029 | 进行中 | SiteAdapter 框架 + local reference + JD dry-run；JD 真实证据待接管 |
+| v4.18-dev / AR029–AR032 | 部分验证 | SiteAdapter/local/JD/淘宝/Amazon + Console + 跨站评测；真实多站成功率/CI 待账号与样本 |
 | **v4.17 / AR028** | **推荐** | 购物车→订单事务：baseline 0/3 → COT 3/3、0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚 |
 | v4.16 / AR027 | 保留 | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
 | v4.15 / AR026 | 保留 | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |

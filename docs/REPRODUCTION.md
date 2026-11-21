@@ -159,7 +159,9 @@ outputs/ar025/              # 自适应观测缓存 基线探针 + 30 场景 + �
 outputs/ar026/              # v3 布局 baseline vs LASC（真实 Edge/0 LLM）
 outputs/ar027/              # 购物车事务 baseline vs CTC + 真实故障回滚
 outputs/ar028/              # 购物车→订单 baseline vs COT + 预检/回滚 + GIF 帧
-outputs/ar029/              # JD dry-run 证据（JSONL/截图/HTML；待人工接管补跑）
+outputs/ar029/              # JD dry-run 证据（JSONL/截图/HTML）
+outputs/ar031/              # Console 会话/审计
+outputs/ar032/              # 跨站只读评测 + MP4 帧
 ```
 
 ---
