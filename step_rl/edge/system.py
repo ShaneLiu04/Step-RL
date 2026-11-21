@@ -2,24 +2,15 @@
 
 from __future__ import annotations
 
-import os
 import time
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-from .edge.adapters.amazon import AmazonAdapter
-from .edge.adapters.evidence import EvidenceWriter
-from .edge.adapters.jd import JDAdapter
-from .edge.adapters.taobao import TaobaoAdapter
-from .edge.browser import BrowserEnv
-from .edge.runtime import run_task
-from .edge.site import LocalShopServer
-from .edge.tasks import TaskSpec
-
-
-def _jd_storage() -> str:
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home())
-    return str(Path(base) / "StepRL" / "credentials" / "jd.json")
+from .adapters.evidence import EvidenceWriter
+from .adapters.registry import create_adapter
+from .browser import BrowserEnv
+from .runtime import run_task
+from .site import LocalShopServer
+from .tasks import TaskSpec
 
 
 class HybridSystem:
@@ -33,6 +24,7 @@ class HybridSystem:
         start_path: str = "/",
         model=None,
         tokenizer=None,
+        model_name: str = "",
         evidence: Optional[EvidenceWriter] = None,
         capture: bool = True,
     ) -> Dict[str, Any]:
@@ -60,6 +52,7 @@ class HybridSystem:
                 "success": bool(result.get("success")),
                 "fallback": bool(result.get("fallback", False)),
                 "fallback_required": bool(result.get("fallback_required", False)),
+                "model": model_name,
                 "steps": len(steps),
                 "policy_steps": sum(1 for step in steps if step.source == "policy"),
                 "skill_steps": sum(1 for step in steps if step.source == "skill"),
@@ -76,27 +69,31 @@ class HybridSystem:
                     evidence.screenshot(png, "final")
             if evidence is not None:
                 evidence.step({"step": "local_run", **payload})
+                for index, step in enumerate(steps):
+                    evidence.step(
+                        {
+                            "step": "policy_step" if step.source == "policy" else "skill_step",
+                            "index": index,
+                            "source": step.source,
+                            "action": step.action,
+                            "exec_ok": step.exec_ok,
+                            "error": step.error,
+                        }
+                    )
             return payload
         finally:
             await env.close()
             server.stop()
 
     async def run_remote(self, site: str, query: str) -> Dict[str, Any]:
-        if site == "jd":
-            adapter = JDAdapter(headless=True)
-        elif site == "taobao":
-            adapter = TaobaoAdapter(headless=True)
-        elif site == "amazon":
-            adapter = AmazonAdapter(headless=True)
-        else:
-            raise ValueError(f"unsupported site: {site}")
+        adapter = create_adapter(site, headless=True)
         started = time.time()
         payload = {"site": site, "query": query, "ok": False}
         try:
-            await adapter.open_session(
-                storage_state=_jd_storage() if site == "jd" else None,
-                manual_login=False,
-            )
+            storage = None
+            if hasattr(adapter, "default_storage_state"):
+                storage = adapter.default_storage_state()
+            await adapter.open_session(storage_state=storage, manual_login=False)
             obs = await adapter.search(query)
             payload = {
                 "site": site,
@@ -109,19 +106,17 @@ class HybridSystem:
                 "seconds": round(time.time() - started, 2),
                 "ok": not bool(obs.signals.get("blocked")) and bool(obs.title),
             }
-            if site == "jd":
+            if hasattr(adapter, "product_links"):
                 try:
-                    links = await adapter.page.eval_on_selector_all(
-                        "a",
-                        "els => els.map(e => e.href).filter(h => /item\\.jd\\.com\\/\\d+\\.html/.test(h))",
-                    )
+                    links = await adapter.product_links()
                     payload["item_links"] = len(links)
                     if not links:
                         payload["ok"] = False
                         payload["error"] = "search page has no product links"
-                except Exception:
+                except Exception as exc:
                     payload["item_links"] = 0
                     payload["ok"] = False
+                    payload["error"] = f"product_links failed: {type(exc).__name__}: {exc}"
             return payload
         except Exception as exc:
             payload["seconds"] = round(time.time() - started, 2)

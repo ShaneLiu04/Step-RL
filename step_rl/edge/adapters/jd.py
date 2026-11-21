@@ -186,6 +186,19 @@ class JDAdapter:
         await self.page.goto(url, wait_until="domcontentloaded")
         await self._settle()
 
+    @staticmethod
+    def default_storage_state() -> str:
+        base = os.environ.get("LOCALAPPDATA") or str(Path.home())
+        return str(Path(base) / "StepRL" / "credentials" / "jd.json")
+
+    async def product_links(self) -> List[str]:
+        page = self._require()
+        links = await page.eval_on_selector_all(
+            "a",
+            "els => els.map(e => e.href).filter(h => /item\\.jd\\.com\\/\\d+\\.html/.test(h))",
+        )
+        return [str(link) for link in links]
+
     async def search(self, query: str) -> Observation:
         await self.goto(jd_search_url(query))
         obs = await self.observe()
