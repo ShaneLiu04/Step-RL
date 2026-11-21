@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001–AR028：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存、布局自适应技能编译、购物车事务编译与购物车→订单事务**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
+本手册对应 **AR001–AR029：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存、布局自适应技能编译、购物车事务编译与购物车→订单事务**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -118,6 +118,8 @@ python scripts/ar027_eval.py
 # 35) AR028 购物车→订单事务（baseline vs COT + 券预检/订单故障回滚）
 python scripts/ar028_eval.py
 python scripts/ar028_demo_gif.py
+# 36) AR029 JD dry-run（人工登录；不提交订单/支付）
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login
 ```
 
 产物：
@@ -157,6 +159,7 @@ outputs/ar025/              # 自适应观测缓存 基线探针 + 30 场景 + �
 outputs/ar026/              # v3 布局 baseline vs LASC（真实 Edge/0 LLM）
 outputs/ar027/              # 购物车事务 baseline vs CTC + 真实故障回滚
 outputs/ar028/              # 购物车→订单 baseline vs COT + 预检/回滚 + GIF 帧
+outputs/ar029/              # JD dry-run 证据（JSONL/截图/HTML；待人工接管补跑）
 ```
 
 ---
@@ -607,6 +610,18 @@ COT 是确定性事务层，不依赖 LLM。服务器复现要求：
 3. 预检任务必须 `steps=0`、cart 不变、order=None；
 4. 订单故障必须取消订单并恢复 cart，`compensated=2`；
 5. `python scripts/ar028_demo_gif.py` 生成真实 GIF，不得用静态伪造。
+
+### 4.5.5 AR029 真实站点复现（JD dry-run）
+
+AR029 不自动提交订单/支付。用户现场接管登录后：
+
+1. `python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login`；
+2. 需要登录态时设置 `--storage-state "%LOCALAPPDATA%\StepRL\credentials\jd.json"`；
+3. 到结算页即停止，验证金额/商品/券信号，不点击提交；
+4. 证据写入 `outputs/ar029/jd/<run_id>/`（JSONL、截图、HTML，敏感字段脱敏）；
+5. 每类任务目标 5 个真实 run；至少 1 个真实失败/拒绝（不可行券/无结果/库存不足）。
+
+未补跑 JD 证据前，AR029 不得标记最终 PASS。
 
 ### 4.6 预期资源与时间（参考）
 
