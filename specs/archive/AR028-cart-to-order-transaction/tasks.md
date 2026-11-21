@@ -27,7 +27,11 @@
 - T7：GIF 5 帧、约 39.7KB，真实订单 `total=1196/paid=1146`。
 - T8：edge **181 passed**；全量（排除 gpt2 网络）**255 passed / 3 skipped**；
   AR011 **30/30、0 LLM、0 tokens、79.28s**。
-- T9/T10：README/REPRODUCTION/EX002/BACKLOG/归档/Gitee。
+- T9：README v4.17（含真实 GIF）/ REPRODUCTION §4.5.4 / EX002 覆盖 / BACKLOG / 封面；
+  spec 归档 `specs/archive/AR028-cart-to-order-transaction/`。
+- T10：Gitee 增量小包同步完成，`main = 4c3299d`；diff 为空；
+  全新 clone 中 `docs/images/ar028_demo.gif`（39710B）存在，
+  `tests/test_edge_cart_to_order.py` **6 passed**，README v4.17/AR028 章节存在。
 
 ## devflow-review 自查
 
