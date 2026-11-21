@@ -200,10 +200,11 @@ class RemoteReadOnlyAdapter:
         page_type = "login" if any(h in host for h in self.login_hosts) else (
             "product" if any(h in host for h in self.item_hosts) else "page"
         )
-        reason = blocked_reason(url, await page.title(), text)
+        title = await page.title()
+        reason = blocked_reason(url, title, text)
         return Observation(
             url=url,
-            title=await page.title(),
+            title=title,
             page_type=page_type,
             elements=elements,
             signals={

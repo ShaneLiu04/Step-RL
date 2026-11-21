@@ -82,7 +82,6 @@ class HybridSystem:
             server.stop()
 
     async def run_remote(self, site: str, query: str) -> Dict[str, Any]:
-        writer = None
         if site == "jd":
             adapter = JDAdapter(headless=True)
         elif site == "taobao":
