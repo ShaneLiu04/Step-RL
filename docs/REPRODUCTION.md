@@ -119,7 +119,7 @@ python scripts/ar027_eval.py
 python scripts/ar028_eval.py
 python scripts/ar028_demo_gif.py
 # 36) AR029 JD dry-run（人工登录；不提交订单/支付）
-python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login --save-storage-state
 ```
 
 产物：
@@ -615,7 +615,7 @@ COT 是确定性事务层，不依赖 LLM。服务器复现要求：
 
 AR029 不自动提交订单/支付。用户现场接管登录后：
 
-1. `python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login`；
+1. `python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login --save-storage-state`；
 2. 需要登录态时设置 `--storage-state "%LOCALAPPDATA%\StepRL\credentials\jd.json"`；
 3. 到结算页即停止，验证金额/商品/券信号，不点击提交；
 4. 证据写入 `outputs/ar029/jd/<run_id>/`（JSONL、截图、HTML，敏感字段脱敏）；

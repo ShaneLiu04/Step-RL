@@ -64,6 +64,9 @@ async def run(args) -> dict:
                 flush=True,
             )
             input()
+            if args.save_storage_state:
+                await adapter.save_storage_state(args.storage_state)
+                result["storage_state_saved"] = args.storage_state
         obs = await adapter.search(args.query)
         result["search_title"] = obs.title
         result["search_page_type"] = obs.page_type
@@ -84,6 +87,25 @@ async def run(args) -> dict:
             result["cart_after_add"] = await adapter.read_cart()
             result["steps"].append({"step": "cart", "url": obs.url})
             writer.step({"step": "cart", "url": obs.url, "text": adapter.current_text[:500]})
+
+        if args.cart_quantity is not None:
+            obs = await adapter.set_cart_quantity(args.cart_quantity)
+            result["cart_after_quantity"] = await adapter.read_cart()
+            result["steps"].append({"step": "cart_quantity", "url": obs.url})
+            await adapter.capture("cart_quantity")
+            writer.step({"step": "cart_quantity", "quantity": args.cart_quantity, "url": obs.url})
+
+        if args.remove_cart:
+            obs = await adapter.remove_from_cart()
+            result["cart_after_remove"] = await adapter.read_cart()
+            result["steps"].append({"step": "cart_remove", "url": obs.url})
+            await adapter.capture("cart_remove")
+            writer.step({"step": "cart_remove", "url": obs.url})
+
+        if args.orders:
+            result["orders"] = await adapter.read_orders()
+            result["steps"].append({"step": "orders", "url": result["orders"].get("url")})
+            writer.step({"step": "orders", "orders": result["orders"]})
 
         if args.to_checkout:
             checkout = await adapter.open_checkout()
@@ -123,7 +145,11 @@ def main() -> None:
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--add-to-cart", action="store_true")
     parser.add_argument("--quantity", type=int, default=1)
+    parser.add_argument("--cart-quantity", type=int, default=None)
+    parser.add_argument("--remove-cart", action="store_true")
+    parser.add_argument("--orders", action="store_true")
     parser.add_argument("--to-checkout", action="store_true")
+    parser.add_argument("--save-storage-state", action="store_true")
     parser.add_argument("--min-interval", type=float, default=5.0)
     parser.add_argument("--max-pages", type=int, default=20)
     parser.add_argument("--max-amount", type=float, default=200.0)

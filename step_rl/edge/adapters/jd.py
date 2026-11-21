@@ -115,6 +115,13 @@ class JDAdapter:
             await self.page.goto("https://www.jd.com/", wait_until="domcontentloaded")
             await self._settle()
 
+    async def save_storage_state(self, path: str) -> None:
+        if self._context is None:
+            raise RuntimeError("JD session not open")
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        await self._context.storage_state(path=str(target))
+
     async def close(self) -> None:
         for obj in (self._context, self._browser):
             try:
