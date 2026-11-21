@@ -239,6 +239,7 @@ class JDAdapter:
             page_type = "orders"
         else:
             page_type = "page"
+        title = await page.title()
         risk_control = any(
             word in text for word in ("访问频繁", "无法搜索", "稍后再试", "安全验证", "验证码")
         )
@@ -251,7 +252,7 @@ class JDAdapter:
         }
         return Observation(
             url=url,
-            title=(await page.title()) if page else "",
+            title=title,
             page_type=page_type,
             elements=elements,
             signals=signals,

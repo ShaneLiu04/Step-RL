@@ -24,6 +24,7 @@ def test_console_rejects_invalid_site_and_empty():
 
 def test_console_real_local_session():
     import asyncio
+
     from step_rl.console.app import SessionManager
 
     async def run():
