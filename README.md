@@ -132,9 +132,25 @@
 5. **端侧成本优势**：AR012 30/30、0 GPU、4 路并发约 2.73×；AR025 保持 30/30、
    0 LLM 的同时把观测往返降低 62.7%、观测耗时降低 63.0%。
 
-**当前组合（v4.17）**：AR011 30 场景 **30/30、0 LLM、0 prompt tokens、77.38s**；
-edge 套件 **169 passed**；EX002 全 AR 覆盖矩阵无缺项。完整证据：
-[docs/results/EX002_report.md](docs/results/EX002_report.md)。
+### Agent + 端侧 LLM：组合而不是替代
+
+| 层 | 真实证据 | 结论 |
+|----|----------|------|
+| 确定性 Agent/Runtime | 30/30、0 LLM、276 技能步、82.86s | 覆盖任务不调用模型 |
+| 纯 LLM 本地执行 | 8/9（88.9%） | 能处理语义，但长链路退化 |
+| 移除验证器观测 | 100% → 33.3% | LLM 不能替代权威验证 |
+| 端侧 LLM 兜底 | remove 成功、4 policy steps、1142 tokens、28.17s | 未覆盖能力由模型补位 |
+| 真实多站 | JD 风控/无商品链接、淘宝登录墙、Amazon 只读 | 需要 adapter/账号/人工，不由模型绕过 |
+
+**组合原则**：确定性 adapter/verifier/事务优先；未覆盖/歧义/失败才调用端侧 LLM；
+登录/验证码/支付/高风险由人工接管；成功只由服务端/订单页证据判定。
+
+**当前组合（v4.18-dev）**：AR011 30 场景 **30/30、0 LLM、0 tokens、82.86s**；
+edge **186 passed**；全量 **268 passed / 3 skipped**（排除既有 gpt2 网络文件）；
+EX002 全 AR 覆盖矩阵无缺项。证据：
+[docs/results/EX002_report.md](docs/results/EX002_report.md)、
+[docs/results/EX003_report.md](docs/results/EX003_report.md)、
+[docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)。
 
 ---
 
