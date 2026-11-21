@@ -74,6 +74,16 @@ async def run(args) -> dict:
         await adapter.capture("search")
         writer.step({"step": "search", "url": obs.url, "title": obs.title})
 
+        if args.pick_first and not args.product:
+            links = await adapter.page.eval_on_selector_all(
+                "a",
+                "els => els.map(e => e.href).filter(h => /item\.jd\.com\/\d+\.html/.test(h))",
+            )
+            if links:
+                args.product = links[0]
+                result["picked_product"] = args.product
+                writer.step({"step": "pick_first", "url": args.product})
+
         if args.product:
             obs = await adapter.open_product(args.product)
             result["product_title"] = obs.title
@@ -140,6 +150,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AR029 JD dry-run (no submit/payment)")
     parser.add_argument("--query", default="无线充电器")
     parser.add_argument("--product", default="")
+    parser.add_argument("--pick-first", action="store_true")
     parser.add_argument("--storage-state", default=default_storage_state())
     parser.add_argument("--manual-login", action="store_true")
     parser.add_argument("--headless", action="store_true")
