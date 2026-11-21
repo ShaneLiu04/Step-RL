@@ -36,8 +36,8 @@
 
 | 计划 | 内容 | 依赖 | 状态 |
 |------|------|------|------|
-| AR030 | 淘宝/天猫 + Amazon（先只读，账号待补） | AR029 adapter/local/JD 框架 | 未开始 |
-| AR031 | Agent Console（实时画面/人工接管/审批/审计） | AR029/AR030 证据协议 | 未开始 |
-| AR032 | 跨站评测 + baseline + CI + 真实 MP4 | AR029–AR031 | 未开始 |
+| AR030 | 淘宝/天猫 + Amazon（只读） | AR029 adapter/local/JD 框架 | 工程闭环；Amazon 只读成功，淘宝空标题/反爬 |
+| AR031 | Agent Console（实时画面/审批/审计） | AR029/AR030 证据协议 | MVP 工程闭环（真实 local 会话） |
+| AR032 | 跨站评测 + baseline + CI + MP4 | AR029–AR031 | 评测脚本+真实帧 MP4；跨站成功率/CD 待账号与样本 |
 
 > AR029 的 JD 真实业务证据仍待用户现场登录补跑；未补齐前不标记 AR029 最终 PASS。
