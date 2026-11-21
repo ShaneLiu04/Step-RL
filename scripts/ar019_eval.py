@@ -41,7 +41,6 @@ from step_rl.edge.skill_induction import (  # noqa: E402
 from step_rl.edge.skill_library import (  # noqa: E402
     clear_induced_skills,
     induced_operations,
-    load_induced_skills,
     register_induced_skill,
     run_skill_hierarchy,
     save_induced_skills,
@@ -258,7 +257,6 @@ async def main() -> None:
     # / test_smart_wait) predate AR019 (verified via git-stash control run:
     # 17 failed with AR019 changes stashed) and are excluded from the gate but
     # reported as debt.
-    python = sys.executable
     env_python = r"C:\Python311\python.exe"
     legacy = [
         "tests/test_locator.py",

@@ -39,7 +39,6 @@ from step_rl.edge.modeling import set_seed  # noqa: E402
 from step_rl.edge.planner import fetch_catalog, fetch_promos, plan_instruction  # noqa: E402
 from step_rl.edge.runtime import run_skill_hierarchy  # noqa: E402
 from step_rl.edge.site import LocalShopServer  # noqa: E402
-from step_rl.edge.tasks import TaskSpec  # noqa: E402
 from step_rl.edge.verifier import compute_progress  # noqa: E402
 
 OUT = ROOT / "outputs" / "ar023" / "eval"
@@ -484,9 +483,9 @@ async def main() -> None:
         f"{flows['v1']['api_promos']['codes']}",
         f"- v1/v2 结算页领取按钮：{flows['v1']['checkout_page']['has_claim_buttons']} / "
         f"{flows['v2']['checkout_page']['has_claim_buttons']}",
-        f"- 真实全流程（v1/v2）：total=598 → paid=548，applied=True，券消耗",
-        f"- 贴线路径：199 < 400 → applied=False、paid=199、券不消耗；"
-        f"同券后续凑满 598 → applied=True（真实复用）",
+        "- 真实全流程（v1/v2）：total=598 → paid=548，applied=True，券消耗",
+        "- 贴线路径：199 < 400 → applied=False、paid=199、券不消耗；"
+        "同券后续凑满 598 → applied=True（真实复用）",
         f"- 门控：covered={p0['gate']['covered']}（{p0['gate']['reason']}，"
         f"{p0['gate']['skills']}）",
         "",

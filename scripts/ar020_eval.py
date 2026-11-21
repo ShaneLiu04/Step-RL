@@ -48,7 +48,6 @@ from step_rl.edge.skill_induction import (  # noqa: E402
 from step_rl.edge.skill_library import (  # noqa: E402
     clear_induced_skills,
     induced_operations,
-    load_induced_skills,
     register_induced_skill,
     run_skill_hierarchy,
     save_induced_skills,

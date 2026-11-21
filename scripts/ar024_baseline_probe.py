@@ -50,7 +50,6 @@ from step_rl.edge.skill_library import (  # noqa: E402
     skill_for_subtask,
 )
 from step_rl.edge.skill_stats import (  # noqa: E402
-    all_skill_stats,
     clear_skill_stats,
     from_dict,
     get_skill_stat,

@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 
 from step_rl.edge.browser import BrowserEnv  # noqa: E402
 from step_rl.edge.capability import check_capability  # noqa: E402
-from step_rl.edge.planner import fetch_catalog, plan_instruction  # noqa: E402
+from step_rl.edge.planner import fetch_catalog  # noqa: E402
 from step_rl.edge.site import LocalShopServer  # noqa: E402
 from step_rl.edge import skill_library  # noqa: E402
 from step_rl.edge.skill_library import (  # noqa: E402
@@ -128,8 +128,6 @@ async def main() -> None:
         catalog = fetch_catalog(server.base_url)
     finally:
         server.stop()
-    spec = plan_instruction(INSTRUCTION, catalog)
-
     runs = []
     for index in (1, 2):
         register_induced_skill("remove", STALE_STEPS, "induced_remove_stale")
@@ -170,8 +168,8 @@ async def main() -> None:
         )
     lines += [
         "",
-        f"结论：两次执行均失败且选中同一失效技能（无记忆）；"
-        f"失败后能力门控仍 covered（无让位/无显式缺口）。",
+        "结论：两次执行均失败且选中同一失效技能（无记忆）；"
+        "失败后能力门控仍 covered（无让位/无显式缺口）。",
     ]
     (OUT / "baseline_probe.md").write_text("\n".join(lines), encoding="utf-8")
     print(json.dumps({"done": str(OUT)}, ensure_ascii=False), flush=True)

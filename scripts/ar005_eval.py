@@ -104,7 +104,7 @@ async def main() -> None:
         pass
     OUT.mkdir(parents=True, exist_ok=True)
     reports = []
-    for label, adapters, semantic, layout in (
+    for label, adapters, semantic, layout, perturb in (
         ("semantic_v1", SEMANTIC, True, "v1", False),
         ("semantic_v2_zero_shot", SEMANTIC, True, "v2", False),
         ("selector_v2", SELECTOR, False, "v2", False),
