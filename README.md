@@ -14,7 +14,7 @@
 [![PyTorch 2.4+](https://img.shields.io/badge/PyTorch-2.4+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers 4.51+](https://img.shields.io/badge/Transformers-4.51+-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/docs/transformers)
 [![Playwright](https://img.shields.io/badge/Playwright-1.43+-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Tests](https://img.shields.io/badge/Edge%20Tests-181%20Passing-22C55E.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Edge%20Tests-186%20Passing-22C55E.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16A34A.svg)](LICENSE)
 
 > 面向自进化：能力门控发现未覆盖任务 → 真实 LLM 兜底成功一次 → 轨迹自动归纳为参数化技能 → 此后同类任务 **0 LLM**。  
@@ -1079,7 +1079,46 @@ spec：`specs/archive/AR027-cart-transaction-compiler/`；
 spec：`specs/archive/AR028-cart-to-order-transaction/`；
 复现：`python scripts/ar028_eval.py`、`python scripts/ar028_demo_gif.py`。
 
-### 5.29 可解释性实验（EX001）
+### 5.29 真实多站点适配框架（AR029，进行中）
+
+**目标。** 把本地 `LocalShopServer` 的能力抽成站点无关的 `SiteAdapter`，并接入
+真实京东 dry-run；后续 AR030 第二/第三站、AR031 Console、AR032 跨站评测。
+
+**当前已交付：**
+
+| 组件 | 路径 |
+|------|------|
+| Adapter 契约/数据 | `step_rl/edge/adapters/base.py` |
+| Local reference | `step_rl/edge/adapters/local.py` |
+| JD dry-run adapter | `step_rl/edge/adapters/jd.py` |
+| 证据协议 | `step_rl/edge/adapters/evidence.py`（JSONL/截图/HTML/脱敏） |
+| JD CLI | `scripts/ar029_jd_dryrun.py` |
+
+**安全边界：** 默认 dry-run；1 会话、动作间隔≥5s、每 run≤20 页面、单笔≤200 元；
+登录/验证码人工接管；`submit_order` 显式 `PermissionError`；凭据只放
+`%LOCALAPPDATA%\StepRL\credentials`，不入仓/日志。
+
+**已验证（真实本地站）：** LocalAdapter 的 observe/execute/catalog/promos/verify
+全部走真实 HTTP/Edge；新增 5 项 adapter 测试；edge **186 passed**、AR011
+**30/30、0 LLM** 零回退。
+
+**待补跑（不伪造）：** JD 真实任务需用户现场接管登录，按每类 5 run 落
+`outputs/ar029/jd/<run_id>/`；当前不填写 JD 成功率。真实证据补齐前 AR029 不标记
+最终验收 PASS。
+
+命令：
+
+```powershell
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login
+python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
+  --storage-state "$env:LOCALAPPDATA\StepRL\credentials\jd.json" --to-checkout
+```
+
+合规：`docs/results/AR029_COMPLIANCE.md`；状态报告：
+`docs/results/AR029_report.md`；需求/设计：
+`specs/changes/AR029-real-multisite-adaptation/`。
+
+### 5.30 可解释性实验（EX001）
 
 实验/归因类使用独立编号 `EXxxx`，不占用创新 AR 编号。完整报告与 6 张图：
 
@@ -1098,7 +1137,7 @@ spec：`specs/archive/AR028-cart-to-order-transaction/`；
 
 设计文档：[docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
-### 5.30 全架构压力实验（EX002）
+### 5.31 全架构压力实验（EX002）
 
 实验/归因编号独立于 AR。完整报告与 6 张图：
 **[docs/results/EX002_report.md](docs/results/EX002_report.md)**
@@ -1205,6 +1244,7 @@ python scripts/ar026_eval.py      # v3 布局 + 自适应技能编译（baseline
 python scripts/ar027_eval.py      # 购物车事务编译（baseline vs CTC + 故障回滚，0 LLM）
 python scripts/ar028_eval.py      # 购物车→订单事务（baseline vs COT + 券预检/回滚）
 python scripts/ar028_demo_gif.py  # 真实 Edge 录制 AR028 GIF demo
+python scripts/ar029_jd_dryrun.py --query "无线充电器" --manual-login  # AR029 JD dry-run
 ```
 
 ### 测试
@@ -1217,8 +1257,8 @@ pytest tests/test_edge_site.py tests/test_edge_verifier.py \
        tests/test_edge_planner.py tests/test_edge_runtime.py tests/test_edge_observation.py tests/test_edge_error_repair.py tests/test_edge_skill_library.py tests/test_edge_unified_runtime.py tests/test_edge_capability.py tests/test_edge_adversarial.py tests/test_edge_checkpoint.py tests/test_edge_cart_update.py tests/test_edge_multi_order.py tests/test_edge_saga.py tests/test_edge_transient.py tests/test_edge_skill_induction.py tests/test_edge_batch_remove.py tests/test_edge_skill_stats.py tests/test_edge_order_query.py tests/test_edge_promo_planning.py \
        tests/test_edge_concurrency.py tests/test_edge_observation_cache.py \
        tests/test_edge_layout_v3_adaptive.py tests/test_edge_cart_transform.py \
-       tests/test_edge_cart_to_order.py -v
-# 181 passed
+       tests/test_edge_cart_to_order.py tests/test_edge_adapters.py -v
+# 186 passed
 ```
 
 ### 产物
@@ -1379,6 +1419,7 @@ step-rl/
 │   ├── ar027_eval.py           # 购物车事务 baseline vs CTC + 回滚
 │   ├── ar028_eval.py           # 购物车→订单 baseline vs COT + 券预检/回滚
 │   ├── ar028_demo_gif.py       # 真实 Edge GIF demo
+│   ├── ar029_jd_dryrun.py      # JD dry-run（人工登录/不提交）
 │   ├── ex001_*.py              # 可解释性实验/图表
 │   ├── build_skill_memory.py
 │   └── generate_cover.py
@@ -1389,7 +1430,7 @@ step-rl/
 │   ├── changes/（进行中 AR）
 │   └── archive/AR001 … AR028 / EX001
 │
-├── tests/                        # 272 项测试；edge 181 passed；已知 gpt2 网络 10 项环境失败
+├── tests/                        # 277 项测试；edge 186 passed；已知 gpt2 网络 10 项环境失败
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
@@ -1579,6 +1620,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
+| v4.18-dev / AR029 | 进行中 | SiteAdapter 框架 + local reference + JD dry-run；JD 真实证据待接管 |
 | **v4.17 / AR028** | **推荐** | 购物车→订单事务：baseline 0/3 → COT 3/3、0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚 |
 | v4.16 / AR027 | 保留 | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |
 | v4.15 / AR026 | 保留 | 布局自适应技能编译：v3 baseline 1/3 → LASC 3/3，0 LLM；v1/v2 30/30 零回退 |
