@@ -1,6 +1,6 @@
 # Step-RL AR001 复现与大规模实验手册
 
-本手册对应 **AR001–AR027：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存、布局自适应技能编译与购物车事务编译**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
+本手册对应 **AR001–AR028：真实端侧 Verifier-Grounded Step-GRPO、层级任务分解、语义动作、技能编译/归纳/统计、多会话并发隔离、自适应观测缓存、布局自适应技能编译、购物车事务编译与购物车→订单事务**。所有实验均在真实 HTTP 商城 + 真实浏览器中执行，所有实验在真实 HTTP 商城与真实浏览器中执行。
 
 ---
 
@@ -115,6 +115,9 @@ python scripts/ar025_eval.py
 python scripts/ar026_eval.py
 # 34) AR027 购物车事务编译（baseline vs CTC + 真实故障回滚，0 LLM）
 python scripts/ar027_eval.py
+# 35) AR028 购物车→订单事务（baseline vs COT + 券预检/订单故障回滚）
+python scripts/ar028_eval.py
+python scripts/ar028_demo_gif.py
 ```
 
 产物：
@@ -153,6 +156,7 @@ outputs/ar024/              # 并发会话隔离 基线探针 + 4 并发/留痕/
 outputs/ar025/              # 自适应观测缓存 基线探针 + 30 场景 + 缓存探针
 outputs/ar026/              # v3 布局 baseline vs LASC（真实 Edge/0 LLM）
 outputs/ar027/              # 购物车事务 baseline vs CTC + 真实故障回滚
+outputs/ar028/              # 购物车→订单 baseline vs COT + 预检/回滚 + GIF 帧
 ```
 
 ---
@@ -264,7 +268,8 @@ r_t = −0.02 + (1.0 if terminal and success else 0)
 | AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏 | 3–4 并发墙钟 | 1.00 |
 | AR025 自适应观测缓存 | 30/30、0 LLM；观测往返 −62.7%、耗时 −63.0%；缓存探针 3 命中/1 扫描 | 77s / 30 场景 | 1.00 |
 | AR026 布局自适应技能编译 | v3 baseline 1/3 → LASC 3/3，0 LLM；AR011 30/30 零回退 | 1.3–2.2s / v3 任务 | 1.00 |
-| **AR027 购物车事务编译（最终）** | **baseline 0/3 → CTC 3/3，0 LLM；故障回滚 compensated=1** | **2.0–2.5s / 事务** | **1.00** |
+| AR027 购物车事务编译 | baseline 0/3 → CTC 3/3，0 LLM；故障回滚 compensated=1 | 2.0–2.5s / 事务 | 1.00 |
+| **AR028 购物车→订单事务（最终）** | **baseline 0/3 → COT 3/3，0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚** | **2.1–3.4s / 事务** | **1.00** |
 
 逐任务报告：
 
@@ -455,7 +460,8 @@ L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 | AR024 并发会话隔离 | 4 并发真实 Edge 4/4 零串扰（2.75×）+ 失败留痕 4/4 + 10×12 写者 0 损坏；串行零回退 | 保留 |
 | AR025 自适应观测缓存 | 30/30、0 LLM；往返 −62.7%、观测耗时 −63.0%；cache probe 3/4 命中；零回退 | 保留 |
 | AR026 布局自适应技能编译 | v3 baseline 1/3 → LASC 3/3（searchbox/查找/步进器真实适配）；AR011 30/30 零回退 | 保留 |
-| **AR027 购物车事务编译** | **baseline 0/3 → CTC 3/3，0 LLM；真实 500 故障下已改项回滚，compensated=1** | **最终保留** |
+| AR027 购物车事务编译 | baseline 0/3 → CTC 3/3，0 LLM；真实 500 故障下已改项回滚，compensated=1 | 保留 |
+| **AR028 购物车→订单事务** | **baseline 0/3 → COT 3/3，0 LLM；券预检/订单取消/购物车回滚；GIF demo** | **最终保留** |
 
 ### 3.3 本机算力说明
 
@@ -590,6 +596,17 @@ CTC 是确定性事务层，不依赖 LLM；大模型实验只影响“未支持
 3. 真实故障注入 `fault_update_once=True, fault_update_pid="p4"` 必须得到
    `success=false`、`compensated=1`、cart 恢复原值；
 4. 不要把 CTC 的成功归因于模型：该路径 0 LLM、0 prompt tokens。
+
+### 4.5.4 AR028 大模型复现配置（购物车→订单事务）
+
+COT 是确定性事务层，不依赖 LLM。服务器复现要求：
+
+1. 跑 `python scripts/ar028_eval.py`，报告 baseline（`enable_compound=False`）与
+   COT 的成功数、订单、券 applied/paid、预检与 compensated；
+2. 跑 `python scripts/ar011_eval.py` 作为 30 场景零回退门禁；
+3. 预检任务必须 `steps=0`、cart 不变、order=None；
+4. 订单故障必须取消订单并恢复 cart，`compensated=2`；
+5. `python scripts/ar028_demo_gif.py` 生成真实 GIF，不得用静态伪造。
 
 ### 4.6 预期资源与时间（参考）
 
