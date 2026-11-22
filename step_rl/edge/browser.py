@@ -355,6 +355,12 @@ class BrowserEnv:
         path = parsed.path or "/"
         return path + (f"?{parsed.query}" if parsed.query else "")
 
+    async def screenshot(self) -> bytes:
+        """Capture the real browser viewport without exposing Playwright internals."""
+        if self._page is None:
+            raise RuntimeError("BrowserEnv not started")
+        return await self._page.screenshot()
+
     async def get_state(self) -> Dict[str, Any]:
         try:
             data = await self._page.evaluate(

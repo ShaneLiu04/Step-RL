@@ -17,6 +17,10 @@ _SECRET_KEYS = {
     "token",
     "access_token",
     "refresh_token",
+    "pt_key",
+    "pt_pin",
+    "thor",
+    "wskey",
 }
 _SECRET_PATTERNS = [
     (re.compile(r"(?i)(password|passwd|token|cookie)\s*[=:]\s*[^\s,;]+"), r"\1=<redacted>"),

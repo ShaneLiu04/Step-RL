@@ -83,6 +83,8 @@ def test_evidence_writer_redacts_secrets(tmp_path):
     assert payload["password"] == "<redacted>"
     assert "super-secret" not in writer.steps_path.read_text(encoding="utf-8")
     assert redact({"token": "abc"})["token"] == "<redacted>"
+    assert redact({"pt_key": "jd-secret", "thor": "x"})["pt_key"] == "<redacted>"
+    assert redact({"thor": "x"})["thor"] == "<redacted>"
 
 
 def test_evidence_writer_paths(tmp_path):

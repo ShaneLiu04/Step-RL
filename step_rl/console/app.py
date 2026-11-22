@@ -129,10 +129,10 @@ class SessionManager:
                 session._server = None
 
     async def _capture(self, session: Session, name: str) -> None:
-        if session._env is None or session._env._page is None:
+        if session._env is None:
             return
         try:
-            png = await session._env._page.screenshot()
+            png = await session._env.screenshot()
             session.screenshot_b64 = base64.b64encode(png).decode("ascii")
             (session.audit_dir / f"{name}.png").write_bytes(png)
             session.event("screenshot", name=name)

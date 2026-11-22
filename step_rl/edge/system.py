@@ -62,8 +62,11 @@ class HybridSystem:
                 "orders": len(state.get("orders", [])),
                 "observation": dict(env.observation_metrics),
             }
-            if capture and env._page is not None:
-                png = await env._page.screenshot()
+            if capture:
+                try:
+                    png = await env.screenshot()
+                except RuntimeError:
+                    png = b""
                 payload["screenshot_bytes"] = len(png)
                 if evidence is not None:
                     evidence.screenshot(png, "final")
