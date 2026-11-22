@@ -51,3 +51,8 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Pre-existing generated demo artifacts (not part of AR scope)
+docs/images/full_system_demo.mp4
+docs/images/full_system_demo_poster.jpg
+scripts/full_system_demo_video.py

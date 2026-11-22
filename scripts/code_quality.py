@@ -55,6 +55,8 @@ def main() -> int:
                 "mypy",
                 "step_rl/logging_utils.py",
                 "step_rl/edge/system.py",
+                "step_rl/edge/adapters/session.py",
+                "step_rl/edge/adapters/registry.py",
                 "--ignore-missing-imports",
                 "--follow-imports=skip",
                 "--no-error-summary",

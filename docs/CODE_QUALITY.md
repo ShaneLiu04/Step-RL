@@ -53,8 +53,8 @@ python -m ruff check <上述目录/文件> --select F,E9
 - Console/系统入口复用同一 runtime，避免两套执行逻辑。
 
 ### 仍存技术债
-1. `jd.py`/`remote.py` 生命周期/限速/截图有重复，可抽 `BrowserSessionBase`；
-2. 部分异常为宽 `except Exception`，用于清理/隔离，后续应加结构化日志；
+1. ~~`jd.py`/`remote.py` 生命周期重复~~：已抽 `BrowserSessionBase`；
+2. 清理路径已用 `contextlib.suppress`；剩余宽异常集中在观测/网络容错，后续继续结构化日志；
 3. 远程 selector 仍是站点特定，需持续用真实页面回归；
 4. Console 暂停/审批 API 已有状态，但尚未与每个动作级 hook 完全联动；
 5. 跨站 CI/n≥30 仍缺账号与样本；
@@ -130,3 +130,12 @@ python scripts/code_quality.py --full
 - mypy targeted 检查：`step_rl/logging_utils.py`、`step_rl/edge/system.py` 通过（旧仓库全量类型债未伪造通过）；
 - CI lint 增加 `ruff check --select F,E9`；
 - 新增 Console token 测试。
+
+## 11. 生产化闭环第二轮（2026-11-21）
+
+- 抽 `adapters/session.py` BrowserSessionBase：JD/Remote 共用 open/close/限速/页面预算/goto/settle/capture/storage_state；
+- Console 可选 token 认证；
+- 结构化 JSON 日志；
+- mypy targeted 通过：logging_utils、edge/system、adapters/session、adapters/registry；
+- CI 增加 ruff F/E9；
+- `.gitignore` 排除未跟踪 full_system_demo 生成物（保留本地，不入仓）。
