@@ -1441,7 +1441,7 @@ python scripts/code_quality.py --full
 - 全量测试（排除既有 gpt2 网络文件）。
 
 最近结果：**全仓 F/E9 clean；271 passed / 3 skipped；关键测试 16 passed**。
-详细审查与修复记录：[docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)。
+详细审查与修复记录：[docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) · 安全审查：[docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md)。
 
 ## 项目结构
 

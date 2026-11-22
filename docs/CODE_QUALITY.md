@@ -114,3 +114,11 @@ python scripts/code_quality.py --full
 
 ### 结论
 代码质量已从“一次性人工检查”变为可重复门禁；未验证的远程业务仍不写成成功。
+
+## 9. 安全编码强化（2026-11-21）
+
+- 依据 secure-coding / 华为 Python 安全规则 / python-coding-standards 扫描；
+- 未发现 eval/exec、shell=True、pickle/yaml.load、硬编码密钥；
+- EvidenceWriter 增加路径安全归一化，阻断 `../` 穿越（新增测试）；
+- JD cookie 名 `pt_key/pt_pin/thor/wskey` 脱敏；
+- 详见 `docs/SECURITY_REVIEW.md`。
