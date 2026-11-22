@@ -146,7 +146,7 @@
 登录/验证码/支付/高风险由人工接管；成功只由服务端/订单页证据判定。
 
 **当前组合（v4.18-dev）**：AR011 30 场景 **30/30、0 LLM、0 tokens、82.86s**；
-edge **186 passed**；全量 **268 passed / 3 skipped**（排除既有 gpt2 网络文件）；
+edge **186 passed**；全量 **271 passed / 3 skipped**（排除既有 gpt2 网络文件）；
 EX002 全 AR 覆盖矩阵无缺项。证据：
 [docs/results/EX002_report.md](docs/results/EX002_report.md)、
 [docs/results/EX003_report.md](docs/results/EX003_report.md)、
@@ -1160,7 +1160,8 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 
 - FastAPI + WebSocket 实时截图流、事件/验证器面板、暂停/恢复/审批/取消、审计 JSONL；
 - 真实 local 会话：`买两件无线充电器` 成功，截图非空、`finish` 事件；
-- 启动：`uvicorn step_rl.console.app:app --host 127.0.0.1 --port 8765`；
+- 启动：`uvicorn step_rl.console.app:app --host 127.0.0.1 --port 8765
+# 可选：$env:CONSOLE_TOKEN="..."，前端用 ?token=...，API 用 X-Console-Token`；
 - 测试：3 passed。spec：`specs/changes/AR031-agent-console/`。
 
 ### 5.32 跨站评测（AR032，部分验证）
@@ -1427,6 +1428,21 @@ python scripts/ar003_eval.py
 ```
 
 ---
+
+## 代码质量门禁
+
+```powershell
+$env:PYTHONPATH="D:\agentRL\Step-RL"
+python scripts/code_quality.py --full
+```
+
+- compileall；
+- `ruff --select F,E9` 全仓；
+- adapter/console/system 关键测试；
+- 全量测试（排除既有 gpt2 网络文件）。
+
+最近结果：**全仓 F/E9 clean；271 passed / 3 skipped；关键测试 16 passed**。
+详细审查与修复记录：[docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) · 安全审查：[docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md)。
 
 ## 项目结构
 

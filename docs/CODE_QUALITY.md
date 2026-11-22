@@ -53,8 +53,8 @@ python -m ruff check <上述目录/文件> --select F,E9
 - Console/系统入口复用同一 runtime，避免两套执行逻辑。
 
 ### 仍存技术债
-1. `jd.py`/`remote.py` 生命周期/限速/截图有重复，可抽 `BrowserSessionBase`；
-2. 部分异常为宽 `except Exception`，用于清理/隔离，后续应加结构化日志；
+1. ~~`jd.py`/`remote.py` 生命周期重复~~：已抽 `BrowserSessionBase`；
+2. 清理路径已用 `contextlib.suppress`；剩余宽异常集中在观测/网络容错，后续继续结构化日志；
 3. 远程 selector 仍是站点特定，需持续用真实页面回归；
 4. Console 暂停/审批 API 已有状态，但尚未与每个动作级 hook 完全联动；
 5. 跨站 CI/n≥30 仍缺账号与样本；
@@ -89,3 +89,53 @@ python -m ruff check step_rl scripts tests --select F,E9
 
 > 仍保留历史 `Dict/List` 注解、宽异常清理等风格债务；本轮不盲目批量改风格，
 > 以避免改变已验证行为。后续可单独做“类型注解现代化”与“结构化日志”专项。
+
+
+## 8. 第三轮：封装/脱敏与可重复门禁（2026-11-21）
+
+### 修复
+- 新增 `BrowserEnv.screenshot()`，`system/console` 不再直接访问 `_page` 私有成员；
+- EvidenceWriter 脱敏扩展到 JD `pt_key/pt_pin/thor/wskey`；
+- 新增 `scripts/code_quality.py` 一键门禁。
+
+### 门禁命令与结果
+
+```powershell
+$env:PYTHONPATH="D:gentRL\Step-RL"
+python scripts/code_quality.py --full
+```
+
+结果：
+- compileall rc=0；
+- ruff F/E9 `All checks passed`；
+- 关键 adapter/console/system 测试 **16 passed**；
+- 全量（排除既有 gpt2）**271 passed / 3 skipped**；
+- 门禁汇总 `{failed: [], ok: True}`。
+
+### 结论
+代码质量已从“一次性人工检查”变为可重复门禁；未验证的远程业务仍不写成成功。
+
+## 9. 安全编码强化（2026-11-21）
+
+- 依据 secure-coding / 华为 Python 安全规则 / python-coding-standards 扫描；
+- 未发现 eval/exec、shell=True、pickle/yaml.load、硬编码密钥；
+- EvidenceWriter 增加路径安全归一化，阻断 `../` 穿越（新增测试）；
+- JD cookie 名 `pt_key/pt_pin/thor/wskey` 脱敏；
+- 详见 `docs/SECURITY_REVIEW.md`。
+
+## 10. 生产化补齐（2026-11-21）
+
+- Console 可选 `CONSOLE_TOKEN` 认证：HTTP `X-Console-Token`、WebSocket `?token=`；未设置时仅本地开发。
+- 新增 `step_rl/logging_utils.py` JSON 结构化日志，system/console 记录 run/finish/error；
+- mypy targeted 检查：`step_rl/logging_utils.py`、`step_rl/edge/system.py` 通过（旧仓库全量类型债未伪造通过）；
+- CI lint 增加 `ruff check --select F,E9`；
+- 新增 Console token 测试。
+
+## 11. 生产化闭环第二轮（2026-11-21）
+
+- 抽 `adapters/session.py` BrowserSessionBase：JD/Remote 共用 open/close/限速/页面预算/goto/settle/capture/storage_state；
+- Console 可选 token 认证；
+- 结构化 JSON 日志；
+- mypy targeted 通过：logging_utils、edge/system、adapters/session、adapters/registry；
+- CI 增加 ruff F/E9；
+- `.gitignore` 排除未跟踪 full_system_demo 生成物（保留本地，不入仓）。

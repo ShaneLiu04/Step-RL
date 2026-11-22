@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote, urlparse
@@ -25,6 +24,7 @@ from .base import (
     Verification,
 )
 from .evidence import EvidenceWriter
+from .session import BrowserSession
 
 SEARCH_URL = "https://search.jd.com/Search?keyword={query}&enc=utf-8"
 ITEM_RE = re.compile(r"item\.jd\.com/(\d+)")
@@ -51,7 +51,8 @@ def extract_amount(text: str) -> Optional[float]:
         return None
 
 
-class JDAdapter:
+class JDAdapter(BrowserSession):
+    settle_seconds = 1.8
     name = "jd"
     capabilities = AdapterCapabilities(
         read=True,
@@ -74,18 +75,15 @@ class JDAdapter:
         max_amount: float = 200.0,
         allow_submit: bool = False,
     ) -> None:
-        self.evidence = evidence
-        self.headless = headless
-        self.min_action_interval = min_action_interval
-        self.max_pages = max_pages
+        super().__init__(
+            site_name="jd",
+            evidence=evidence,
+            headless=headless,
+            min_action_interval=min_action_interval,
+            max_pages=max_pages,
+        )
         self.max_amount = max_amount
         self.allow_submit = allow_submit
-        self._pw = None
-        self._browser = None
-        self._context = None
-        self.page = None
-        self.pages_loaded = 0
-        self._last_action = 0.0
         self.current_text = ""
 
     async def open_session(
@@ -94,71 +92,9 @@ class JDAdapter:
         storage_state: Optional[str] = None,
         manual_login: bool = False,
     ) -> None:
-        from playwright.async_api import async_playwright
-
-        self._pw = await async_playwright().start()
-        launch_kwargs: Dict[str, Any] = {"headless": self.headless}
-        executable = os.environ.get("STEP_RL_BROWSER_PATH")
-        if executable:
-            launch_kwargs["executable_path"] = executable
-        else:
-            launch_kwargs["channel"] = "msedge"
-        self._browser = await self._pw.chromium.launch(**launch_kwargs)
-        context_kwargs: Dict[str, Any] = {"viewport": {"width": 1280, "height": 900}}
-        if storage_state and Path(storage_state).exists():
-            context_kwargs["storage_state"] = storage_state
-        self._context = await self._browser.new_context(**context_kwargs)
-        self.page = await self._context.new_page()
-        self.page.set_default_timeout(15000)
-        self._last_action = time.monotonic()
+        await super().open_session(storage_state=storage_state)
         if manual_login:
-            await self.page.goto("https://www.jd.com/", wait_until="domcontentloaded")
-            await self._settle()
-
-    async def save_storage_state(self, path: str) -> None:
-        if self._context is None:
-            raise RuntimeError("JD session not open")
-        target = Path(path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        await self._context.storage_state(path=str(target))
-
-    async def close(self) -> None:
-        for obj in (self._context, self._browser):
-            try:
-                if obj:
-                    await obj.close()
-            except Exception:
-                pass
-        try:
-            if self._pw:
-                await self._pw.stop()
-        except Exception:
-            pass
-
-    def _require(self):
-        if self.page is None:
-            raise RuntimeError("JD session not open")
-        return self.page
-
-    def _rate_limit(self) -> None:
-        elapsed = time.monotonic() - self._last_action
-        if elapsed < self.min_action_interval:
-            time.sleep(self.min_action_interval - elapsed)
-        self._last_action = time.monotonic()
-
-    def _count_page(self) -> None:
-        if self.pages_loaded >= self.max_pages:
-            raise RuntimeError(f"page budget exceeded: {self.pages_loaded}")
-        self.pages_loaded += 1
-
-    async def _settle(self) -> None:
-        try:
-            await self.page.wait_for_load_state("domcontentloaded", timeout=8000)
-        except Exception:
-            pass
-        # JD often redirects/refreshes after DOMContentLoaded (login/risk-control
-        # interstitials).  Give navigation a moment, then observe with retries.
-        await asyncio.sleep(1.8)
+            await self.goto("https://www.jd.com/")
 
     async def _evaluate_observe(self):
         last_error = None
@@ -183,13 +119,6 @@ class JDAdapter:
         raise RuntimeError(
             f"JD observation failed after navigation retries: {last_error}"
         )
-
-    async def goto(self, url: str) -> None:
-        self._require()
-        self._rate_limit()
-        self._count_page()
-        await self.page.goto(url, wait_until="domcontentloaded")
-        await self._settle()
 
     @staticmethod
     def default_storage_state() -> str:
@@ -277,22 +206,6 @@ class JDAdapter:
             signals=signals,
             revision=str(id(raw)),
         )
-
-    async def capture(self, name: str) -> Dict[str, str]:
-        page = self._require()
-        result = {}
-        if self.evidence is not None:
-            try:
-                png = await page.screenshot(full_page=False)
-                result["screenshot"] = str(self.evidence.screenshot(png, name))
-            except Exception:
-                pass
-            try:
-                html = await page.content()
-                result["html"] = str(self.evidence.html(html, name))
-            except Exception:
-                pass
-        return result
 
     async def execute(self, action: Action) -> ActionResult:
         page = self._require()

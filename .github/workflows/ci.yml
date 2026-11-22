@@ -75,7 +75,10 @@ jobs:
 
       - name: Install lint tools
         run: |
-          pip install black isort flake8 mypy bandit
+          pip install black isort flake8 mypy bandit ruff
+
+      - name: Ruff functional gate (F/E9)
+        run: ruff check step_rl/ tests/ scripts/ --select F,E9 --exclude scripts/full_system_demo_video.py
 
       - name: Check code formatting (black)
         run: black --check --diff step_rl/ tests/ scripts/

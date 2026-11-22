@@ -8,6 +8,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+_SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _safe_component(value: str) -> str:
+    cleaned = _SAFE_COMPONENT.sub("_", str(value)).strip("._-")
+    return (cleaned or "run")[:80]
+
+
 _SECRET_KEYS = {
     "password",
     "passwd",
@@ -17,6 +25,10 @@ _SECRET_KEYS = {
     "token",
     "access_token",
     "refresh_token",
+    "pt_key",
+    "pt_pin",
+    "thor",
+    "wskey",
 }
 _SECRET_PATTERNS = [
     (
@@ -48,10 +60,12 @@ def redact(value: Any) -> Any:
 
 class EvidenceWriter:
     def __init__(self, root: Path, run_id: str, site: str) -> None:
-        self.root = Path(root) / site / run_id
+        safe_site = _safe_component(site)
+        safe_run = _safe_component(run_id)
+        self.root = Path(root) / safe_site / safe_run
         self.root.mkdir(parents=True, exist_ok=True)
-        self.site = site
-        self.run_id = run_id
+        self.site = safe_site
+        self.run_id = safe_run
         self.steps_path = self.root / "steps.jsonl"
         self.started_at = datetime.now().isoformat(timespec="seconds")
 

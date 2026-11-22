@@ -5,21 +5,39 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    Header,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from ..edge.browser import BrowserEnv
 from ..edge.runtime import run_task
 from ..edge.site import LocalShopServer
+from ..logging_utils import get_logger
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 AUDIT_ROOT = ROOT / "outputs" / "ar031" / "sessions"
+logger = get_logger("step_rl.console")
+
+
+def require_token(
+    x_console_token: Optional[str] = Header(default=None),
+) -> None:
+    expected = os.environ.get("CONSOLE_TOKEN", "")
+    if expected and x_console_token != expected:
+        raise HTTPException(status_code=401, detail="console token required")
 
 
 class RunRequest(BaseModel):
@@ -112,11 +130,21 @@ class SessionManager:
             }
             session.status = "success" if session.result["success"] else "failed"
             session.event("finish", **session.result)
+            logger.info(
+                "console_finish",
+                extra={
+                    "extra_fields": {"session": session.id, "status": session.status}
+                },
+            )
             await self._capture(session, "final")
         except Exception as exc:
             session.error = f"{type(exc).__name__}: {exc}"
             session.status = "error"
             session.event("error", error=session.error)
+            logger.warning(
+                "console_error",
+                extra={"extra_fields": {"session": session.id, "error": session.error}},
+            )
         finally:
             session._stop.set()
             if session._env is not None:
@@ -127,10 +155,10 @@ class SessionManager:
                 session._server = None
 
     async def _capture(self, session: Session, name: str) -> None:
-        if session._env is None or session._env._page is None:
+        if session._env is None:
             return
         try:
-            png = await session._env._page.screenshot()
+            png = await session._env.screenshot()
             session.screenshot_b64 = base64.b64encode(png).decode("ascii")
             (session.audit_dir / f"{name}.png").write_bytes(png)
             session.event("screenshot", name=name)
@@ -161,7 +189,7 @@ def create_app() -> FastAPI:
     async def health() -> Dict[str, str]:
         return {"status": "ok", "ar": "AR031"}
 
-    @app.post("/api/sessions")
+    @app.post("/api/sessions", dependencies=[Depends(require_token)])
     async def create_session(request: RunRequest) -> Dict[str, Any]:
         try:
             session = manager.create(request.site, request.instruction)
@@ -169,18 +197,20 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc))
         return session.snapshot()
 
-    @app.get("/api/sessions")
+    @app.get("/api/sessions", dependencies=[Depends(require_token)])
     async def list_sessions() -> List[Dict[str, Any]]:
         return [s.snapshot() for s in manager.sessions.values()]
 
-    @app.get("/api/sessions/{session_id}")
+    @app.get("/api/sessions/{session_id}", dependencies=[Depends(require_token)])
     async def get_session(session_id: str) -> Dict[str, Any]:
         session = manager.sessions.get(session_id)
         if session is None:
             raise HTTPException(status_code=404, detail="not found")
         return session.snapshot()
 
-    @app.post("/api/sessions/{session_id}/approve")
+    @app.post(
+        "/api/sessions/{session_id}/approve", dependencies=[Depends(require_token)]
+    )
     async def approve(session_id: str) -> Dict[str, Any]:
         session = manager.sessions.get(session_id)
         if session is None:
@@ -189,7 +219,7 @@ def create_app() -> FastAPI:
         session.event("approve")
         return session.snapshot()
 
-    @app.post("/api/sessions/{session_id}/pause")
+    @app.post("/api/sessions/{session_id}/pause", dependencies=[Depends(require_token)])
     async def pause(session_id: str) -> Dict[str, Any]:
         session = manager.sessions.get(session_id)
         if session is None:
@@ -198,7 +228,9 @@ def create_app() -> FastAPI:
         session.event("pause")
         return session.snapshot()
 
-    @app.post("/api/sessions/{session_id}/resume")
+    @app.post(
+        "/api/sessions/{session_id}/resume", dependencies=[Depends(require_token)]
+    )
     async def resume(session_id: str) -> Dict[str, Any]:
         session = manager.sessions.get(session_id)
         if session is None:
@@ -207,7 +239,9 @@ def create_app() -> FastAPI:
         session.event("resume")
         return session.snapshot()
 
-    @app.post("/api/sessions/{session_id}/cancel")
+    @app.post(
+        "/api/sessions/{session_id}/cancel", dependencies=[Depends(require_token)]
+    )
     async def cancel(session_id: str) -> Dict[str, Any]:
         try:
             manager.close(session_id)
@@ -220,6 +254,10 @@ def create_app() -> FastAPI:
 
     @app.websocket("/ws/{session_id}")
     async def websocket(websocket: WebSocket, session_id: str) -> None:
+        expected = os.environ.get("CONSOLE_TOKEN", "")
+        if expected and websocket.query_params.get("token") != expected:
+            await websocket.close(code=1008)
+            return
         await websocket.accept()
         try:
             while True:
@@ -279,7 +317,7 @@ button.secondary{background:#475569} button.danger{background:#b91c1c}
 </div>
 </main>
 <script>
-let sid=null, ws=null;
+let sid=null, ws=null; const TOKEN=new URLSearchParams(location.search).get('token')||'';
 function render(s){
   document.getElementById('status').textContent = s.status + (s.paused?' (paused)':'') + (s.approved?' · approved':'');
   document.getElementById('result').textContent = JSON.stringify(s.result||{}, null, 2) + (s.error?('\n'+s.error):'');
@@ -290,17 +328,21 @@ async function start(){
   const instr=document.getElementById('instruction').value;
   const r=await fetch('/api/sessions',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-Console-Token':TOKEN},
     body:JSON.stringify({instruction:instr,site:'local'})
   });
   const s=await r.json(); sid=s.id; render(s);
   if(ws) ws.close();
-  ws=new WebSocket('ws://'+location.host+'/ws/'+sid);
+  const tokenQuery=TOKEN?('?token='+encodeURIComponent(TOKEN)):'';
+  ws=new WebSocket('ws://'+location.host+'/ws/'+sid+tokenQuery);
   ws.onmessage=e=>render(JSON.parse(e.data));
 }
 async function act(a){
   if(!sid) return;
-  const r=await fetch('/api/sessions/'+sid+'/'+a,{method:'POST'});
+  const r=await fetch('/api/sessions/'+sid+'/'+a,{
+    method:'POST',
+    headers:{'X-Console-Token':TOKEN}
+  });
   render(await r.json());
 }
 </script></body></html>"""
