@@ -89,3 +89,28 @@ python -m ruff check step_rl scripts tests --select F,E9
 
 > 仍保留历史 `Dict/List` 注解、宽异常清理等风格债务；本轮不盲目批量改风格，
 > 以避免改变已验证行为。后续可单独做“类型注解现代化”与“结构化日志”专项。
+
+
+## 8. 第三轮：封装/脱敏与可重复门禁（2026-11-21）
+
+### 修复
+- 新增 `BrowserEnv.screenshot()`，`system/console` 不再直接访问 `_page` 私有成员；
+- EvidenceWriter 脱敏扩展到 JD `pt_key/pt_pin/thor/wskey`；
+- 新增 `scripts/code_quality.py` 一键门禁。
+
+### 门禁命令与结果
+
+```powershell
+$env:PYTHONPATH="D:gentRL\Step-RL"
+python scripts/code_quality.py --full
+```
+
+结果：
+- compileall rc=0；
+- ruff F/E9 `All checks passed`；
+- 关键 adapter/console/system 测试 **16 passed**；
+- 全量（排除既有 gpt2）**271 passed / 3 skipped**；
+- 门禁汇总 `{failed: [], ok: True}`。
+
+### 结论
+代码质量已从“一次性人工检查”变为可重复门禁；未验证的远程业务仍不写成成功。
