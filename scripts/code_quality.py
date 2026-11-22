@@ -47,6 +47,19 @@ def main() -> int:
                 "scripts/full_system_demo_video.py",
             ],
         ),
+        (
+            "mypy-core",
+            [
+                sys.executable,
+                "-m",
+                "mypy",
+                "step_rl/logging_utils.py",
+                "step_rl/edge/system.py",
+                "--ignore-missing-imports",
+                "--follow-imports=skip",
+                "--no-error-summary",
+            ],
+        ),
         ("targeted-tests", [sys.executable, "-m", "pytest", *TARGET_TESTS, "-q"]),
     ]
     if args.full:

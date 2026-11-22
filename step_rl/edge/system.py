@@ -6,11 +6,15 @@ import time
 from typing import Any, Dict, Optional
 
 from .adapters.evidence import EvidenceWriter
+from ..logging_utils import get_logger
 from .adapters.registry import create_adapter
 from .browser import BrowserEnv
 from .runtime import run_task
 from .site import LocalShopServer
 from .tasks import TaskSpec
+
+
+logger = get_logger("step_rl.system")
 
 
 class HybridSystem:
@@ -70,6 +74,10 @@ class HybridSystem:
                 payload["screenshot_bytes"] = len(png)
                 if evidence is not None:
                     evidence.screenshot(png, "final")
+            logger.info(
+                "local_run",
+                extra={"extra_fields": {"success": payload["success"], "steps": payload["steps"], "fallback": payload["fallback"]}},
+            )
             if evidence is not None:
                 evidence.step({"step": "local_run", **payload})
                 for index, step in enumerate(steps):
@@ -124,6 +132,7 @@ class HybridSystem:
         except Exception as exc:
             payload["seconds"] = round(time.time() - started, 2)
             payload["error"] = f"{type(exc).__name__}: {exc}"
+            logger.warning("remote_failed", extra={"extra_fields": {"site": site, "error": payload["error"]}})
             return payload
         finally:
             await adapter.close()

@@ -38,3 +38,14 @@ def test_console_real_local_session():
         assert any(event["kind"] == "finish" for event in snapshot["events"])
 
     asyncio.run(run())
+
+
+def test_console_token_auth(monkeypatch):
+    monkeypatch.setenv("CONSOLE_TOKEN", "secret")
+    client = TestClient(app)
+    assert client.get("/api/sessions").status_code == 401
+    allowed = client.get(
+        "/api/sessions", headers={"X-Console-Token": "secret"}
+    )
+    assert allowed.status_code == 200
+    assert allowed.json() == []
