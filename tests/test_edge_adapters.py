@@ -87,6 +87,13 @@ def test_evidence_writer_redacts_secrets(tmp_path):
     assert redact({"thor": "x"})["thor"] == "<redacted>"
 
 
+def test_evidence_writer_blocks_path_traversal(tmp_path):
+    writer = EvidenceWriter(tmp_path, "../../escape", "../site")
+    assert writer.root.parent == tmp_path / "site"
+    assert writer.root.name == "escape"
+    assert ".." not in str(writer.root.relative_to(tmp_path))
+
+
 def test_evidence_writer_paths(tmp_path):
     writer = EvidenceWriter(tmp_path, "run2", "jd")
     png = writer.screenshot(b"png", "cart")

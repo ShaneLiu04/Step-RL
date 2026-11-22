@@ -7,6 +7,7 @@ Real browser = system Edge via Playwright.  No submit/payment is implemented.
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 import os
 import re
 import time
@@ -124,16 +125,12 @@ class JDAdapter:
 
     async def close(self) -> None:
         for obj in (self._context, self._browser):
-            try:
-                if obj:
+            if obj:
+                with suppress(Exception):
                     await obj.close()
-            except Exception:
-                pass
-        try:
-            if self._pw:
+        if self._pw:
+            with suppress(Exception):
                 await self._pw.stop()
-        except Exception:
-            pass
 
     def _require(self):
         if self.page is None:
