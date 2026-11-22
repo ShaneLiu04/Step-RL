@@ -122,3 +122,11 @@ python scripts/code_quality.py --full
 - EvidenceWriter 增加路径安全归一化，阻断 `../` 穿越（新增测试）；
 - JD cookie 名 `pt_key/pt_pin/thor/wskey` 脱敏；
 - 详见 `docs/SECURITY_REVIEW.md`。
+
+## 10. 生产化补齐（2026-11-21）
+
+- Console 可选 `CONSOLE_TOKEN` 认证：HTTP `X-Console-Token`、WebSocket `?token=`；未设置时仅本地开发。
+- 新增 `step_rl/logging_utils.py` JSON 结构化日志，system/console 记录 run/finish/error；
+- mypy targeted 检查：`step_rl/logging_utils.py`、`step_rl/edge/system.py` 通过（旧仓库全量类型债未伪造通过）；
+- CI lint 增加 `ruff check --select F,E9`；
+- 新增 Console token 测试。

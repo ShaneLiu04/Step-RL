@@ -15,7 +15,7 @@
 | 硬编码密码/密钥/Token | 未发现 |
 | 凭据入仓/日志 | storage_state 只在本地 `%LOCALAPPDATA%`；EvidenceWriter 脱敏 |
 | 路径穿越 | 已修复：EvidenceWriter 对 site/run_id 做安全字符归一化 |
-| 未认证 HTTP 接口 | FastAPI Console 默认绑定 127.0.0.1，仅本地开发；公网部署需认证（见技术债） |
+| 未认证 HTTP 接口 | Console 支持可选 `CONSOLE_TOKEN`（HTTP Header + WS query）；未设置时仅 127.0.0.1 本地开发 |
 
 ## 2. 修复
 
@@ -26,7 +26,7 @@
 
 ## 3. 已知安全边界/技术债
 
-- Console 目前无登录/鉴权，仅限本机；对外部署前必须加认证、CSRF/CORS、审计。
+- Console 已有可选 token 认证；对外部署仍需完整登录/角色鉴权、CSRF/CORS 与审计。
 - 部分清理路径使用宽 `except Exception`，用于资源关闭；后续可统一 `contextlib.suppress` + 结构化日志。
 - 真实站点密码/扫码凭据不由本仓库接收；不实现自动支付/风控绕过。
 

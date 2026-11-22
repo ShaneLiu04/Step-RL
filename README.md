@@ -1160,7 +1160,8 @@ python scripts/ar029_jd_dryrun.py --query "USB-C" --product "<JD item URL>" `
 
 - FastAPI + WebSocket 实时截图流、事件/验证器面板、暂停/恢复/审批/取消、审计 JSONL；
 - 真实 local 会话：`买两件无线充电器` 成功，截图非空、`finish` 事件；
-- 启动：`uvicorn step_rl.console.app:app --host 127.0.0.1 --port 8765`；
+- 启动：`uvicorn step_rl.console.app:app --host 127.0.0.1 --port 8765
+# 可选：$env:CONSOLE_TOKEN="..."，前端用 ?token=...，API 用 X-Console-Token`；
 - 测试：3 passed。spec：`specs/changes/AR031-agent-console/`。
 
 ### 5.32 跨站评测（AR032，部分验证）
