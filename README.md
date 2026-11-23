@@ -1536,7 +1536,7 @@ step-rl/
 │   ├── changes/（进行中 AR）
 │   └── archive/AR001 … AR028 / EX001
 │
-├── tests/                        # 283 项测试；edge 186 passed；full 266 passed；已知 gpt2 网络 10 项环境失败
+├── tests/                        # edge 186 passed；full 271 passed + 3 skipped（排除 gpt2 网络文件）
 ├── docs/REPRODUCTION.md
 ├── docs/EXPERIMENTS.md
 ├── docs/results/EX001_report.md
