@@ -9,10 +9,13 @@ from .browser import BrowserEnv
 from .hierarchical import run_hierarchy
 from .planner import fetch_catalog, fetch_promos, plan_instruction
 from .rollout import StepRecord
+from .skill_induction import TrajectoryRecorder, induce_skill
 from .skill_library import (
     checkout_skill,
+    register_induced_skill,
     run_skill,
     run_skill_hierarchy,
+    save_induced_skills,
     update_quantity_skill,
 )
 from .tasks import TaskSpec
@@ -207,6 +210,8 @@ async def run_task(
     skill_retries: int = 0,
     enable_cart_transform: bool = True,
     enable_compound: bool = True,
+    enable_self_healing: bool = True,
+    learning_path: str = "",
 ) -> Dict[str, Any]:
     """Execute one natural-language task with the full composed runtime."""
 
@@ -325,9 +330,12 @@ async def run_task(
         }
 
     # Skill execution could not satisfy the task (or the plan stayed the same):
-    # hand the current state to the LLM hierarchy.
+    # hand the current state to the LLM hierarchy.  AR034: when self-healing is
+    # enabled, a successful fallback trajectory is generalised and registered so
+    # the next identical operation runs with zero LLM calls.
+    recorder = TrajectoryRecorder(env) if enable_self_healing else None
     rollout = await run_hierarchy(
-        env,
+        recorder or env,
         spec,
         model,
         tokenizer,
@@ -335,6 +343,24 @@ async def run_task(
         max_steps_per_subtask=max_steps_per_subtask,
         semantic=semantic,
     )
+    healed_skill = ""
+    builtin_operations = {"add", "search", "checkout", "update"}
+    if (
+        enable_self_healing
+        and recorder is not None
+        and rollout.success
+        and spec.operation not in builtin_operations
+        and recorder.records
+    ):
+        template = induce_skill(spec, recorder.records, catalog)
+        register_induced_skill(
+            spec.operation,
+            template["steps"],
+            name=str(template.get("name", "")),
+        )
+        healed_skill = str(template.get("name", ""))
+        if learning_path:
+            save_induced_skills(learning_path)
     attempts.append(
         {
             "attempt": len(attempts) + 1,
@@ -343,6 +369,8 @@ async def run_task(
             "steps": rollout.total_steps,
             "final_progress": rollout.final_progress,
             "mode": "llm_fallback",
+            "self_healing": bool(healed_skill),
+            "healed_skill": healed_skill,
         }
     )
     return {
@@ -351,6 +379,8 @@ async def run_task(
         "attempts": attempts,
         "steps": rollout.steps,
         "fallback": True,
+        "self_healing": bool(healed_skill),
+        "healed_skill": healed_skill,
     }
 
 
