@@ -41,3 +41,4 @@
 | AR032 | 跨站评测 + baseline + CI + MP4 | AR029–AR031 | 评测脚本+真实帧 MP4；跨站成功率/CD 待账号与样本 |
 
 > AR029 的 JD 真实业务证据仍待用户现场登录补跑；未补齐前不标记 AR029 最终 PASS。
+| 端侧 LLM 自愈技能闭环 | AR034 | baseline 两次均 4 步/1142 tokens；self-heal #1 注册 induced_remove，#2 0 LLM/4 技能步/0.84s；见 specs/archive/AR034-self-healing-runtime/ |
