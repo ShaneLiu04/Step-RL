@@ -145,7 +145,7 @@
 **组合原则**：确定性 adapter/verifier/事务优先；未覆盖/歧义/失败才调用端侧 LLM；
 登录/验证码/支付/高风险由人工接管；成功只由服务端/订单页证据判定。
 
-**当前组合（v4.18-dev）**：AR011 30 场景 **30/30、0 LLM、0 tokens、82.86s**；
+**当前组合（v4.19-dev）**：AR011 30 场景 **30/30、0 LLM、0 tokens、82.86s**；
 edge **186 passed**；全量 **271 passed / 3 skipped**（排除既有 gpt2 网络文件）；
 EX002 全 AR 覆盖矩阵无缺项。证据：
 [docs/results/EX002_report.md](docs/results/EX002_report.md)、
@@ -1249,6 +1249,23 @@ adapter，不由模型单独解决。完整报告：[docs/results/AR033_report.m
 
 ---
 
+### 5.37 端侧 LLM 自愈技能闭环（AR034）
+
+真实 Qwen3-0.6B + 真实 Edge，同一 remove 任务：
+
+| 组 | success | policy steps | skill steps | tokens | 秒 |
+|----|---------|--------------|-------------|--------|----|
+| baseline #1 | ✓ | 4 | 0 | 1142 | 24.75 |
+| baseline #2 | ✓ | 4 | 0 | 1142 | 24.56 |
+| self-heal #1 | ✓ | 4 | 0 | 1142 | 24.49 |
+| self-heal #2 | ✓ | **0** | **4** | **0** | **0.84** |
+
+机制：LLM 兜底成功 → TrajectoryRecorder 记录真实轨迹 → induce_skill +
+register_induced_skill → 下一次 0 LLM。baseline 无自愈，重复 LLM。
+
+GIF：`docs/images/ar034_demo.gif`（4 帧真实截图）；证据：
+`outputs/ar034/eval/ar034_results.json`、`induced_skills.json`。
+
 ## 训练算法
 
 ### SFT
@@ -1726,6 +1743,7 @@ L4/L5 的 Step-GRPO 训练使用相同专家前缀到达结算页；Sparse 与 V
 
 | 版本 | 状态 | 说明 |
 |------|------|------|
+| v4.19-dev / AR034 | 自愈闭环 | 一次 LLM 兜底 → 自动技能 → 下次 0 LLM；baseline 重复 1142 tokens |
 | v4.18-dev / AR029–AR033 | 部分验证 | 混合系统级闭环：CPU 30/30、GPU 兜底成功、Console/远程隔离；真实多站成功率待账号/样本 |
 | **v4.17 / AR028** | **推荐** | 购物车→订单事务：baseline 0/3 → COT 3/3、0 LLM；券 total/paid=1196/1146；预检零动作、订单故障回滚 |
 | v4.16 / AR027 | 保留 | 购物车事务编译：baseline 0/3 → CTC 3/3、0 LLM；真实故障回滚 compensated=1 |

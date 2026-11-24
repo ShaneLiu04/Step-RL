@@ -163,6 +163,7 @@ outputs/ar029/              # JD dry-run 证据（JSONL/截图/HTML）
 outputs/ar031/              # Console 会话/审计
 outputs/ar032/              # 跨站只读评测 + MP4 帧
 outputs/ar033/              # 混合系统级验证（CPU/GPU/Console/远程）
+outputs/ar034/              # 自愈技能闭环 baseline vs self-heal + induced_skills
 ```
 
 ---
