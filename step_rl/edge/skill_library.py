@@ -46,8 +46,8 @@ from .skill_stats import (
 from .tasks import TaskSpec
 from .verifier import compute_progress
 
-NAME_VALUE = "刘星言先生"
-ADDRESS_VALUE = "深圳市龙岗区坂田路1号"
+NAME_VALUE = "林知远先生"
+ADDRESS_VALUE = "示例市星河区云栖路1号"
 
 # AR026: semantic control aliases.  A step names the *capability*, not a
 # layout-specific role/label; the live observation decides which control exists.

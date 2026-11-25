@@ -56,3 +56,6 @@ Thumbs.db
 docs/images/full_system_demo.mp4
 docs/images/full_system_demo_poster.jpg
 scripts/full_system_demo_video.py
+
+# Local organisation-specific privacy terms (never commit)
+.privacy-terms

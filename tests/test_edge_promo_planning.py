@@ -202,7 +202,7 @@ def _full_state(order: dict) -> dict:
         "order": order,
         "orders": [order],
         "cart": {},
-        "form": {"name": "刘星言先生", "address": "深圳市龙岗区坂田路1号"},
+        "form": {"name": "林知远先生", "address": "示例市星河区云栖路1号"},
         "visited": [
             "/",
             "/search?q=无线",
@@ -293,8 +293,8 @@ def test_checkout_skill_without_promo_field_for_field():
     steps = [(s.kind, s.name, s.role, s.value, s.url) for s in checkout_skill().steps]
     assert steps == [
         ("goto", "", "", "", "/checkout"),
-        ("type", "收货人", "textbox", "刘星言先生", ""),
-        ("type", "地址", "textbox", "深圳市龙岗区坂田路1号", ""),
+        ("type", "收货人", "textbox", "林知远先生", ""),
+        ("type", "地址", "textbox", "示例市星河区云栖路1号", ""),
         ("click", "提交订单", "button", "", ""),
     ]
     # unknown codes are ignored, not fabricated into a claim step

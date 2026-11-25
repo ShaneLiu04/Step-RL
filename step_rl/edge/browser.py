@@ -8,12 +8,13 @@ state transition is read back from the server.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import os
 import random
 import time
 from copy import deepcopy
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urljoin, urlparse
 
 from .site import LocalShopServer
@@ -200,6 +201,10 @@ class BrowserEnv:
         self.step_count = 0
         # AR025: per-environment observation cache and auditable counters.
         self._obs_cache: Optional[Dict[str, Any]] = None
+        # Studio: observers called as hook(phase, action, result) around every
+        # executed action; phase is "before" (result None) or "after".  Hooks
+        # may be coroutines and may block (pause / human approval gates).
+        self.action_hooks: List[Callable[..., Any]] = []
         self.observation_metrics: Dict[str, Any] = {
             "calls": 0,
             "hits": 0,
@@ -370,6 +375,44 @@ class BrowserEnv:
 
     # -- actions ----------------------------------------------------------
     async def execute(self, action: Dict[str, Any]) -> Dict[str, Any]:
+        await self._emit("before", action, None)
+        result = await self._execute_action(action)
+        await self._emit("after", action, result)
+        return result
+
+    async def _emit(
+        self, phase: str, action: Dict[str, Any], result: Optional[Dict[str, Any]]
+    ) -> None:
+        for hook in list(self.action_hooks):
+            outcome = hook(phase, action, result)
+            if inspect.isawaitable(outcome):
+                await outcome
+
+    async def element_label(self, action: Dict[str, Any]) -> str:
+        """Visible label of the element a click/type action targets ('' if none)."""
+        if self._page is None:
+            return ""
+        params = action.get("params") or {}
+        if not isinstance(params, dict):
+            return ""
+        element = params.get("element")
+        if element:
+            selector = f'[data-eid="{element}"]'
+        else:
+            selector = str(params.get("selector", ""))
+        if not selector:
+            return ""
+        try:
+            locator = self._page.locator(selector)
+            if await locator.count() != 1:
+                return ""
+            label = await locator.get_attribute("aria-label") or ""
+            text = await locator.inner_text(timeout=1000)
+            return (label or text or "").strip()[:80]
+        except Exception:
+            return ""
+
+    async def _execute_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
         name = str(action.get("action", "")).lower()
         params = action.get("params") or {}
         result: Dict[str, Any] = {

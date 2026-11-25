@@ -59,10 +59,10 @@ class CLIPVisionEncoder:
             self.processor = CLIPProcessor.from_pretrained(model_name)
             self.model = CLIPModel.from_pretrained(model_name).to(self.device)
             self.model.eval()
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "transformers with CLIP support required. Install: pip install transformers[torch]"
-            )
+            ) from exc
 
     def encode(self, image_path_or_pil) -> torch.Tensor:
         """Encode image to feature vector."""
@@ -88,10 +88,10 @@ class Qwen2VLEncoder:
                 model_name, device_map="auto", torch_dtype=torch.bfloat16
             )
             self.model.eval()
-        except ImportError:
+        except ImportError as exc:
             raise ImportError(
                 "Qwen2-VL requires latest transformers. Install: pip install transformers -U"
-            )
+            ) from exc
 
     def encode(self, image_path_or_pil) -> torch.Tensor:
         """Encode image to feature vector."""

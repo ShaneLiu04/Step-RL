@@ -1,9 +1,8 @@
 # Step-RL 安全编码审查（Python）
 
-> 依据：secure-coding、华为安全编码规则（Python 分类）、python-coding-standards。
-> 仓库为 Python-only，无 Java/前端源码、无 CodeHub MR/流水线报告：
-> `java-coding-standards`、`huawei-java-standards`、`frontend-coding-guide` 不适用；
-> `codecheck-fix`、`mr-pipeline-report` 无输入，未伪造执行。
+> 依据：通用安全编码规则（OWASP / CWE，Python 分类）与 Python 编码规范。
+> 仓库以 Python 为主；Studio 前端为零依赖原生 JS（无第三方脚本、无 CDN），
+> 不涉及 Java 源码。仅对真实存在的代码给出结论，不伪造未执行的扫描。
 
 ## 1. 危险模式扫描
 

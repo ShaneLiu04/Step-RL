@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from step_rl.environment.smart_wait import smart_wait
+pytest.importorskip("playwright")
+
+from step_rl.environment.smart_wait import smart_wait  # noqa: E402
 
 
 class TestSmartWait:

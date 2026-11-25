@@ -496,8 +496,8 @@ L4（数量 2 + 结算）与 L5（多商品）均从 0% 提升到 **100%**。
 ### 4.2 安装
 
 ```bash
-git clone https://gitee.com/liu-xingyan04/step-rl.git
-cd step-rl
+git clone https://github.com/ShaneLiu04/Step-RL.git
+cd Step-RL
 pip install -r requirements.txt
 # Linux 服务器可正常安装 Chromium
 playwright install chromium

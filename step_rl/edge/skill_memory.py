@@ -17,8 +17,8 @@ from urllib.parse import urlparse
 from .site import PRODUCTS
 from .tasks import TaskSpec
 
-NAME = "刘星言"
-ADDRESS = "深圳市龙岗区坂田街道"
+NAME = "林知远"
+ADDRESS = "示例市星河区云栖街道"
 
 _PRODUCT_RE = re.compile(r"product-(p\d+)")
 _ADD_RE = re.compile(r"^/add/(p\d+)\?qty=(\d+)$")

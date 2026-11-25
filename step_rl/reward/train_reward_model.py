@@ -113,7 +113,7 @@ def build_contrastive_pairs(
         by_task.setdefault(task, {}).setdefault(outcome, []).append(item)
 
     pairs_data = []
-    for task, outcomes in by_task.items():
+    for outcomes in by_task.values():
         success_items = outcomes.get("success", [])
         failure_items = outcomes.get("failure", [])
         for s in success_items:

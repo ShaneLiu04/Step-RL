@@ -72,7 +72,7 @@ class StepRLPPOAdapter(PPOTrainer):  # type: ignore[misc]
             vf_coef=float(ppo_cfg.get("vf_coef", 0.5)),
             entropy_coef=float(ppo_cfg.get("entropy_coef", 0.01)),
         )
-        super().__init__(config=ppo_config, *args, **kwargs)
+        super().__init__(*args, config=ppo_config, **kwargs)
         self._custom_reward_fn = reward_fn
         self._step_rl_config = config
 
@@ -131,7 +131,7 @@ class StepRLGRPOAdapter(GRPOTrainer):  # type: ignore[misc]
             batch_size=config["training"]["batch_size"],
             optimize_cuda_cache=True,
         )
-        super().__init__(config=grpo_config, *args, **kwargs)
+        super().__init__(*args, config=grpo_config, **kwargs)
         self._custom_reward_fn = reward_fn
         self._step_rl_config = config
 

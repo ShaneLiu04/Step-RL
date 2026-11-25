@@ -2,7 +2,7 @@
 
 - 时间：2026-11-04 01:18:00
 - 平台：Windows-10-10.0.26200-SP0
-- 模型：`C:\Users\l30086046\.cache\huggingface\hub\models--Qwen--Qwen3-0.6B-Base\snapshots\main`
+- 模型：`~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B-Base/snapshots/main`
 - 最大步数：8
 
 ## 指标对比

@@ -54,10 +54,10 @@ def test_order_fault_is_one_shot():
         get("/add/p3?qty=1")
         get("/checkout")
         with pytest.raises(urllib.error.HTTPError) as error:
-            post("/place-order", {"name": "A先生", "address": "深圳路1号"})
+            post("/place-order", {"name": "A先生", "address": "云栖路1号"})
         assert error.value.code == 500
         get("/checkout")
-        post("/place-order", {"name": "A先生", "address": "深圳路1号"})
+        post("/place-order", {"name": "A先生", "address": "云栖路1号"})
     finally:
         server.stop()
 

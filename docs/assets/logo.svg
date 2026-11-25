@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0E1A2B"/>
+      <stop offset="0.55" stop-color="#0A1220"/>
+      <stop offset="1" stop-color="#070B14"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.26" cy="0.2" r="0.75">
+      <stop offset="0" stop-color="#2DE2C0" stop-opacity="0.32"/>
+      <stop offset="0.5" stop-color="#3B82F6" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="halo2" cx="0.85" cy="0.9" r="0.6">
+      <stop offset="0" stop-color="#8B7CFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="stair" x1="0.1" y1="0.9" x2="0.9" y2="0.1">
+      <stop offset="0" stop-color="#2EF2C2"/>
+      <stop offset="0.5" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#8B7CFF"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="starglow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <path d="M256 8C50 8 8 50 8 256s42 248 248 248 248-42 248-248S462 8 256 8Z" fill="url(#bg)"/>
+  <path d="M256 8C50 8 8 50 8 256s42 248 248 248 248-42 248-248S462 8 256 8Z" fill="url(#halo)"/>
+  <path d="M256 8C50 8 8 50 8 256s42 248 248 248 248-42 248-248S462 8 256 8Z" fill="url(#halo2)"/>
+  <path d="M256 10.5C52 10.5 10.5 52 10.5 256S52 501.5 256 501.5 501.5 460 501.5 256 460 10.5 256 10.5Z"
+        fill="none" stroke="url(#rim)" stroke-width="3"/>
+
+  <path d="M104 318C134 214 236 128 346 112" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 17"/>
+
+  <path d="M128 388H210V308H290V228H370V160" fill="none" stroke="url(#stair)" stroke-width="50"
+        stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <g filter="url(#starglow)">
+    <path d="M398 74C402 104 410 112 440 116C410 120 402 128 398 158C394 128 386 120 356 116C386 112 394 104 398 74Z"
+          fill="#FFFFFF"/>
+  </g>
+</svg>

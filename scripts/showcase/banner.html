@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --ink: #F5F7FB; --mute: #9AA4B8; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1600px; height: 520px; overflow: hidden; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 520px at 8% 0%, rgba(46, 242, 194, 0.20), transparent 60%),
+      radial-gradient(900px 600px at 100% 110%, rgba(139, 124, 255, 0.26), transparent 60%),
+      linear-gradient(135deg, #0B1322 0%, #070B14 100%);
+    display: flex; align-items: center; padding: 0 96px; gap: 72px; position: relative;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0; opacity: 0.35;
+    background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px; mask-image: radial-gradient(ellipse at 70% 50%, #000 20%, transparent 75%);
+  }
+  .logo { width: 300px; height: 300px; flex: none; filter: drop-shadow(0 30px 60px rgba(46, 160, 255, 0.28)); position: relative; }
+  .text { position: relative; }
+  .eyebrow { font-size: 18px; letter-spacing: 0.32em; text-transform: uppercase; color: #7FE9D2; font-weight: 600; }
+  h1 { font-size: 104px; letter-spacing: -0.045em; font-weight: 700; line-height: 1.02; margin-top: 14px; }
+  h1 span { background: linear-gradient(90deg, #2EF2C2, #38BDF8 45%, #8B7CFF); -webkit-background-clip: text; color: transparent; }
+  .tag { font-size: 30px; color: #DCE3EF; margin-top: 18px; letter-spacing: -0.01em; font-weight: 500; }
+  .sub { font-size: 21px; color: var(--mute); margin-top: 10px; }
+  .chips { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
+  .chip {
+    font-size: 17px; padding: 9px 16px; border-radius: 999px; color: #E8EDF6;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px); display: inline-flex; gap: 8px; align-items: center;
+  }
+  .chip b { color: #2EF2C2; font-weight: 700; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <img class="logo" src="../../step_rl/console/static/logo.svg" alt="" />
+  <div class="text">
+    <div class="eyebrow">Verifier-driven · Edge Web Agent</div>
+    <h1>Step-RL <span>Studio</span></h1>
+    <div class="tag">会编译自己的 Web Agent：先验证，再执行，最后 0 LLM 复用</div>
+    <div class="sub">Hierarchical RL · Executable verifier · Compiled &amp; self-healing skills · Real browser</div>
+    <div class="chips">
+      <span class="chip"><b>30/30</b> 统一回归</span>
+      <span class="chip"><b>0</b> LLM 调用</span>
+      <span class="chip"><b>2.73×</b> 并发加速</span>
+      <span class="chip"><b>−62.7%</b> 观测往返</span>
+      <span class="chip">服务端状态判定成功</span>
+    </div>
+  </div>
+</body>
+</html>

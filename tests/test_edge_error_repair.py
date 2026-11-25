@@ -37,9 +37,9 @@ def test_name_title_validation():
         get("/add/p3?qty=1")
         get("/checkout")
         with pytest.raises(urllib.error.HTTPError):
-            post("/place-order", {"name": "刘星言", "address": "深圳路1号"})
+            post("/place-order", {"name": "林知远", "address": "云栖路1号"})
         get("/checkout")
-        post("/place-order", {"name": "刘星言先生", "address": "深圳路1号"})
+        post("/place-order", {"name": "林知远先生", "address": "云栖路1号"})
     finally:
         server.stop()
 
@@ -51,7 +51,7 @@ def test_address_road_validation():
         get("/add/p3?qty=1")
         get("/checkout")
         with pytest.raises(urllib.error.HTTPError):
-            post("/place-order", {"name": "刘星言先生", "address": "深圳市龙岗区"})
+            post("/place-order", {"name": "林知远先生", "address": "示例市星河区"})
     finally:
         server.stop()
 

@@ -4,7 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from step_rl.inference.model_backend import (
+pytest.importorskip("transformers", exc_type=ImportError)
+
+from step_rl.inference.model_backend import (  # noqa: E402
     GPT4OBackend,
     HuggingFaceBackend,
     PolicyModelBackend,

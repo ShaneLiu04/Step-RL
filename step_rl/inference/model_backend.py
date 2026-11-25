@@ -84,8 +84,8 @@ class VLLMBackend(PolicyModelBackend):
     ):
         try:
             from vllm import LLM, SamplingParams
-        except ImportError:
-            raise ImportError("vllm is not installed. Install with: pip install vllm")
+        except ImportError as exc:
+            raise ImportError("vllm is not installed. Install with: pip install vllm") from exc
         self.llm = LLM(
             model=model_name,
             tensor_parallel_size=tensor_parallel_size,

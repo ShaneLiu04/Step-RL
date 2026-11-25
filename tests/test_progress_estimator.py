@@ -1,9 +1,10 @@
 """Tests for ProgressEstimator."""
 
 import pytest
-import torch
 
-pytest.importorskip("transformers")
+torch = pytest.importorskip("torch")
+# exc_type=ImportError: a version-mismatched install raises ImportError, not ModuleNotFoundError.
+pytest.importorskip("transformers", exc_type=ImportError)
 
 from step_rl.reward.progress_estimator import (
     EvidentialLayer,

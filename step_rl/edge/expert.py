@@ -19,8 +19,8 @@ from .site import PRODUCTS
 from .tasks import SFT_TASKS, TaskSpec
 from .verifier import compute_progress
 
-NAME = "刘星言"
-ADDRESS = "深圳市龙岗区坂田街道"
+NAME = "林知远"
+ADDRESS = "示例市星河区云栖街道"
 
 
 def _has(obs: Dict[str, Any], selector: str) -> bool:

@@ -1,6 +1,6 @@
 {
   "reward_mode": "vgdp",
-  "model": "C:\\Users\\l30086046\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-0.6B-Base\\snapshots\\main",
+  "model": "~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B-Base/snapshots/main",
   "sft_adapter": "outputs/ar001/sft_adapter",
   "group_size": 3,
   "epochs": 2,

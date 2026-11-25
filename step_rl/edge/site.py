@@ -8,6 +8,7 @@ through a real browser; nothing here is simulated on the client side.
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import uuid
 from dataclasses import dataclass, field
@@ -1071,6 +1072,16 @@ class _Handler(BaseHTTPRequestHandler):
         self._send(render_error("接口不存在"), 404, sid)
 
 
+class _ShopHTTPServer(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address) -> None:
+        # Browsers abort in-flight requests on navigation/close; that is not a server fault.
+        if isinstance(sys.exc_info()[1], ConnectionError):
+            return
+        super().handle_error(request, client_address)
+
+
 class LocalShopServer:
     """Background HTTP server with isolated sessions."""
 
@@ -1091,7 +1102,7 @@ class LocalShopServer:
         fault_update_once: bool = False,
         fault_update_pid: str = "p4",
     ) -> None:
-        self._httpd = ThreadingHTTPServer((host, port), _Handler)
+        self._httpd = _ShopHTTPServer((host, port), _Handler)
         self._httpd.store = SessionStore()  # type: ignore[attr-defined]
         self._httpd.layout = layout  # type: ignore[attr-defined]
         self._httpd.stock = {p.pid: p.stock for p in PRODUCTS.values()}

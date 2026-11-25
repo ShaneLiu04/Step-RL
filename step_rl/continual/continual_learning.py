@@ -200,7 +200,7 @@ class ContinualLearner:
 
         self.model.train()
         total_metrics: Dict[str, float] = {}
-        for epoch in range(3):
+        for _epoch in range(3):
             for batch in loader:
                 for k in list(batch.keys()):
                     if isinstance(batch[k], torch.Tensor):
@@ -308,7 +308,7 @@ class ContinualLearner:
 
         self.model.train()
         total_metrics: Dict[str, float] = {}
-        for epoch in range(epochs):
+        for _epoch in range(epochs):
             for batch in loader:
                 for k in list(batch.keys()):
                     if isinstance(batch[k], torch.Tensor):

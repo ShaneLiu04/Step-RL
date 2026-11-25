@@ -29,7 +29,7 @@ def test_cancel_route_sets_status():
         opener = _opener(server)
         opener.open(server.base_url + "/add/p3?qty=1").read()
         opener.open(server.base_url + "/checkout").read()
-        body = urllib.parse.urlencode({"name": "A先生", "address": "深圳路1号"}).encode(
+        body = urllib.parse.urlencode({"name": "A先生", "address": "云栖路1号"}).encode(
             "utf-8"
         )
         request = urllib.request.Request(

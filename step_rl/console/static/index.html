@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Step-RL Studio</title>
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-run" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z" fill="currentColor"/></symbol>
+  <symbol id="i-skills" viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9Z M4 7.5 12 12l8-4.5 M12 12v9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16 M7 16v-5 M12 16V6 M17 16v-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3.5 4.5h2.2l2.1 10.2h9.6l2-7H7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.4" fill="currentColor"/><circle cx="16.5" cy="19" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3c.7 4.6 2.4 6.3 7 7-4.6.7-6.3 2.4-7 7-.7-4.6-2.4-6.3-7-7 4.6-.7 6.3-2.4 7-7Z" fill="currentColor"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6 8.2v7.6 M18 10.2c0 4-6 3-11 6" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 9 4.5-9 4.5-9-4.5Z M3 13l9 4.5 9-4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-stack" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="11" width="16" height="5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 19.5h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5 M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5 5 6v5.5c0 4.4 3 7.9 7 9 4-1.1 7-4.6 7-9V6Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 12 2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-cursor" viewBox="0 0 24 24"><path d="M6 4l12 7.2-5.3 1.3L10 18Z" fill="currentColor"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="11" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8 14h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M5 12h12 M13 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="6" y="10.5" width="12" height="9" rx="2" fill="currentColor"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5.5 13.5H11L10 21l8-11h-5.6Z" fill="currentColor"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 3.5v3M14 3.5v3M10 17.5v3M14 17.5v3M3.5 10h3M3.5 14h3M17.5 10h3M17.5 14h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8Z M9 8.5h6M9 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/static/logo.svg" alt="" class="brand-logo" />
+      <div class="brand-text">
+        <div class="brand-name">Step-RL <span>Studio</span></div>
+        <div class="brand-sub" id="brand-sub">Edge Agent · 端侧分层强化学习</div>
+      </div>
+      <button class="icon-btn" id="btn-theme" title="切换外观"><svg class="ic"><use href="#i-moon"/></svg></button>
+    </div>
+
+    <div class="runtime-card">
+      <div class="rc-row"><span class="dot live"></span><b>本地真实商城</b><span class="rc-chip mono">Edge</span></div>
+      <div class="rc-sub" id="rc-sub">确定性技能 + 验证器 · 0 LLM</div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-tab="run"><svg class="ic"><use href="#i-run"/></svg>Agent 运行<span class="nav-badge hidden" id="nav-live">LIVE</span></button>
+      <button class="nav-item" data-tab="skills"><svg class="ic"><use href="#i-skills"/></svg>技能库</button>
+      <button class="nav-item" data-tab="evidence"><svg class="ic"><use href="#i-chart"/></svg>证据实验室</button>
+      <button class="nav-item" data-tab="audit"><svg class="ic"><use href="#i-clock"/></svg>审计回放</button>
+      <button class="nav-item" data-tab="system"><svg class="ic"><use href="#i-gear"/></svg>系统</button>
+    </nav>
+
+    <div class="side-section">
+      <div class="side-title">最近运行</div>
+      <div id="recent" class="recent"><div class="recent-empty">暂无运行</div></div>
+    </div>
+
+    <div class="side-foot"><svg class="ic ic-xs"><use href="#i-shield"/></svg>成功只由服务端证据判定</div>
+  </aside>
+
+  <main class="main">
+    <!-- ── Run ─────────────────────────────────────────────── -->
+    <section class="view active" id="view-run">
+      <header class="view-head">
+        <div>
+          <h1>Agent 运行</h1>
+          <p class="subtitle">自然语言 → 约束规划 → 编译技能 → 真实浏览器执行 → 服务端验证</p>
+        </div>
+        <label class="switch-row" title="Agent 点击“提交订单”前暂停，等待人工批准">
+          <span>下单前人工确认</span>
+          <span class="switch"><input type="checkbox" id="sw-approval" /><span class="slider"></span></span>
+        </label>
+      </header>
+
+      <div class="scroll-body" id="run-scroll">
+        <div id="run-idle">
+          <div class="hero">
+            <img src="/static/logo.svg" alt="" class="hero-logo" />
+            <h2>让 Agent 在真实浏览器里完成任务</h2>
+            <p>选择一个经过评测的场景，或直接描述你的购物任务。全部动作由真实 Edge 执行，状态以服务端为准。</p>
+          </div>
+          <div class="scenario-grid" id="scenario-grid"></div>
+        </div>
+
+        <div id="run-live" class="hidden">
+          <div class="live-grid">
+            <div class="live-left">
+              <div class="browser">
+                <div class="browser-bar">
+                  <span class="lights"><i></i><i></i><i></i></span>
+                  <div class="url-pill"><svg class="ic ic-xs"><use href="#i-lock"/></svg><span id="url-text" class="mono">shop.local/</span></div>
+                  <span class="live-badge" id="live-badge"><span class="dot live"></span>LIVE</span>
+                </div>
+                <div class="browser-view"><img id="screen" alt="真实浏览器画面" /><div class="screen-empty" id="screen-empty"><span class="spinner"></span>正在启动 Edge…</div></div>
+              </div>
+
+              <div class="state-grid">
+                <div class="card state-card">
+                  <div class="card-head"><svg class="ic ic-sm"><use href="#i-cart"/></svg>购物车 · 服务端状态</div>
+                  <div id="cart-rows" class="cart-rows"><div class="muted">空</div></div>
+                  <div class="cart-total"><span>合计</span><b id="cart-total">¥0</b></div>
+                </div>
+                <div class="card state-card">
+                  <div class="card-head"><svg class="ic ic-sm"><use href="#i-receipt"/></svg>订单 · 验证器</div>
+                  <div id="order-box" class="order-box"><div class="muted">尚未下单</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="live-right">
+              <div class="card run-card">
+                <div class="run-top">
+                  <span class="status-pill" id="status-pill">准备中</span>
+                  <span class="elapsed mono" id="elapsed">0.0s</span>
+                </div>
+                <div class="run-instruction" id="run-instruction">—</div>
+                <div class="run-meta" id="run-meta"></div>
+                <div class="controls">
+                  <button class="btn" id="btn-pause"><svg class="ic ic-sm"><use href="#i-pause"/></svg>暂停</button>
+                  <button class="btn hidden" id="btn-resume"><svg class="ic ic-sm"><use href="#i-run"/></svg>继续</button>
+                  <button class="btn btn-danger" id="btn-cancel"><svg class="ic ic-sm"><use href="#i-x"/></svg>取消</button>
+                  <button class="btn btn-primary hidden" id="btn-new-run"><svg class="ic ic-sm"><use href="#i-plus"/></svg>新任务</button>
+                </div>
+              </div>
+
+              <div class="card result-card hidden" id="result-card"></div>
+
+              <div class="card timeline-card">
+                <div class="card-head"><svg class="ic ic-sm"><use href="#i-bolt"/></svg>执行轨迹<span class="muted small" id="step-count">0 步</span></div>
+                <ol class="timeline" id="timeline"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form class="composer" id="composer">
+        <textarea id="instruction" rows="1" maxlength="200" placeholder="描述任务，例如：预算650元，买无线充电器和蓝牙耳机各一件，并结算"></textarea>
+        <div class="composer-bar">
+          <div class="chips">
+            <span class="chip" id="chip-scenario"><svg class="ic ic-xs"><use href="#i-globe"/></svg>自定义任务</span>
+            <span class="chip"><svg class="ic ic-xs"><use href="#i-cpu"/></svg>Edge 无头</span>
+            <span class="chip ok"><svg class="ic ic-xs"><use href="#i-bolt"/></svg>0 LLM</span>
+          </div>
+          <button class="send-btn" id="btn-send" type="submit" title="运行"><svg class="ic"><use href="#i-arrow-up"/></svg></button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── Skills ──────────────────────────────────────────── -->
+    <section class="view" id="view-skills">
+      <header class="view-head">
+        <div>
+          <h1>技能库</h1>
+          <p class="subtitle">编译技能 · 事务技能 · 自愈归纳技能 —— 以验证器口径统计成败</p>
+        </div>
+        <div class="seg" id="skill-seg">
+          <button class="seg-item active" data-kind="">全部</button>
+          <button class="seg-item" data-kind="compiled">编译</button>
+          <button class="seg-item" data-kind="transaction">事务</button>
+          <button class="seg-item" data-kind="induced">归纳</button>
+        </div>
+      </header>
+      <div class="scroll-body">
+        <div class="skill-grid" id="skill-grid"></div>
+        <div class="section-title">运行期归纳注册表</div>
+        <div class="card" id="induced-box"></div>
+        <div class="section-title">技能记忆</div>
+        <div class="card" id="memory-box"></div>
+      </div>
+    </section>
+
+    <!-- ── Evidence ───────────────────────────────────────── -->
+    <section class="view" id="view-evidence">
+      <header class="view-head">
+        <div>
+          <h1>证据实验室</h1>
+          <p class="subtitle">每一个数字都来自归档的真实评测报告</p>
+        </div>
+      </header>
+      <div class="scroll-body">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="evi-row">
+          <div class="card ablation-card">
+            <div class="card-head"><svg class="ic ic-sm"><use href="#i-chart"/></svg>关键消融 · 完整组合 vs 基线</div>
+            <div id="ablations"></div>
+          </div>
+          <div class="card attempts-card">
+            <div class="card-head"><svg class="ic ic-sm"><use href="#i-target"/></svg>AR 价值账本</div>
+            <div class="attempts" id="attempts"></div>
+          </div>
+        </div>
+        <div class="section-title">每次尝试消除的真实失败</div>
+        <div class="card milestones" id="milestones"></div>
+        <div class="section-title">AR011 · 30 场景统一运行时</div>
+        <div class="card"><div class="scenario-dots" id="scenario-dots"></div><div class="dots-legend muted small">每个方块是一个真实场景 · 颜色深浅表示耗时 · 斜纹表示 ID 扰动</div></div>
+      </div>
+    </section>
+
+    <!-- ── Audit ──────────────────────────────────────────── -->
+    <section class="view" id="view-audit">
+      <header class="view-head">
+        <div>
+          <h1>审计回放</h1>
+          <p class="subtitle">每次运行的事件流与最终画面都落盘留痕</p>
+        </div>
+        <button class="btn" id="btn-refresh-audit">刷新</button>
+      </header>
+      <div class="scroll-body">
+        <div class="audit-grid" id="audit-grid"></div>
+      </div>
+    </section>
+
+    <!-- ── System ─────────────────────────────────────────── -->
+    <section class="view" id="view-system">
+      <header class="view-head">
+        <div>
+          <h1>系统</h1>
+          <p class="subtitle">运行时、商品目录、安全边界与 API</p>
+        </div>
+      </header>
+      <div class="scroll-body">
+        <div class="sys-grid" id="sys-grid"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet-backdrop hidden" id="approval-sheet">
+  <div class="sheet">
+    <div class="sheet-grabber"></div>
+    <div class="sheet-icon"><svg class="ic"><use href="#i-shield"/></svg></div>
+    <h3>Agent 即将提交订单</h3>
+    <p class="muted">已到达高风险动作「提交订单」。请核对服务端购物车后批准，或取消本次任务。</p>
+    <div class="sheet-summary" id="sheet-summary"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-lg" id="btn-sheet-cancel">取消任务</button>
+      <button class="btn btn-primary btn-lg" id="btn-sheet-approve"><svg class="ic ic-sm"><use href="#i-check"/></svg>批准提交</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

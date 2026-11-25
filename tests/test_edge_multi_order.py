@@ -42,7 +42,7 @@ def test_order_history_keeps_multiple_orders():
         for pid in ("p3", "p2"):
             get(f"/add/{pid}?qty=1")
             get("/checkout")
-            post("/place-order", {"name": "A先生", "address": "深圳路1号"})
+            post("/place-order", {"name": "A先生", "address": "云栖路1号"})
         state = json.loads(get("/api/state"))
         assert len(state["orders"]) == 2
         assert len({o["id"] for o in state["orders"]}) == 2

@@ -230,7 +230,7 @@ def generate_mock_results(
             base_success = 0.88
 
         episodes = []
-        for i in range(num_episodes):
+        for _ in range(num_episodes):
             success = np.random.rand() < base_success
             length = np.random.randint(5, 25) if success else np.random.randint(10, 30)
             episodes.append(

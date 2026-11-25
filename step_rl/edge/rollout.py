@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
-import torch
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from .browser import BrowserEnv
 from .expert import expert_action
@@ -14,6 +12,9 @@ from .policy import build_prompt, parse_action, render_action, repair_action
 from .skill_memory import SkillMemory
 from .tasks import TaskSpec
 from .verifier import compute_progress
+
+if TYPE_CHECKING:
+    import torch
 
 
 @dataclass
@@ -59,6 +60,9 @@ def generate_action(
     temperature: float = 1.0,
     max_prompt_tokens: int = 1024,
 ) -> Dict[str, Any]:
+    # Deferred so the deterministic (0 LLM) runtime installs and runs without torch.
+    import torch
+
     device = _model_device(model)
     encoded = tokenizer(
         prompt,
@@ -315,10 +319,10 @@ async def rollout_task(
             value = None
             if "称谓" in text:
                 keyword = "收货人"
-                value = "刘星言先生"
+                value = "林知远先生"
             elif "路" in text:
                 keyword = "地址"
-                value = "深圳市龙岗区坂田路1号"
+                value = "示例市星河区云栖路1号"
             if keyword and value:
                 repair_budget -= 1
                 await env.execute({"action": "goto", "params": {"url": "/checkout"}})
@@ -353,7 +357,7 @@ async def rollout_task(
                                 "action": "type",
                                 "params": {
                                     "element": address["eid"],
-                                    "text": "深圳市龙岗区坂田路1号",
+                                    "text": "示例市星河区云栖路1号",
                                 },
                             }
                         )

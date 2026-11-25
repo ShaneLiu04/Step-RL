@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1600px; height: 840px; overflow: hidden; }
+  body {
+    font-family: -apple-system, "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #F7F8FB, #EEF1F7); color: #1C1C1E; padding: 48px 56px;
+  }
+  header { display: flex; align-items: center; gap: 18px; }
+  header img { width: 56px; height: 56px; }
+  h1 { font-size: 34px; letter-spacing: -0.03em; }
+  .lead { color: #6B7280; font-size: 16px; margin-top: 4px; }
+  .band { margin-top: 26px; }
+  .band-l { font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; color: #8E8E93; text-transform: uppercase; margin-bottom: 10px; }
+  .row { display: flex; gap: 14px; align-items: stretch; }
+  .card {
+    flex: 1; background: #fff; border: 1px solid #E5E7EB; border-radius: 18px; padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.05);
+  }
+  .card h3 { font-size: 17px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  .card p { font-size: 13.5px; color: #6B7280; margin-top: 6px; line-height: 1.5; }
+  .card code { font-family: "SF Mono", "Cascadia Code", Consolas, monospace; font-size: 12.5px; color: #0F766E; background: #ECFDF5; padding: 1px 6px; border-radius: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .flow { display: flex; align-items: center; gap: 10px; }
+  .flow .card { padding: 14px 16px; }
+  .arrow { color: #A1A1AA; font-size: 22px; flex: none; }
+  .dark { background: linear-gradient(135deg, #0E1A2B, #0A1020); color: #F5F7FB; border: none; }
+  .dark p { color: #A6B0C3; }
+  .grad { background: linear-gradient(90deg, #2EF2C2, #38BDF8 50%, #8B7CFF); -webkit-background-clip: text; color: transparent; }
+  .loop { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); margin: 8px 6px 0 0; color: #DCE3EF; }
+  .foot { margin-top: 22px; font-size: 13.5px; color: #6B7280; display: flex; gap: 28px; }
+  .foot b { color: #1C1C1E; }
+</style>
+</head>
+<body>
+  <header>
+    <img src="../../step_rl/console/static/logo.svg" alt="" />
+    <div>
+      <h1>Step-RL — 架构总览</h1>
+      <div class="lead">自然语言 → 约束规划 → 编译技能 → 真实浏览器执行 → 服务端验证；失败经端侧 LLM 兜底后归纳为新技能</div>
+    </div>
+  </header>
+
+  <div class="band">
+    <div class="band-l">Surfaces · 交付形态</div>
+    <div class="row">
+      <div class="card"><h3><span class="dot" style="background:#007AFF"></span>Step-RL Studio</h3><p>FastAPI + WebSocket 实时画面 · 暂停 / 恢复 / 取消 · 下单前人工确认 · 审计回放</p></div>
+      <div class="card"><h3><span class="dot" style="background:#34C759"></span><code>step-rl</code> CLI</h3><p><code>doctor</code> 环境体检 · <code>run</code> 单任务 · <code>eval</code> 验证套件 · <code>privacy-scan</code></p></div>
+      <div class="card"><h3><span class="dot" style="background:#AF52DE"></span>Python Runtime API</h3><p><code>run_task(env, instruction)</code> · 可嵌入现有服务 · 并发会话隔离</p></div>
+      <div class="card"><h3><span class="dot" style="background:#FF9500"></span>容器 / CI</h3><p>Dockerfile · GitHub Actions：ruff → 隐私门禁 → pytest → 真实浏览器 smoke</p></div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="band-l">Runtime · 0 LLM 主路径</div>
+    <div class="flow">
+      <div class="card"><h3>约束规划</h3><p>预算 / 价格上限 / 缺货回退 / 优惠券 → <code>TaskSpec</code></p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>层级分解</h3><p>search → product → cart → checkout 子目标</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>编译技能</h3><p>CTC 购物车事务 · COT 订单事务 · Saga 补偿</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>语义动作</h3><p>Set-of-Mark <code>data-eid</code>，DOM 改版 / ID churn 鲁棒</p></div>
+      <div class="arrow">→</div>
+      <div class="card"><h3>BrowserEnv</h3><p>Playwright + 系统 Edge / Chromium · 观测缓存</p></div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="band-l">Verification &amp; Self-evolution · 可验证与自进化</div>
+    <div class="loop">
+      <div class="card dark">
+        <h3><span class="grad">可执行验证器 Φ</span></h3>
+        <p>成功只由服务端状态判定（购物车 / 订单 / 优惠是否真实落库），不信任页面文字或模型自述。同一个 Φ 同时用于：运行时检查点、VGDP 稠密奖励、评测判分、审计。</p>
+        <span class="pill">compute_progress</span><span class="pill">VGDP reward</span><span class="pill">checkpoint replan</span><span class="pill">audit verdict</span>
+      </div>
+      <div class="card dark">
+        <h3><span class="grad">失败 → 技能</span></h3>
+        <p>编译技能未覆盖 → 端侧 LLM 兜底一次 → 验证器确认成功 → 参数化归纳为新技能 → 统计成功率、低效淘汰 → 下次 0 LLM 复用。</p>
+        <span class="pill">AR019 归纳</span><span class="pill">AR021 统计</span><span class="pill">AR034 自愈</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="band-l">Training (optional extra) · 训练</div>
+    <div class="row">
+      <div class="card"><h3>SFT</h3><p>验证器筛选的成功轨迹做行为克隆</p></div>
+      <div class="card"><h3>Step-GRPO</h3><p>以 Φ 的进度差分作为步级优势，层级策略训练</p></div>
+      <div class="card"><h3>进度估计器</h3><p>无验证器站点上的学习型 Φ̂（实验）</p></div>
+      <div class="card"><h3>多站点适配</h3><p>本地商城 v1 / v2 / v3 + 只读真实站点适配器</p></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span><b>核心安装</b>：fastapi · uvicorn · pydantic · playwright（无需 torch / GPU）</span>
+    <span><b>训练栈</b>：<code>pip install -e ".[train]"</code></span>
+    <span><b>证据</b>：docs/results · specs/archive（AR001–AR035）</span>
+  </div>
+</body>
+</html>

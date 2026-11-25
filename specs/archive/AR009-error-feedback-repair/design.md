@@ -42,9 +42,9 @@ checkout_address_requires_road=True
 
 ```python
 if "称谓" in notice and name input exists:
-    type #name -> "刘星言先生"
+    type #name -> "林知远先生"
 elif "路" in notice and address input exists:
-    type #address -> "深圳市龙岗区坂田路1号"
+    type #address -> "示例市星河区云栖路1号"
 ```
 
 - 每次最多 2 次；
