@@ -3,43 +3,89 @@
 <head>
 <meta charset="utf-8" />
 <style>
-  :root { --ink: #F5F7FB; --mute: #9AA4B8; }
+  :root { --ink: #F5F8FF; --mute: #9AA8C2; --teal: #2EF2C2; --blue: #38BDF8; --violet: #8B7CFF; }
   * { box-sizing: border-box; margin: 0; }
   html, body { width: 1600px; height: 520px; overflow: hidden; }
   body {
     font-family: -apple-system, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     color: var(--ink);
     background:
-      radial-gradient(900px 520px at 8% 0%, rgba(46, 242, 194, 0.20), transparent 60%),
-      radial-gradient(900px 600px at 100% 110%, rgba(139, 124, 255, 0.26), transparent 60%),
+      radial-gradient(820px 460px at 6% -10%, rgba(46, 242, 194, 0.18), transparent 60%),
+      radial-gradient(900px 520px at 108% 112%, rgba(139, 124, 255, 0.28), transparent 62%),
+      radial-gradient(600px 400px at 72% 0%, rgba(56, 189, 248, 0.10), transparent 65%),
       linear-gradient(135deg, #0B1322 0%, #070B14 100%);
-    display: flex; align-items: center; padding: 0 96px; gap: 72px; position: relative;
+    display: flex; align-items: center; padding: 0 56px; gap: 48px; position: relative;
   }
   body::before {
-    content: ""; position: absolute; inset: 0; opacity: 0.35;
-    background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-    background-size: 40px 40px; mask-image: radial-gradient(ellipse at 70% 50%, #000 20%, transparent 75%);
+    content: ""; position: absolute; inset: 0; opacity: 0.32;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse at 60% 50%, #000 20%, transparent 78%);
   }
-  .logo { width: 300px; height: 300px; flex: none; filter: drop-shadow(0 30px 60px rgba(46, 160, 255, 0.28)); position: relative; }
-  .text { position: relative; }
-  .eyebrow { font-size: 18px; letter-spacing: 0.32em; text-transform: uppercase; color: #7FE9D2; font-weight: 600; }
-  h1 { font-size: 104px; letter-spacing: -0.045em; font-weight: 700; line-height: 1.02; margin-top: 14px; }
-  h1 span { background: linear-gradient(90deg, #2EF2C2, #38BDF8 45%, #8B7CFF); -webkit-background-clip: text; color: transparent; }
-  .tag { font-size: 30px; color: #DCE3EF; margin-top: 18px; letter-spacing: -0.01em; font-weight: 500; }
-  .sub { font-size: 21px; color: var(--mute); margin-top: 10px; }
-  .chips { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
+  body::after {
+    content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(46, 242, 194, 0.8), rgba(56, 189, 248, 0.9), rgba(139, 124, 255, 0.85), transparent);
+  }
+  .brand { width: 920px; flex: none; position: relative; }
+  .topline { display: flex; align-items: center; gap: 18px; }
+  .logo { width: 92px; height: 92px; flex: none; filter: drop-shadow(0 18px 36px rgba(46, 160, 255, 0.30)); }
+  .meta { display: flex; flex-direction: column; gap: 8px; }
+  .eyebrow { font-size: 16px; letter-spacing: 0.30em; text-transform: uppercase; color: #7FE9D2; font-weight: 600; }
+  .version { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #BFD0E8; }
+  .version b { color: var(--teal); font-weight: 700; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 12px rgba(46, 242, 194, 0.9); }
+  h1 { font-size: 92px; letter-spacing: -0.045em; font-weight: 700; line-height: 1.0; margin-top: 10px; }
+  h1 span { background: linear-gradient(90deg, #2EF2C2, #38BDF8 48%, #8B7CFF); -webkit-background-clip: text; color: transparent; }
+  .tag { font-size: 26px; color: #DCE5F3; margin-top: 14px; letter-spacing: -0.01em; font-weight: 500; }
+  .sub { font-size: 18px; color: var(--mute); margin-top: 8px; }
+  .chips { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
   .chip {
-    font-size: 17px; padding: 9px 16px; border-radius: 999px; color: #E8EDF6;
-    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(12px); display: inline-flex; gap: 8px; align-items: center;
+    font-size: 14px; padding: 7px 13px; border-radius: 999px; color: #E8EDF6;
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.13);
+    backdrop-filter: blur(12px); display: inline-flex; gap: 7px; align-items: center;
+    white-space: nowrap;
   }
-  .chip b { color: #2EF2C2; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip b { color: var(--teal); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .foot { margin-top: 20px; font-size: 13px; color: #7F8DA8; letter-spacing: 0.02em; }
+  .foot b { color: #B9C8E0; font-weight: 600; }
+  .preview {
+    width: 520px; height: 408px; flex: none; position: relative;
+    border-radius: 26px; padding: 16px;
+    background: linear-gradient(160deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035));
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 189, 248, 0.10) inset;
+    backdrop-filter: blur(18px);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .preview::before {
+    content: ""; position: absolute; inset: -40px; z-index: -1; border-radius: 40px;
+    background: radial-gradient(ellipse at 30% 20%, rgba(46, 242, 194, 0.20), transparent 60%),
+                radial-gradient(ellipse at 80% 90%, rgba(139, 124, 255, 0.22), transparent 62%);
+    filter: blur(24px);
+  }
+  .chrome { display: flex; align-items: center; gap: 8px; height: 20px; padding: 0 4px; }
+  .chrome i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .chrome .r { background: #F87171; } .chrome .y { background: #FBBF24; } .chrome .g { background: #34D399; }
+  .chrome .title { margin-left: 8px; font-size: 11px; color: #98A8C4; letter-spacing: 0.06em; }
+  .chrome .live { margin-left: auto; font-size: 10px; color: #7FE9D2; border: 1px solid rgba(46,242,194,0.35); padding: 2px 8px; border-radius: 999px; background: rgba(46,242,194,0.08); }
+  .shot { width: 100%; height: 300px; object-fit: cover; object-position: top left; border-radius: 14px; border: 1px solid rgba(255,255,255,0.10); }
+  .metrics { display: flex; gap: 8px; }
+  .metric { flex: 1; border-radius: 10px; padding: 7px 9px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); }
+  .metric b { display: block; font-size: 13px; color: var(--teal); font-variant-numeric: tabular-nums; }
+  .metric span { display: block; font-size: 9px; color: #8D9DB8; margin-top: 2px; letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
-  <img class="logo" src="../../step_rl/console/static/logo.svg" alt="" />
-  <div class="text">
-    <div class="eyebrow">Verifier-driven · Edge Web Agent</div>
+  <div class="brand">
+    <div class="topline">
+      <img class="logo" src="../../step_rl/console/static/logo.svg" alt="" />
+      <div class="meta">
+        <div class="eyebrow">Verifier-driven · Edge Web Agent</div>
+        <div class="version"><span class="dot"></span><b>v4.20.0</b> · Studio + CLI + FDE</div>
+      </div>
+    </div>
     <h1>Step-RL <span>Studio</span></h1>
     <div class="tag">会编译自己的 Web Agent：先验证，再执行，最后 0 LLM 复用</div>
     <div class="sub">Hierarchical RL · Executable verifier · Compiled &amp; self-healing skills · Real browser</div>
@@ -49,6 +95,21 @@
       <span class="chip"><b>2.73×</b> 并发加速</span>
       <span class="chip"><b>−62.7%</b> 观测往返</span>
       <span class="chip">服务端状态判定成功</span>
+    </div>
+    <div class="foot"><b>303 tests passed</b> · CPU-first · Edge / Chromium · MIT</div>
+  </div>
+  <div class="preview">
+    <div class="chrome">
+      <i class="r"></i><i class="y"></i><i class="g"></i>
+      <span class="title">Step-RL Studio · 证据实验室</span>
+      <span class="live">LIVE</span>
+    </div>
+    <img class="shot" src="../../docs/assets/studio-dark-evidence.jpg" alt="" />
+    <div class="metrics">
+      <div class="metric"><b>30/30</b><span>UNIFIED SUITE</span></div>
+      <div class="metric"><b>0</b><span>LLM CALLS</span></div>
+      <div class="metric"><b>2.73×</b><span>PARALLEL</span></div>
+      <div class="metric"><b>−62.7%</b><span>ROUND TRIPS</span></div>
     </div>
   </div>
 </body>
